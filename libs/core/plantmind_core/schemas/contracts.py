@@ -1,5 +1,5 @@
-"""Data contracts shared by every service. These are the ONLY shapes that
-cross service boundaries — change here means change everywhere, so keep stable."""
+"""Shapes that cross service boundaries. Changing anything here touches
+every service, so think twice."""
 
 from enum import Enum
 from typing import Literal, Optional
