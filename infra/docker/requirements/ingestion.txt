@@ -1,0 +1,5 @@
+celery[redis]>=5.4
+redis>=5.0
+minio>=7.2
+openai>=1.40
+httpx>=0.27
