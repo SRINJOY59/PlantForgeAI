@@ -1,0 +1,85 @@
+version: "3.9"
+
+x-service-base: &svc
+  env_file: .env
+  depends_on: [redis, neo4j, minio]
+  restart: unless-stopped
+  volumes:
+    - ./libs/core:/opt/libs/core:ro
+
+services:
+  # ---------- infrastructure ----------
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_PLUGINS: '["graph-data-science"]'
+    ports: ["7474:7474", "7687:7687"]
+    volumes: ["neo4j_data:/data", "./infra/neo4j:/init:ro"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: redis-server --appendonly yes
+    volumes: ["redis_data:/data"]
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["minio_data:/data"]
+
+  # ---------- application services ----------
+  gateway:
+    <<: *svc
+    build: services/gateway
+    ports: ["8000:8000"]
+
+  ingestion:
+    <<: *svc
+    build: services/ingestion
+    command: celery -A app.tasks worker -Q q_classify -c 4
+
+  extraction-wo:
+    <<: *svc
+    build: services/extraction
+    command: celery -A app.tasks worker -Q q_parse_wo -c 8
+
+  extraction-pnid:
+    <<: *svc
+    build: services/extraction
+    command: celery -A app.tasks worker -Q q_extract_pnid -c 4
+
+  extraction-text:
+    <<: *svc
+    build: services/extraction
+    command: celery -A app.tasks worker -Q q_extract_text -c 32
+
+  resolution:
+    <<: *svc
+    build: services/resolution
+    command: celery -A app.tasks worker -Q q_resolve -c 4
+
+  graphd:
+    <<: *svc
+    build: services/graphd
+    # single writer: concurrency MUST stay 1; beat drives flush + denoise
+    command: celery -A app.writer worker -Q q_write -c 1 -B
+
+  retrieval:
+    <<: *svc
+    build: services/retrieval
+    ports: ["8001:8001"]
+
+  agents:
+    <<: *svc
+    build: services/agents
+    command: python -m app.consumer
+
+volumes:
+  neo4j_data:
+  redis_data:
+  minio_data:
