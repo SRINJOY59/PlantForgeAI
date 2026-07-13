@@ -45,7 +45,10 @@ docker compose up      # neo4j, redis, minio + all services
 ## Repo layout
 
 - `libs/core` — shared pip package: schemas (pydantic contracts), LLM client, config, telemetry
-- `services/*` — one container each, own Dockerfile + pyproject
+- `services/<name>/` — the service's python package itself (imported as `<name>`,
+  e.g. `graphd.writer`); container built from the shared
+  `infra/docker/service.Dockerfile` with `SERVICE: <name>` build arg, deps in
+  `infra/docker/requirements/<name>.txt`, command in docker-compose.yml
 - `infra/neo4j/init.cypher` — constraints + indexes (run once)
 - `eval/` — golden QA set + extraction benchmarks
 - `data/samples/` — demo corpus

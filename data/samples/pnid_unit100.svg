@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" font-family="monospace" font-size="14">
+  <rect width="1200" height="600" fill="white"/>
+  <text x="20" y="30" font-size="18">UNIT 100 - FEED SECTION    DWG U100-PID-001 REV 2</text>
+
+  <!-- T-101 feed tank -->
+  <rect x="60" y="200" width="100" height="160" fill="none" stroke="black" stroke-width="2"/>
+  <text x="75" y="190">T-101</text>
+  <text x="65" y="385">FEED TANK</text>
+
+  <!-- suction header -->
+  <line x1="160" y1="280" x2="260" y2="280" stroke="black" stroke-width="2"/>
+  <line x1="260" y1="180" x2="260" y2="380" stroke="black" stroke-width="2"/>
+
+  <!-- PI-102 on suction -->
+  <circle cx="210" cy="240" r="18" fill="none" stroke="black" stroke-width="2"/>
+  <text x="203" y="236" font-size="12">PI</text>
+  <text x="199" y="250" font-size="12">102</text>
+  <line x1="210" y1="258" x2="210" y2="280" stroke="black" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- P-101A -->
+  <line x1="260" y1="180" x2="340" y2="180" stroke="black" stroke-width="2"/>
+  <circle cx="380" cy="180" r="40" fill="none" stroke="black" stroke-width="2"/>
+  <path d="M 380 140 L 412 204 M 380 140 L 348 204" fill="none" stroke="black" stroke-width="2"/>
+  <text x="358" y="250">P-101A</text>
+  <line x1="420" y1="180" x2="520" y2="180" stroke="black" stroke-width="2"/>
+
+  <!-- P-101B -->
+  <line x1="260" y1="380" x2="340" y2="380" stroke="black" stroke-width="2"/>
+  <circle cx="380" cy="380" r="40" fill="none" stroke="black" stroke-width="2"/>
+  <path d="M 380 340 L 412 404 M 380 340 L 348 404" fill="none" stroke="black" stroke-width="2"/>
+  <text x="358" y="450">P-101B</text>
+  <line x1="420" y1="380" x2="520" y2="380" stroke="black" stroke-width="2"/>
+
+  <!-- discharge header joins -->
+  <line x1="520" y1="180" x2="520" y2="380" stroke="black" stroke-width="2"/>
+  <line x1="520" y1="280" x2="600" y2="280" stroke="black" stroke-width="2"/>
+
+  <!-- FT-103 on discharge -->
+  <circle cx="560" cy="240" r="18" fill="none" stroke="black" stroke-width="2"/>
+  <text x="553" y="236" font-size="12">FT</text>
+  <text x="549" y="250" font-size="12">103</text>
+  <line x1="560" y1="258" x2="560" y2="280" stroke="black" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- E-204 heat exchanger -->
+  <circle cx="650" cy="280" r="45" fill="none" stroke="black" stroke-width="2"/>
+  <line x1="605" y1="280" x2="695" y2="280" stroke="black" stroke-width="2"/>
+  <path d="M 620 280 L 640 265 L 660 295 L 680 280" fill="none" stroke="black" stroke-width="2"/>
+  <text x="625" y="350">E-204</text>
+  <text x="600" y="368">FEED HEATER</text>
+
+  <!-- to V-203 -->
+  <line x1="695" y1="280" x2="800" y2="280" stroke="black" stroke-width="2"/>
+
+  <!-- V-203 separator -->
+  <rect x="800" y="170" width="90" height="220" rx="45" fill="none" stroke="black" stroke-width="2"/>
+  <text x="815" y="160">V-203</text>
+  <text x="790" y="415">SEPARATOR</text>
+
+  <!-- PSV-204 on V-203 top -->
+  <line x1="845" y1="170" x2="845" y2="120" stroke="black" stroke-width="2"/>
+  <path d="M 830 120 L 860 120 L 845 95 Z" fill="none" stroke="black" stroke-width="2"/>
+  <text x="870" y="112">PSV-204</text>
+  <line x1="845" y1="95" x2="845" y2="60" stroke="black" stroke-width="2"/>
+  <text x="805" y="50">TO FLARE</text>
+
+  <!-- vapour line to K-301 -->
+  <line x1="890" y1="220" x2="990" y2="220" stroke="black" stroke-width="2"/>
+  <circle cx="1040" cy="220" r="45" fill="none" stroke="black" stroke-width="2"/>
+  <path d="M 1005 195 L 1075 210 M 1005 245 L 1075 230" fill="none" stroke="black" stroke-width="2"/>
+  <text x="1015" y="295">K-301</text>
+  <text x="975" y="313">VAPOUR COMPRESSOR</text>
+  <line x1="1085" y1="220" x2="1160" y2="220" stroke="black" stroke-width="2"/>
+  <text x="1095" y="205">TO UNIT 200</text>
+
+  <!-- liquid outlet -->
+  <line x1="845" y1="390" x2="845" y2="470" stroke="black" stroke-width="2"/>
+  <line x1="845" y1="470" x2="1160" y2="470" stroke="black" stroke-width="2"/>
+  <text x="1000" y="458">LIQUID TO UNIT 300</text>
+
+  <!-- TI-205 on E-204 outlet -->
+  <circle cx="750" cy="240" r="18" fill="none" stroke="black" stroke-width="2"/>
+  <text x="744" y="236" font-size="12">TI</text>
+  <text x="740" y="250" font-size="12">205</text>
+  <line x1="750" y1="258" x2="750" y2="280" stroke="black" stroke-width="1" stroke-dasharray="4 3"/>
+</svg>

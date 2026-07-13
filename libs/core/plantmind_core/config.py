@@ -22,9 +22,9 @@ class Settings(BaseSettings):
     # --- LLM via OpenRouter (OpenAI-compatible) ---
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    llm_cheap: str = "anthropic/claude-haiku-4.5"    # classify, verify, ER adjudication
-    llm_mid: str = "anthropic/claude-sonnet-4.5"     # text extraction, answering
-    llm_vision: str = "anthropic/claude-sonnet-4.5"  # P&ID extraction
+    llm_cheap: str = "qwen/qwen3.6-flash"         # classify, verify, ER adjudication
+    llm_mid: str = "deepseek/deepseek-v4-pro"     # text extraction, answering
+    llm_vision: str = "qwen/qwen3.7-plus"         # P&ID extraction (image input)
     llm_max_concurrency: int = 32                    # global in-process semaphore
     llm_max_retries: int = 5
     llm_timeout_s: float = 120.0

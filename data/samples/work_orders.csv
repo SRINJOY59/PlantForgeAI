@@ -1,0 +1,13 @@
+wo_id,date,equipment_tag,failure_code,description,action_taken,technician,downtime_hours
+WO-2201,2025-08-14,P-101A,SEAL-LEAK,Mechanical seal leaking at gland during startup,Replaced seal cartridge; flushed seal pot,R. Sharma,6
+WO-2208,2025-09-02,E-204,FOULING,Outlet temperature 12C above normal; suspected tube fouling,Scheduled bundle cleaning at next opportunity,V. Iyer,0
+WO-2214,2025-10-19,P-101A,SEAL-LEAK,Seal failure again; noticed noise and pressure fluctuation on suction gauge PI-102,Replaced seal; logged suction pressure below min at 0.4 barg,R. Sharma,9
+WO-2221,2025-11-05,V-203,GASKET-LEAK,Minor leak at manway gasket,Retorqued manway bolts to spec,A. Khan,2
+WO-2226,2025-12-11,K-301,VIBRATION,High vibration alarm on bearing housing NDE,Aligned coupling; vibration back within limits,S. Patel,14
+WO-2233,2026-01-22,P-101B,SEAL-LEAK,Seal weeping observed during routine round,Replaced seal cartridge,R. Sharma,5
+WO-2238,2026-02-08,E-204,FOULING,Bundle cleaned; heavy scaling found on tube side,Chemical cleaning completed; performance restored,V. Iyer,18
+WO-2245,2026-03-03,K-301,TRIP,Compressor tripped on high discharge temperature,See incident report IR-2026-014,S. Patel,22
+WO-2251,2026-03-04,PSV-204,RELIEF-LIFT,PSV lifted during K-301 trip event; requires bench test before reuse,Sent to workshop for pop test and recertification,A. Khan,0
+WO-2257,2026-04-16,P-101A,SEAL-LEAK,Third seal failure in nine months; suction strainer found partially blocked,Replaced seal; cleaned strainer; raised recommendation to review suction line design,R. Sharma,11
+WO-2263,2026-05-21,FT-103,DRIFT,Flow transmitter reading drifting against field check,Recalibrated transmitter,M. George,1
+WO-2270,2026-06-30,P-101B,BEARING-NOISE,Abnormal bearing noise during operation,Greased bearing; monitoring; possible replacement next shutdown,S. Patel,0

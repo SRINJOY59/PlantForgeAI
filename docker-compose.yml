@@ -1,5 +1,3 @@
-version: "3.9"
-
 x-service-base: &svc
   env_file: .env
   depends_on: [redis, neo4j, minio]
@@ -33,51 +31,75 @@ services:
     volumes: ["minio_data:/data"]
 
   # ---------- application services ----------
+  # all built from infra/docker/service.Dockerfile; SERVICE arg picks the code
   gateway:
     <<: *svc
-    build: services/gateway
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: gateway }
+    command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000
     ports: ["8000:8000"]
 
   ingestion:
     <<: *svc
-    build: services/ingestion
-    command: celery -A app.tasks worker -Q q_classify -c 4
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: ingestion }
+    command: celery -A ingestion.tasks worker -Q q_classify -c 4
 
   extraction-wo:
     <<: *svc
-    build: services/extraction
-    command: celery -A app.tasks worker -Q q_parse_wo -c 8
+    build: &extraction-build
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: extraction }
+    command: celery -A extraction.tasks worker -Q q_parse_wo -c 8
 
   extraction-pnid:
     <<: *svc
-    build: services/extraction
-    command: celery -A app.tasks worker -Q q_extract_pnid -c 4
+    build: *extraction-build
+    command: celery -A extraction.tasks worker -Q q_extract_pnid -c 4
 
   extraction-text:
     <<: *svc
-    build: services/extraction
-    command: celery -A app.tasks worker -Q q_extract_text -c 32
+    build: *extraction-build
+    command: celery -A extraction.tasks worker -Q q_extract_text -c 32
 
   resolution:
     <<: *svc
-    build: services/resolution
-    command: celery -A app.tasks worker -Q q_resolve -c 4
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: resolution }
+    command: celery -A resolution.tasks worker -Q q_resolve -c 4
 
   graphd:
     <<: *svc
-    build: services/graphd
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: graphd }
     # single writer: concurrency MUST stay 1; beat drives flush + denoise
-    command: celery -A app.writer worker -Q q_write -c 1 -B
+    command: celery -A graphd.writer worker -Q q_write -c 1 -B --loglevel=info
 
   retrieval:
     <<: *svc
-    build: services/retrieval
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: retrieval }
+    command: uvicorn retrieval.main:app --host 0.0.0.0 --port 8001
     ports: ["8001:8001"]
 
   agents:
     <<: *svc
-    build: services/agents
-    command: python -m app.consumer
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: agents }
+    command: python -m agents.consumer
 
 volumes:
   neo4j_data:

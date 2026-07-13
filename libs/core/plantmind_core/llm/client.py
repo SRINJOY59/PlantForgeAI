@@ -43,6 +43,7 @@ class LLMClient:
     async def complete(self, messages, tier=Tier.CHEAP, max_tokens=2048,
                        temperature=0.0, response_format=None) -> str:
         model = self._models[tier]
+        extra = {"response_format": response_format} if response_format else {}
 
         for attempt in range(self._max_retries + 1):
             try:
@@ -52,7 +53,7 @@ class LLMClient:
                         messages=messages,
                         max_tokens=max_tokens,
                         temperature=temperature,
-                        response_format=response_format,
+                        **extra,
                     )
                 if resp.usage:
                     self.meter.record(model, resp.usage.prompt_tokens,

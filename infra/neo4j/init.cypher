@@ -1,6 +1,11 @@
 // Run once against a fresh database. Constraints double as race-condition
 // backstops: a duplicate create fails loudly instead of corrupting the graph.
 
+// every node carries :Entity plus its type label; all writes and lookups
+// key on Entity.id, which keeps cross-label MATCHes on the id index
+CREATE CONSTRAINT entity_id IF NOT EXISTS
+FOR (n:Entity) REQUIRE n.id IS UNIQUE;
+
 CREATE CONSTRAINT equipment_tag IF NOT EXISTS
 FOR (e:Equipment) REQUIRE e.tag IS UNIQUE;
 
