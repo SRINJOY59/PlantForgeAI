@@ -50,6 +50,10 @@ class FakeLLM:
         self.calls.append(("vision", prompt, schema))
         return self.responses.pop(0)
 
+    async def vision(self, prompt, images_b64, max_tokens=4096):
+        self.calls.append(("vision_text", prompt, None))
+        return self.responses.pop(0)
+
 
 class FakeEmbedder:
     async def embed(self, texts):

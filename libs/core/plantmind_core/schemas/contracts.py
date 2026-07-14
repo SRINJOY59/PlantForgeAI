@@ -11,11 +11,13 @@ class NodeType(str, Enum):
     INSTRUMENT = "Instrument"
     LINE = "Line"
     DOCUMENT = "Document"
+    SECTION = "Section"
     CHUNK = "Chunk"
     WORK_ORDER = "WorkOrder"
     FAILURE_MODE = "FailureMode"
     PROCEDURE = "Procedure"
     REGULATION_CLAUSE = "RegulationClause"
+    PERSON = "Person"
 
 
 class EdgeType(str, Enum):

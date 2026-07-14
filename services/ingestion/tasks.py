@@ -24,9 +24,11 @@ _classifier = None
 
 def _llm_classify(filename: str, sniff: str) -> str:
     prompt = (
-        "Classify this industrial document as exactly one of: table, pnid, text.\n"
+        "Classify this industrial document as exactly one of: table, pnid, "
+        "text, manual, email, image.\n"
         "table = structured rows (work orders, inspections). pnid = engineering "
-        f"drawing. text = prose document.\n\nFilename: {filename}\n"
+        "drawing. text = short prose. manual = long structured handbook. "
+        f"image = photo/scan/chart.\n\nFilename: {filename}\n"
         f"First bytes:\n{sniff[:800]}\n\nAnswer with the single word only."
     )
     reply = asyncio.run(get_llm().complete(
@@ -72,7 +74,7 @@ def run_classify(payload: dict, store: ObjectStore, bus: RedisBus,
         store.move(staging_key, object_key)
 
         sniff = data[:2048].decode("utf-8", errors="ignore")
-        kind = classifier.classify(filename, sniff)
+        kind = classifier.classify(filename, sniff, data)
 
         route = ROUTE_FOR[kind]
         sender(route, {

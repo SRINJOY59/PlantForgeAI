@@ -52,6 +52,31 @@ def test_broken_fallback_still_lands_on_text():
     assert c.classify("scan_0042.pdf", "") == DocKind.TEXT
 
 
+def test_emails_by_extension_and_headers():
+    c = Classifier()
+    assert c.classify("thread.eml", "") == DocKind.EMAIL
+    sniff = "Return-Path: <x@y.z>\nReceived: from mail\nSubject: pump issue"
+    assert c.classify("exported_message", sniff) == DocKind.EMAIL
+
+
+def test_images_route_to_image_lane_unless_drawing_named():
+    c = Classifier()
+    assert c.classify("nameplate_photo.jpg", "") == DocKind.IMAGE
+    assert c.classify("trend.png", "") == DocKind.IMAGE
+    assert c.classify("unit100_dwg.png", "") == DocKind.PNID   # hint wins
+
+
+def test_long_text_pdf_is_manual_short_is_text():
+    c = Classifier()
+    sniff = "maintenance instructions for centrifugal pumps " * 8
+    long_pdf = b"%PDF" + b"/Type /Page\n" * 40
+    short_pdf = b"%PDF" + b"/Type /Page\n" * 3
+    assert c.classify("ksb_manual.pdf", sniff, long_pdf) == DocKind.MANUAL
+    assert c.classify("report.pdf", sniff, short_pdf) == DocKind.TEXT
+
+
 def test_every_kind_has_a_route():
     assert set(ROUTE_FOR) == set(DocKind)
     assert ROUTE_FOR[DocKind.TABLE] is Routes.parse_workorder
+    assert ROUTE_FOR[DocKind.MANUAL] is Routes.extract_manual
+    assert ROUTE_FOR[DocKind.IMAGE] is Routes.extract_image

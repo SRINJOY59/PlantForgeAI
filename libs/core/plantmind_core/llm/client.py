@@ -1,4 +1,5 @@
 import asyncio
+import json
 import random
 from enum import Enum
 from typing import Type, TypeVar
@@ -13,6 +14,14 @@ log = get_logger("llm")
 T = TypeVar("T", bound=BaseModel)
 
 RETRYABLE = {429, 500, 502, 503, 529}
+
+
+def _strip_fences(raw: str) -> str:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1] if "\n" in raw else raw
+        raw = raw.rsplit("```", 1)[0]
+    return raw.strip()
 
 
 class Tier(str, Enum):
@@ -73,24 +82,35 @@ class LLMClient:
 
     async def structured(self, messages, schema: Type[T], tier=Tier.CHEAP,
                          max_tokens=4096) -> T:
+        json_schema = schema.model_json_schema()
         response_format = {
             "type": "json_schema",
             "json_schema": {
                 "name": schema.__name__,
                 "strict": True,
-                "schema": schema.model_json_schema(),
+                "schema": json_schema,
             },
         }
-        raw = await self.complete(messages, tier=tier, max_tokens=max_tokens,
+        # schema also goes in a system message: some open-weight providers
+        # silently downgrade json_schema to json_object (which then requires
+        # the word "json" in the prompt), and weaker ones follow the prompt
+        # better than the response_format anyway
+        convo = [{"role": "system", "content":
+                  "Respond with a single JSON object conforming to this "
+                  "JSON schema, no prose:\n" + json.dumps(json_schema)},
+                 *messages]
+        raw = await self.complete(convo, tier=tier, max_tokens=max_tokens,
                                   response_format=response_format)
         try:
-            return schema.model_validate_json(raw)
+            return schema.model_validate_json(_strip_fences(raw))
         except ValidationError as e:
-            log.warning("structured output failed validation, retrying",
+            # reasoning models burn thinking tokens from the same budget, so
+            # truncated json usually means "not enough room" - retry bigger
+            log.warning("structured output failed validation, retrying larger",
                         schema=schema.__name__, error=str(e)[:200])
-            raw = await self.complete(messages, tier=tier, max_tokens=max_tokens,
+            raw = await self.complete(convo, tier=tier, max_tokens=max_tokens * 2,
                                       response_format=response_format)
-            return schema.model_validate_json(raw)
+            return schema.model_validate_json(_strip_fences(raw))
 
     async def vision(self, prompt: str, images_b64: list[str],
                      max_tokens=4096) -> str:
@@ -104,7 +124,7 @@ class LLMClient:
                                    tier=Tier.VISION, max_tokens=max_tokens)
 
     async def vision_structured(self, prompt: str, images_b64: list[str],
-                                schema: Type[T], max_tokens=4096) -> T:
+                                schema: Type[T], max_tokens=8192) -> T:
         content = [{"type": "text", "text": prompt}]
         for b64 in images_b64:
             content.append({

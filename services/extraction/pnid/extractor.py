@@ -117,3 +117,25 @@ class PnidExtractor:
                                         "content_hash": content_hash})
         return CandidateSubgraph(doc_id=doc_id, content_hash=content_hash,
                                  nodes=[*nodes.values(), doc_node], edges=edges)
+
+
+def main():
+    """usage (from plantmind/services, needs OPENROUTER_API_KEY in ../.env):
+    ../.venv/Scripts/python -m extraction.pnid.extractor ../data/samples/pnid_unit100.svg"""
+    import asyncio
+    import sys
+    from pathlib import Path
+
+    from plantmind_core.devtools import find_file, summarize
+    from plantmind_core.llm import get_llm
+
+    extractor = PnidExtractor(get_llm())
+    for arg in sys.argv[1:]:
+        path = find_file(arg)
+        csg = asyncio.run(extractor.extract(
+            "smoke-" + path.stem, "smoke-hash", path.name, path.read_bytes()))
+        summarize(csg)
+
+
+if __name__ == "__main__":
+    main()

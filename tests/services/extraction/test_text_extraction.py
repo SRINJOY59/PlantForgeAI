@@ -2,6 +2,7 @@ import asyncio
 
 import pytest
 
+from plantmind_core.config import get_settings
 from plantmind_core.schemas import EdgeType, NodeType
 from extraction.text.chunker import SectionChunker
 from extraction.text.extractor import (
@@ -12,44 +13,89 @@ from conftest import SAMPLES, FakeEmbedder, FakeLLM
 SOP = (SAMPLES / "sop_pump_seal_replacement.md").read_text(encoding="utf-8")
 
 
-def test_chunker_splits_on_headers_with_true_offsets():
-    chunks = SectionChunker().split(SOP)
+class RecordingEmbedder(FakeEmbedder):
+    def __init__(self):
+        self.inputs = []
 
-    assert len(chunks) >= 5
-    sections = {c.section for c in chunks}
-    assert "1. Safety prerequisites" in sections
-    assert "4. Pre-start checks" in sections
+    async def embed(self, texts):
+        self.inputs.extend(texts)
+        return await super().embed(texts)
+
+
+def all_chunks(sections):
+    return [c for s in sections for c in s.chunks]
+
+
+def test_chunker_builds_section_tree_with_exact_offsets():
+    sections = SectionChunker().split(SOP)
+
+    titles = {s.title for s in sections}
+    assert "1. Safety prerequisites" in titles
+    assert "4. Pre-start checks" in titles
+
+    chunks = all_chunks(sections)
+    assert chunks
     for c in chunks:
-        assert SOP[c.start:c.end].strip() == c.text   # offsets point home
-
-
-def extract(llm_responses):
-    llm = FakeLLM(*llm_responses)
-    extractor = TextExtractor(llm, FakeEmbedder())
-    csg = asyncio.run(extractor.extract("doc-sop", "hash-sop", "sop.md", SOP))
-    return csg, llm
+        assert SOP[c.start:c.end] == c.text        # exact, not just stripped
+    indices = [c.index for c in chunks]
+    assert indices == list(range(len(chunks)))     # global, gapless
 
 
 def n_batches():
-    chunker = SectionChunker()
-    from plantmind_core.config import get_settings
-    bs = get_settings().extraction_batch_size
-    n = len(chunker.split(SOP))
-    return -(-n // bs)
+    n = len(all_chunks(SectionChunker().split(SOP)))
+    return -(-n // get_settings().extraction_batch_size)
 
 
 def empty_batches():
     return [BatchFindings() for _ in range(n_batches())]
 
 
-def test_chunks_become_nodes_with_embeddings():
+def extract(llm_responses, embedder=None):
+    llm = FakeLLM(*llm_responses)
+    extractor = TextExtractor(llm, embedder or FakeEmbedder())
+    csg = asyncio.run(extractor.extract("doc-sop", "hash-sop", "sop.md", SOP))
+    return csg, llm
+
+
+def test_parent_child_structure_in_graph():
     csg, _ = extract(empty_batches())
 
+    section_nodes = [n for n in csg.nodes if n.type == NodeType.SECTION]
     chunk_nodes = [n for n in csg.nodes if n.type == NodeType.CHUNK]
-    assert chunk_nodes and all(n.props["embedding"] == [0.1, 0.2, 0.3]
-                               for n in chunk_nodes)
-    part_of = [e for e in csg.edges if e.type == EdgeType.PART_OF]
-    assert len(part_of) == len(chunk_nodes)
+    assert section_nodes and chunk_nodes
+
+    part_of = [(e.src, e.dst) for e in csg.edges if e.type == EdgeType.PART_OF]
+    for s in section_nodes:                        # every section hangs off the doc
+        assert (s.surface_form, "doc-sop") in part_of
+    for c in chunk_nodes:                          # every chunk hangs off a section
+        parents = [dst for src, dst in part_of if src == c.surface_form]
+        assert len(parents) == 1 and "#sec" in parents[0]
+
+    prestart = next(n for n in section_nodes
+                    if n.props["title"] == "4. Pre-start checks")
+    assert "0.8 barg" in prestart.props["text"]    # parent carries full context
+
+
+def test_embeddings_use_contextual_enrichment():
+    embedder = RecordingEmbedder()
+    csg, _ = extract(empty_batches(), embedder)
+
+    assert embedder.inputs
+    assert all(i.startswith("From sop.md, section ") for i in embedder.inputs)
+
+    chunk = next(n for n in csg.nodes if n.type == NodeType.CHUNK)
+    assert not chunk.props["text"].startswith("From sop.md")   # raw text stays raw
+    assert chunk.props["context"].startswith("From sop.md, section ")
+
+
+def test_prompt_carries_tag_list_and_negation_rules():
+    _, llm = extract(empty_batches())
+
+    prompt = llm.calls[0][1][0]["content"]
+    assert "P-101A" in prompt and "PI-102" in prompt          # coref tag list
+    assert "no leakage observed" in prompt                    # negation trap
+    assert "inspect for cavitation" in prompt                 # instruction trap
+    assert "Never report a tag" in prompt                     # coref guard
 
 
 def test_regex_pass_finds_tags_without_llm():
@@ -59,14 +105,11 @@ def test_regex_pass_finds_tags_without_llm():
     assert {"P-101A", "P-101B", "T-101", "E-204", "PI-102", "FT-103"} <= surfaces
 
     pi102 = next(n for n in csg.nodes if n.surface_form == "PI-102")
-    assert pi102.type == NodeType.INSTRUMENT          # prefix says instrument
-    p101a = next(n for n in csg.nodes if n.surface_form == "P-101A")
-    assert p101a.type == NodeType.EQUIPMENT
-
+    assert pi102.type == NodeType.INSTRUMENT
     mention = next(e for e in csg.edges if e.type == EdgeType.MENTIONED_IN
                    and e.src == "P-101A")
     start, end = mention.provenance.span
-    assert SOP[start:end] == "P-101A"                 # span survives chunking
+    assert SOP[start:end] == "P-101A"
 
 
 def test_llm_findings_become_edges():

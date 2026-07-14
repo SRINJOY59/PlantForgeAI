@@ -42,6 +42,18 @@ cp .env.example .env   # fill API keys
 docker compose up      # neo4j, redis, minio + all services
 ```
 
+## Dev setup (local venv)
+
+```
+python -m venv .venv
+.venv\Scripts\pip install -e libs\core[celery,dev] minio openpyxl fakeredis
+echo <abs-path-to-repo>\services > .venv\Lib\site-packages\plantmind_services.pth
+```
+
+The .pth puts services/ on sys.path, so module smoke tests run from anywhere:
+`python -m extraction.workorder.parser data\samples\work_orders.csv`
+(.env is discovered by walking up from wherever you run.)
+
 ## Repo layout
 
 - `libs/core` — shared pip package: schemas (pydantic contracts), LLM client, config, telemetry

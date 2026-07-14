@@ -101,3 +101,16 @@ def run_flush(bus: RedisBus, store: GraphStore, batch_size: int,
     if stats["subgraphs"] or stats["bad"]:
         log.info("flush done", **stats)
     return stats
+
+
+def main():
+    """usage (from plantmind/services, needs redis+neo4j from docker compose):
+    ../.venv/Scripts/python -m graphd.writer
+    Runs one flush of whatever is sitting in the write buffer."""
+    bus, store = _deps()
+    stats = run_flush(bus, store, settings.write_batch_size)
+    print(stats)
+
+
+if __name__ == "__main__":
+    main()

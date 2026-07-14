@@ -74,3 +74,27 @@ def group_batch(subgraphs: list[CandidateSubgraph]) -> WriteBatch:
         batch.doc_ids.add(csg.doc_id)
 
     return batch
+
+
+def main():
+    """usage (from plantmind/services):
+    ../.venv/Scripts/python -m graphd.batching subgraph.json [...]
+    Feed it resolved CandidateSubgraph json files and see the write shapes."""
+    import sys
+    from pathlib import Path
+
+    subgraphs = [CandidateSubgraph.model_validate_json(Path(a).read_text())
+                 for a in sys.argv[1:]]
+    batch = group_batch(subgraphs)
+    for label, rows in batch.nodes_by_label.items():
+        print(f"\n{label}: {len(rows)} rows")
+        for row in rows[:3]:
+            print(f"   {row}")
+    for edge_type, rows in batch.edges_by_type.items():
+        print(f"\n{edge_type}: {len(rows)} rows")
+        for row in rows[:3]:
+            print(f"   {row['src']} -> {row['dst']}  (prov {row['prov_hash']})")
+
+
+if __name__ == "__main__":
+    main()

@@ -52,3 +52,16 @@ class RedisBus:
 
     def publish_delta(self, delta_json: str):
         self._r.xadd(keys.DELTA_STREAM, {"payload": delta_json})
+
+    # observability -----------------------------------------------------------
+    def depths(self) -> dict:
+        """How much work is waiting where. Zero everywhere = pipeline idle."""
+        from plantmind_core.queues import Routes
+        d = {r.queue: self._r.llen(r.queue)
+             for r in Routes.all() if r.queue != "q_write"}
+        d["write_buffer"] = self._r.llen(keys.WRITE_BUFFER)
+        d["dlq"] = self._r.llen(keys.WRITE_DLQ)
+        return d
+
+    def graph_version(self) -> int:
+        return int(self._r.get(keys.GRAPH_VERSION) or 0)

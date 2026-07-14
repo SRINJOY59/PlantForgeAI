@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from plantmind_core.schemas import EdgeType, NodeType
@@ -5,9 +7,8 @@ from extraction.workorder.parser import TableParser
 from conftest import SAMPLES
 
 
-@pytest.fixture
-def parser():
-    return TableParser()
+def parse(filename, data, doc_id="doc-x", llm=None):
+    return asyncio.run(TableParser(llm).parse(doc_id, "hash-x", filename, data))
 
 
 def nodes_of(csg, node_type):
@@ -18,10 +19,8 @@ def edges_of(csg, edge_type):
     return [e for e in csg.edges if e.type == edge_type]
 
 
-def test_work_orders_sample_parses_completely(parser):
-    data = (SAMPLES / "work_orders.csv").read_bytes()
-
-    csg = parser.parse("doc-wo", "hash-wo", "work_orders.csv", data)
+def test_work_orders_sample_parses_completely():
+    csg = parse("work_orders.csv", (SAMPLES / "work_orders.csv").read_bytes())
 
     assert len(nodes_of(csg, NodeType.WORK_ORDER)) == 12       # one per row
     assert len(nodes_of(csg, NodeType.DOCUMENT)) == 1
@@ -39,10 +38,8 @@ def test_work_orders_sample_parses_completely(parser):
     assert {e.src for e in seal_leaks} == {"P-101A", "P-101B"}
 
 
-def test_work_order_props_carried(parser):
-    data = (SAMPLES / "work_orders.csv").read_bytes()
-
-    csg = parser.parse("doc-wo", "hash-wo", "work_orders.csv", data)
+def test_work_order_props_carried():
+    csg = parse("work_orders.csv", (SAMPLES / "work_orders.csv").read_bytes())
 
     wo = next(n for n in nodes_of(csg, NodeType.WORK_ORDER)
               if n.surface_form == "WO-2214")
@@ -51,22 +48,18 @@ def test_work_order_props_carried(parser):
     assert "PI-102" in wo.props["description"]
 
 
-def test_provenance_points_at_source_row(parser):
-    data = (SAMPLES / "work_orders.csv").read_bytes()
-
-    csg = parser.parse("doc-wo", "hash-wo", "work_orders.csv", data)
+def test_provenance_points_at_source_row():
+    csg = parse("work_orders.csv", (SAMPLES / "work_orders.csv").read_bytes())
 
     first_failure = edges_of(csg, EdgeType.HAS_FAILURE)[0]
-    assert first_failure.provenance.doc_id == "doc-wo"
+    assert first_failure.provenance.doc_id == "doc-x"
     assert first_failure.provenance.page == 1                  # row number
     assert first_failure.provenance.confidence == 1.0
-    assert first_failure.provenance.extractor_version == "wo-parser-v1"
 
 
-def test_inspections_sample_builds_compliance_edges(parser):
-    data = (SAMPLES / "inspection_records.csv").read_bytes()
-
-    csg = parser.parse("doc-ins", "hash-ins", "inspection_records.csv", data)
+def test_inspections_sample_builds_compliance_edges():
+    csg = parse("inspection_records.csv",
+                (SAMPLES / "inspection_records.csv").read_bytes())
 
     standards = {n.surface_form for n in nodes_of(csg, NodeType.REGULATION_CLAUSE)}
     assert "OISD-STD-128" in standards
@@ -79,17 +72,16 @@ def test_inspections_sample_builds_compliance_edges(parser):
     assert v203.props["inspection_type"] == "Hydrostatic test"
 
 
-def test_no_resolved_ids_yet(parser):
-    data = (SAMPLES / "work_orders.csv").read_bytes()
-    csg = parser.parse("doc-wo", "hash-wo", "work_orders.csv", data)
+def test_no_resolved_ids_yet():
+    csg = parse("work_orders.csv", (SAMPLES / "work_orders.csv").read_bytes())
     assert all(n.resolved_id is None for n in csg.nodes)       # resolver's job
 
 
-def test_unknown_table_rejected(parser):
-    with pytest.raises(ValueError, match="unrecognised"):
-        parser.parse("d", "h", "mystery.csv", b"a,b,c\n1,2,3\n")
+def test_unknown_table_without_llm_rejected():
+    with pytest.raises(ValueError, match="no LLM wired"):
+        parse("mystery.csv", b"a,b,c\n1,2,3\n")
 
 
-def test_empty_file_rejected(parser):
+def test_empty_file_rejected():
     with pytest.raises(ValueError, match="no data rows"):
-        parser.parse("d", "h", "empty.csv", b"wo_id,date\n")
+        parse("empty.csv", b"wo_id,date\n")

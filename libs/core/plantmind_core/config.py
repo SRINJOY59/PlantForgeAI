@@ -2,11 +2,22 @@
 no service defines its own config keys."""
 
 from functools import lru_cache
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _find_env() -> str:
+    """Walk up from CWD so smoke tests work from any directory in the repo."""
+    for parent in (Path.cwd(), *Path.cwd().parents):
+        candidate = parent / ".env"
+        if candidate.exists():
+            return str(candidate)
+    return ".env"
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_find_env(), extra="ignore")
 
     # --- infrastructure ---
     neo4j_uri: str = "bolt://neo4j:7687"
