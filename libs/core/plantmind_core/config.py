@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     neo4j_ro_user: str = "retrieval_ro"
     neo4j_ro_password: str = "change_me"
     redis_url: str = "redis://redis:6379/0"
+    retrieval_url: str = "http://localhost:8001"     # gateway proxies Q&A here
     minio_endpoint: str = "http://minio:9000"
     minio_user: str = "plantmind"
     minio_password: str = "change_me"

@@ -27,6 +27,10 @@ def prov_hash(p: Provenance) -> str:
     return hashlib.sha1(parts.encode()).hexdigest()[:16]
 
 
+def _source_value(source) -> str:
+    return source.value if hasattr(source, "value") else str(source)
+
+
 def clean_props(props: dict) -> dict:
     """Neo4j properties allow primitives and flat arrays of primitives,
     nothing nested. Anything richer (a chart's series, for example) is
@@ -86,6 +90,7 @@ def group_batch(subgraphs: list[CandidateSubgraph]) -> WriteBatch:
                     "page": edge.provenance.page,
                     "extractor_version": edge.provenance.extractor_version,
                     "confidence": edge.provenance.confidence,
+                    "source": _source_value(edge.provenance.source),
                 }),
             }
             batch.edges_by_type.setdefault(edge.type.value, []).append(row)

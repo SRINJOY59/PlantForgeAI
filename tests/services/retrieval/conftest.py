@@ -86,6 +86,12 @@ class FakeLLM:
         self.prompts.append(messages[-1]["content"])
         return self.reply
 
+    async def stream(self, messages, tier=None, max_tokens=None,
+                     temperature=0.0):
+        self.prompts.append(messages[-1]["content"])
+        for word in self.reply.split(" "):
+            yield word + " "
+
 
 class FakeEmbedder:
     async def embed(self, texts):

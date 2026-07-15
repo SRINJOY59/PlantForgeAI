@@ -25,7 +25,7 @@ class Routes:
     extract_image = Route("extraction.tasks.extract_image", "q_extract_pnid")
     resolve = Route("resolution.tasks.resolve", "q_resolve")
     flush = Route("graphd.tasks.flush_write_buffer", "q_write")
-    denoise = Route("graphd.denoise.run", "q_write")
+    denoise = Route("graphd.tasks.run_denoise", "q_write")
 
     @classmethod
     def all(cls) -> list[Route]:

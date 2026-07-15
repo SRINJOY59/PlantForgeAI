@@ -44,3 +44,12 @@ class ObjectStore:
 
     def delete(self, key: str):
         self._client.remove_object(BUCKET, key)
+
+    def find_document(self, doc_id: str):
+        """The raw object for a doc_id (key raw/<doc_id>/<filename>).
+        Returns (filename, bytes) or None - used to serve citation sources."""
+        prefix = f"raw/{doc_id}/"
+        for obj in self._client.list_objects(BUCKET, prefix=prefix):
+            filename = obj.object_name.rsplit("/", 1)[-1]
+            return filename, self.get(obj.object_name)
+        return None

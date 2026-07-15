@@ -29,6 +29,21 @@ class EdgeType(str, Enum):
     GOVERNED_BY = "GOVERNED_BY"
     PRECEDES = "PRECEDES"
     SUPERSEDES = "SUPERSEDES"
+    CAUSES = "CAUSES"                # recovered by denoise: mechanism -> mode
+    MERGED_INTO = "MERGED_INTO"      # denoise: variant node -> canonical node
+    # the "graph of mistakes": knowledge about what went wrong, not just facts
+    FAILED_FIX = "FAILED_FIX"        # a repair that did not hold
+    CONTRADICTS = "CONTRADICTS"      # two sources disagree
+    CORRECTED_BY = "CORRECTED_BY"    # a human/outcome overturned a claim
+
+
+class Source(str, Enum):
+    """How a fact came to be known - its epistemic tier. Only DOCUMENT is
+    ground truth; AGENT facts are hypotheses; HUMAN facts are confirmed.
+    Nothing above DOCUMENT is written until it clears the verifier."""
+    DOCUMENT = "document"
+    AGENT = "agent"
+    HUMAN = "human"
 
 
 class Provenance(BaseModel):
@@ -38,6 +53,7 @@ class Provenance(BaseModel):
     bbox: Optional[tuple[float, float, float, float]] = None  # for drawings
     extractor_version: str
     confidence: float = Field(ge=0.0, le=1.0)
+    source: Source = Source.DOCUMENT
 
 
 class CandidateNode(BaseModel):
@@ -103,3 +119,7 @@ class Alert(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     fingerprint: str                             # dedup key, one alert per fact
     graph_version: int = 0
+    # grounding: did every tag the agent named actually appear in its
+    # evidence? unverified alerts are shown but marked, never trusted blindly
+    verified: bool = True
+    unverified_claims: list[str] = Field(default_factory=list)

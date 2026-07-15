@@ -8,6 +8,8 @@ from plantmind_core.llm import Tier, Tool, ToolAgent
 from plantmind_core.schemas import Alert, Citation
 from plantmind_core.telemetry import get_logger
 
+from agents.verifier import check_grounding
+
 log = get_logger("agents.investigator")
 
 SYSTEM = """You are a reliability engineer investigating a failure pattern
@@ -64,19 +66,36 @@ class InvestigatorAgent:
         result = await agent.run(
             SYSTEM, TASK.format(tag=trigger.tag, mode=trigger.mode,
                                 family=trigger.family))
+
+        # Layer 1: every tag the agent named must trace to its evidence
+        given = {trigger.tag, trigger.family,
+                 *(s["tag"] for s in trigger.siblings)}
+        grounding = check_grounding(result.answer, result.trace, given)
         log.info("investigation done", tag=trigger.tag, mode=trigger.mode,
-                 steps=result.steps, tools_used=len(result.trace))
+                 steps=result.steps, tools_used=len(result.trace),
+                 verified=grounding.verified,
+                 ungrounded=grounding.ungrounded_tags)
+
+        body = result.answer
+        if not grounding.verified:
+            body += ("\n\n[UNVERIFIED - the following tags were not found in "
+                     "the investigation evidence and may be incorrect: "
+                     + ", ".join(grounding.ungrounded_tags) + "]")
 
         docs = _docs_from_trace(result.trace)
-        severity = "critical" if (trigger.siblings and trigger.count >= 2) \
+        # an ungrounded alert can't be critical - trust is capped by evidence
+        recurring_pattern = trigger.siblings and trigger.count >= 2
+        severity = "critical" if (recurring_pattern and grounding.verified) \
             else "warning"
         return Alert(
             kind="failure_pattern", severity=severity,
             title=f"Recurring failure pattern: {trigger.tag} {trigger.mode}",
-            body=result.answer, equipment=trigger.tag,
+            body=body, equipment=trigger.tag,
             citations=[Citation(doc_id=d, snippet="") for d in docs],
             fingerprint=f"failure:{trigger.tag}:{trigger.mode}:{trigger.count}",
-            graph_version=trigger.graph_version)
+            graph_version=trigger.graph_version,
+            verified=grounding.verified,
+            unverified_claims=grounding.ungrounded_tags)
 
 
 def _one_tag_schema() -> dict:

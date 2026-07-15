@@ -64,7 +64,23 @@ def test_severity_critical_when_recurring_and_siblings():
     reader = reader_with_history()
     trigger = Trigger(tag="P-101B", mode="SEAL-LEAK", count=2, family="P-101",
                       siblings=[{"tag": "P-101A", "count": 3}], graph_version=1)
-    llm = ScriptedLLM(msg(content="advice"))
+    llm = ScriptedLLM(msg(content="advice for P-101B"))
 
     alert = asyncio.run(InvestigatorAgent(reader, llm=llm).investigate(trigger))
     assert alert.severity == "critical"
+    assert alert.verified is True
+
+
+def test_ungrounded_agent_output_is_flagged_and_capped():
+    reader = reader_with_history()
+    trigger = Trigger(tag="P-101B", mode="SEAL-LEAK", count=2, family="P-101",
+                      siblings=[{"tag": "P-101A", "count": 3}], graph_version=1)
+    # agent hallucinates a tag it never gathered evidence for
+    llm = ScriptedLLM(msg(content="Root cause is shared with X-777, replace it."))
+
+    alert = asyncio.run(InvestigatorAgent(reader, llm=llm).investigate(trigger))
+
+    assert alert.verified is False
+    assert "X-777" in alert.unverified_claims
+    assert "UNVERIFIED" in alert.body
+    assert alert.severity == "warning"          # trust capped despite pattern

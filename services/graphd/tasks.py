@@ -1,26 +1,42 @@
+import asyncio
+
 from plantmind_core.celeryapp import WorkerApp
 from plantmind_core.config import get_settings
 from plantmind_core.queues import Routes
 
+from graphd.denoise.runner import DenoiseRunner
 from graphd.writer import GraphWriter
 
+settings = get_settings()
 worker = WorkerApp("graphd")
-worker.schedule(Routes.flush,
-                every_seconds=get_settings().write_flush_interval_s)
-# denoise gets scheduled here once implemented
+worker.schedule(Routes.flush, every_seconds=settings.write_flush_interval_s)
+worker.schedule(Routes.denoise, every_seconds=settings.denoise_interval_s)
 
 celery_app = worker.app  # celery CLI entrypoint: celery -A graphd.tasks ...
 
 _writer = None
+_denoise = None
 
 
-def _instance() -> GraphWriter:
+def _writer_instance() -> GraphWriter:
     global _writer
     if _writer is None:
         _writer = GraphWriter.from_settings()
     return _writer
 
 
+def _denoise_instance() -> DenoiseRunner:
+    global _denoise
+    if _denoise is None:
+        _denoise = DenoiseRunner.from_settings()
+    return _denoise
+
+
 @worker.task(Routes.flush)
 def flush_write_buffer():
-    return _instance().flush()
+    return _writer_instance().flush()
+
+
+@worker.task(Routes.denoise)
+def run_denoise():
+    return asyncio.run(_denoise_instance().run())

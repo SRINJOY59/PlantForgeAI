@@ -92,6 +92,23 @@ class LLMClient:
                                   tools=tools, tool_choice="auto")
         return resp.choices[0].message
 
+    async def stream(self, messages, tier=Tier.MID, max_tokens=2048,
+                     temperature=0.0):
+        """Yields answer text deltas as they arrive. No retry mid-stream:
+        once tokens are flowing a failure is surfaced by ending the stream,
+        because the caller has already shown partial output."""
+        model = self._models[tier]
+        async with self._sem:
+            stream = await self._client.chat.completions.create(
+                model=model, messages=messages, max_tokens=max_tokens,
+                temperature=temperature, stream=True)
+            async for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield delta
+
     async def structured(self, messages, schema: Type[T], tier=Tier.CHEAP,
                          max_tokens=4096) -> T:
         json_schema = schema.model_json_schema()

@@ -49,6 +49,23 @@ class RetrievalService:
         return cls(GraphReader.from_settings(), get_llm(), get_embedder(),bus=RedisBus.from_settings())
 
     async def ask(self, question: str) -> Answer:
+        mode, context, evidence = await self._prepare(question)
+        return await self._answerer.answer(
+            question, context, evidence, mode, self._graph_version())
+
+    async def ask_stream(self, question: str):
+        """Yields ('token', text) deltas while generating, then a final
+        ('done', Answer-with-citations). Retrieval finishes before the first
+        token, so the meta envelope is fully known up front."""
+        mode, context, evidence = await self._prepare(question)
+        async for delta in self._answerer.stream(question, context):
+            yield "token", delta
+        yield "done", self._answerer.build_meta(evidence, mode,
+                                                self._graph_version())
+
+    async def _prepare(self, question: str):
+        """Shared by ask() and ask_stream(): the whole retrieval pipeline up
+        to (but not including) generation -> (mode, context, evidence)."""
         seeds = self._linker.link(question)
         mode = self._router.route(question, seeds)
         log.info("routing", mode=mode.value, seeds=len(seeds))
@@ -66,8 +83,7 @@ class RetrievalService:
         digest = self._plant_digest(question)
         if digest:
             context = digest + "\n\n" + context
-
-        return await self._answerer.answer(question, context, evidence, mode, self._graph_version())
+        return mode, context, evidence
 
     # ---------------------------------------------------------------- modes
     async def _vector_context(self, question: str):
