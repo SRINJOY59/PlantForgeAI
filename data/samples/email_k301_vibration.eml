@@ -1,0 +1,29 @@
+From: Suresh Patel <suresh.patel@unit100plant.example>
+To: Maintenance Planning <maint-planning@unit100plant.example>
+Cc: Ops Team <ops-team@unit100plant.example>
+Subject: K-301 NDE bearing vibration creeping up again
+Date: Tue, 30 Jun 2026 15:47:12 +0530
+Message-ID: <20260630154712.GB8812@unit100plant.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Hi planning,
+
+Weekly route reading on K-301 NDE bearing is 4.1 mm/s RMS today, up from
+3.2 last month. Still under the 4.5 alert limit from SOP-U100-12 but the
+trend looks like the run-up we saw before the December alignment job
+(WO-2226).
+
+TI-302 discharge temperature is normal, so this looks mechanical rather
+than process. Requesting a vibration spectrum analysis slot next week
+before we consider pulling the coupling guard.
+
+Also for the same visit: P-102 DE bearing noise from INS-510 is still
+pending - can we club both jobs?
+
+Thanks,
+Suresh
+
+On Mon, 29 Jun 2026 at 10:02, Maintenance Planning wrote:
+> Reminder: July vibration routes close Friday. Flag anything trending
+> for the August shutdown list alongside the E-204 bundle cleaning.

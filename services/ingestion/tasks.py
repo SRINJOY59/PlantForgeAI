@@ -1,25 +1,18 @@
 import asyncio
-import hashlib
 
 from plantmind_core.bus import RedisBus
 from plantmind_core.celeryapp import WorkerApp
-from plantmind_core.config import get_settings
 from plantmind_core.llm import Tier, get_llm
-from plantmind_core.queues import Routes
-from plantmind_core.telemetry import get_logger
-
-from ingestion.classify import ROUTE_FOR, Classifier
+from plantmind_core.queues import DocKind, Flow
 from plantmind_core.storage import ObjectStore
 
-log = get_logger("ingestion.tasks")
-settings = get_settings()
+from ingestion.classify import Classifier
+from ingestion.service import IngestionService
 
 worker = WorkerApp("ingestion")
 celery_app = worker.app  # celery CLI entrypoint: celery -A ingestion.tasks ...
 
-_store = None
-_bus = None
-_classifier = None
+_service = None
 
 
 def _llm_classify(filename: str, sniff: str) -> str:
@@ -36,61 +29,22 @@ def _llm_classify(filename: str, sniff: str) -> str:
     return reply.strip().lower()
 
 
-def _deps():
-    global _store, _bus, _classifier
-    if _store is None:
-        _store = ObjectStore.from_settings()
-    if _bus is None:
-        _bus = RedisBus.from_settings()
-    if _classifier is None:
-        _classifier = Classifier(llm_fallback=_llm_classify)
-    return _store, _bus, _classifier
+def _instance() -> IngestionService:
+    global _service
+    if _service is None:
+        _service = IngestionService(
+            store=ObjectStore.from_settings(),
+            bus=RedisBus.from_settings(),
+            classifier=Classifier(llm_fallback=_llm_classify),
+        )
+    return _service
 
 
-@worker.task(Routes.classify)
+@worker.task(Flow.ingest)
 def classify_document(payload: dict):
-    store, bus, classifier = _deps()
-    return run_classify(payload, store, bus, classifier, sender=worker.send)
-
-
-def run_classify(payload: dict, store: ObjectStore, bus: RedisBus,
-                 classifier: Classifier, sender) -> dict:
-    """payload: {staging_key, filename, source?} - the uploader put the raw
-    bytes at staging_key and enqueued us."""
-    staging_key = payload["staging_key"]
-    filename = payload["filename"]
-
-    data = store.get(staging_key)
-    content_hash = hashlib.sha256(data).hexdigest()
-
-    if not bus.claim_document(content_hash):
-        store.delete(staging_key)
-        log.info("duplicate dropped", filename=filename, content_hash=content_hash)
-        return {"status": "duplicate", "content_hash": content_hash}
-
-    try:
-        doc_id = content_hash[:16]
-        object_key = f"raw/{doc_id}/{filename}"
-        store.move(staging_key, object_key)
-
-        sniff = data[:2048].decode("utf-8", errors="ignore")
-        kind = classifier.classify(filename, sniff, data)
-
-        route = ROUTE_FOR[kind]
-        sender(route, {
-            "doc_id": doc_id,
-            "object_key": object_key,
-            "filename": filename,
-            "content_hash": content_hash,
-            "source": payload.get("source"),
-        })
-    except Exception:
-        # give the claim back, otherwise a transient failure here would
-        # permanently block this file from ever being ingested
-        bus.release_document(content_hash)
-        raise
-
-    log.info("document routed", doc_id=doc_id, filename=filename,
-             kind=kind.value, queue=route.queue)
-    return {"status": "queued", "doc_id": doc_id, "kind": kind.value,
-            "queue": route.queue}
+    result = _instance().classify_document(payload)
+    if result["status"] == "classified":
+        route = Flow.extraction_for[DocKind(result["kind"])]
+        worker.send(route, result.pop("next_payload"))
+        result["queue"] = route.queue
+    return result

@@ -1,29 +1,10 @@
 import re
-from enum import Enum
 
-from plantmind_core.queues import Routes
+from plantmind_core.queues import DocKind, Flow
 from plantmind_core.telemetry import get_logger
 
 log = get_logger("ingestion.classify")
 
-
-class DocKind(str, Enum):
-    TABLE = "table"      # structured rows: work orders, inspection records
-    PNID = "pnid"        # engineering drawings
-    TEXT = "text"        # SOPs, incident reports, short prose
-    MANUAL = "manual"    # long structured documents (OEM manuals, handbooks)
-    EMAIL = "email"
-    IMAGE = "image"      # standalone images: charts, nameplates, scans
-
-
-ROUTE_FOR = {
-    DocKind.TABLE: Routes.parse_workorder,
-    DocKind.PNID: Routes.extract_pnid,
-    DocKind.TEXT: Routes.extract_text,
-    DocKind.MANUAL: Routes.extract_manual,
-    DocKind.EMAIL: Routes.extract_email,
-    DocKind.IMAGE: Routes.extract_image,
-}
 
 DRAWING_HINTS = ("pnid", "p&id", "pid-", "-pid", "dwg", "drawing")
 IMAGE_EXTS = ("png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff")
@@ -96,7 +77,8 @@ def main():
         data = path.read_bytes()
         sniff = data[:2048].decode("utf-8", errors="ignore")
         kind = classifier.classify(path.name, sniff, data)
-        print(f"{path.name:40s} -> {kind.value:8s} ({ROUTE_FOR[kind].queue})")
+        print(f"{path.name:40s} -> {kind.value:8s} "
+              f"({Flow.extraction_for[kind].queue})")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,26 @@
+From: Deepak Nair <deepak.nair@unit100plant.example>
+To: Stores <stores@unit100plant.example>
+Cc: Maintenance Planning <maint-planning@unit100plant.example>
+Subject: Bearing and packing spares for P-201A/B - reorder before August window
+Date: Mon, 06 Jul 2026 09:41:33 +0530
+Message-ID: <20260706094133.GF6610@unit100plant.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Stores,
+
+The May bearing change on P-201A (WO-3064) used our last 6309-C3 bearing
+set. Both lean solvent pumps P-201A and P-201B are due gland repacks in
+the August window, and we have one packing set (style 2840, 12 mm) left
+against two needed.
+
+Please reorder before end of July:
+- 6309-C3 bearing sets x2
+- Packing style 2840, 12 mm x2 boxes
+- Gland followers x1 (spare, after the corrosion seen on the old one)
+
+If lead time is over three weeks, flag it - the changeover SOP (SOP-U200-07)
+depends on a healthy standby, and we saw in November (WO-3039) what
+happens when a changeover goes wrong with no margin.
+
+Deepak

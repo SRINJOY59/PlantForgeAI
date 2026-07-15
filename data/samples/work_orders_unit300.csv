@@ -1,0 +1,7 @@
+wo_id,date,equipment_tag,failure_code,description,action_taken,technician,downtime_hours
+WO-4005,2025-08-06,P-301,PUMP-AIRLOCK,Product transfer pump losing prime after tank switch,Vent routine added to transfer procedure,D. Nair,2
+WO-4012,2025-09-30,LT-304,GAUGE-MISMATCH,Tank level differs from manual dip by 90 mm,Transmitter recalibrated; dip taken weekly since,M. George,1
+WO-4019,2025-11-12,T-301,ROOF-DRAIN-BLOCK,Water pooling on floating roof after rains,Roof drain flushed; check valve replaced,A. Khan,0
+WO-4026,2026-01-08,P-301,FLANGE-LEAK,Discharge flange weep at gasket,Retorqued cold; gasket change planned,D. Nair,1
+WO-4033,2026-03-25,P-301,MOTOR-OVERHEAT,Motor running hot at high ambient,Cooling fins cleaned; thermal scan added to route,S. Patel,4
+WO-4040,2026-05-07,T-301,STRAINER-CHOKE,Outlet strainer choking repeatedly after tank cleaning,Strainer cleaned; second cleaning pass of tank arranged,A. Khan,5

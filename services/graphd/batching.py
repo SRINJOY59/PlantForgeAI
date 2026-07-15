@@ -3,6 +3,7 @@ UNWIND writes. Pure functions — no I/O — so the grouping logic is testable
 without a database."""
 
 import hashlib
+import json
 from dataclasses import dataclass, field
 
 from plantmind_core.schemas import CandidateSubgraph, Provenance
@@ -26,6 +27,24 @@ def prov_hash(p: Provenance) -> str:
     return hashlib.sha1(parts.encode()).hexdigest()[:16]
 
 
+def clean_props(props: dict) -> dict:
+    """Neo4j properties allow primitives and flat arrays of primitives,
+    nothing nested. Anything richer (a chart's series, for example) is
+    stored as a json string; None means 'no value' and is dropped."""
+    clean = {}
+    for key, value in props.items():
+        if value is None:
+            continue
+        if isinstance(value, (str, int, float, bool)):
+            clean[key] = value
+        elif isinstance(value, (list, tuple)) and all(
+                isinstance(x, (str, int, float, bool)) for x in value):
+            clean[key] = list(value)
+        else:
+            clean[key] = json.dumps(value, ensure_ascii=False)
+    return clean
+
+
 def group_batch(subgraphs: list[CandidateSubgraph]) -> WriteBatch:
     batch = WriteBatch()
 
@@ -43,7 +62,8 @@ def group_batch(subgraphs: list[CandidateSubgraph]) -> WriteBatch:
             label = node.type.value
             row = {
                 "id": node.resolved_id,
-                "props": {"surface_form": node.surface_form, **node.props},
+                "props": clean_props({"surface_form": node.surface_form,
+                                      **node.props}),
             }
             rows = batch.nodes_by_label.setdefault(label, [])
             existing = next((r for r in rows if r["id"] == row["id"]), None)
@@ -60,13 +80,13 @@ def group_batch(subgraphs: list[CandidateSubgraph]) -> WriteBatch:
                 "src": id_map.get(edge.src, edge.src),
                 "dst": id_map.get(edge.dst, edge.dst),
                 "prov_hash": prov_hash(edge.provenance),
-                "props": {
+                "props": clean_props({
                     **edge.props,
                     "doc_id": edge.provenance.doc_id,
                     "page": edge.provenance.page,
                     "extractor_version": edge.provenance.extractor_version,
                     "confidence": edge.provenance.confidence,
-                },
+                }),
             }
             batch.edges_by_type.setdefault(edge.type.value, []).append(row)
             batch.edge_types.add(edge.type.value)

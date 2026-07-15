@@ -6,7 +6,7 @@ import pytest
 from plantmind_core import keys
 from plantmind_core.bus import RedisBus
 from plantmind_core.schemas import GraphDelta
-from graphd.writer import run_flush
+from graphd.writer import GraphWriter
 from conftest import FakeStore, make_subgraph
 
 
@@ -23,7 +23,7 @@ def push(r, *subgraphs):
 def test_empty_buffer_writes_nothing(r):
     store = FakeStore()
 
-    stats = run_flush(RedisBus(r), store, batch_size=10)
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
 
     assert store.batches == []
     assert stats["subgraphs"] == 0
@@ -36,7 +36,7 @@ def test_flush_commits_batch_bumps_version_and_publishes_delta(r):
     push(r, make_subgraph(doc_id="doc1"), make_subgraph(doc_id="doc2", tag="P-101B",
                                                         resolved_id="equip:p-101b"))
 
-    stats = run_flush(RedisBus(r), store, batch_size=10)
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
 
     assert stats["subgraphs"] == 2
     assert len(store.batches) == 1
@@ -56,7 +56,7 @@ def test_drains_buffer_across_rounds(r):
     store = FakeStore()
     push(r, *[make_subgraph(doc_id=f"doc{i}") for i in range(5)])
 
-    stats = run_flush(RedisBus(r), store, batch_size=2)
+    stats = GraphWriter(RedisBus(r), store, batch_size=2).flush()
 
     assert stats["rounds"] == 3
     assert stats["subgraphs"] == 5
@@ -70,7 +70,7 @@ def test_malformed_item_goes_to_dlq_rest_committed(r):
     r.rpush(keys.WRITE_BUFFER, "{not json")
     push(r, make_subgraph())
 
-    stats = run_flush(RedisBus(r), store, batch_size=10)
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
 
     assert stats["bad"] == 1
     assert stats["subgraphs"] == 1
@@ -84,7 +84,7 @@ def test_unresolved_round_parked_in_dlq_not_dropped(r):
     csg.nodes[0].resolved_id = None
     push(r, csg)
 
-    stats = run_flush(RedisBus(r), store, batch_size=10)
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
 
     assert stats["bad"] == 1
     assert store.batches == []
@@ -99,27 +99,50 @@ def test_skips_when_lock_held(r):
     push(r, make_subgraph())
     r.set(keys.FLUSH_LOCK, "1")
 
-    stats = run_flush(RedisBus(r), store, batch_size=10)
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
 
     assert stats == {"skipped": "already flushing"}
     assert r.llen(keys.WRITE_BUFFER) == 1
 
 
-def test_lock_released_even_if_store_raises(r):
+def test_store_failure_parks_work_and_releases_lock(r):
     store = FakeStore(fail_times=1)
     push(r, make_subgraph())
 
-    with pytest.raises(RuntimeError):
-        run_flush(RedisBus(r), store, batch_size=10)
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
 
+    assert stats["bad"] == 1
+    assert r.llen(keys.WRITE_DLQ) == 1        # nothing lost mid-air anymore
     assert r.get(keys.FLUSH_LOCK) is None
+
+
+def test_poison_subgraph_parked_others_still_committed(r):
+    class PoisonStore(FakeStore):
+        def write_batch(self, batch, version):
+            if "equip:BAD" in batch.node_ids:
+                raise RuntimeError("illegal property")
+            super().write_batch(batch, version)
+
+    store = PoisonStore()
+    poison = make_subgraph(doc_id="doc-bad", tag="BAD", resolved_id="equip:BAD")
+    push(r, make_subgraph(doc_id="doc1"), poison,
+         make_subgraph(doc_id="doc3", tag="P-101B", resolved_id="equip:p-101b"))
+
+    stats = GraphWriter(RedisBus(r), store, batch_size=10).flush()
+
+    assert stats["bad"] == 1
+    assert stats["subgraphs"] == 2                    # the healthy two landed
+    committed = {id for batch, _ in store.batches for id in batch.node_ids}
+    assert "equip:p-101a" in committed and "equip:p-101b" in committed
+    assert "equip:BAD" not in committed
+    assert r.llen(keys.WRITE_DLQ) == 1                # culprit parked, not lost
 
 
 def test_max_rounds_caps_single_invocation(r):
     store = FakeStore()
     push(r, *[make_subgraph(doc_id=f"doc{i}") for i in range(4)])
 
-    stats = run_flush(RedisBus(r), store, batch_size=1, max_rounds=2)
+    stats = GraphWriter(RedisBus(r), store, batch_size=1, max_rounds=2).flush()
 
     assert stats["rounds"] == 2
     assert r.llen(keys.WRITE_BUFFER) == 2  # next tick picks these up

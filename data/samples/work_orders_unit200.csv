@@ -1,0 +1,11 @@
+wo_id,date,equipment_tag,failure_code,description,action_taken,technician,downtime_hours
+WO-3011,2025-07-18,P-201A,PACKING-LEAK,Lean solvent pump leaking at packing gland,Repacked; sleeve inspected OK,D. Nair,6
+WO-3018,2025-08-22,C-220,HIGH-DP,Absorber differential pressure trending high,Reduced throughput; foaming suspected; antifoam dosed,K. Reddy,0
+WO-3024,2025-09-14,V-210,CARRYOVER,Liquid carryover from KO drum to C-220 during rate change,Drained boot; level controller retuned,K. Reddy,4
+WO-3031,2025-10-09,E-210,CORROSION,Aftercooler channel head pitting found at inspection,Weld repair and recoat scheduled,A. Khan,0
+WO-3039,2025-11-27,P-201B,MOTOR-TRIP,Motor tripped on overload during changeover to B pump,Motor megger tested OK; changeover procedure review raised,D. Nair,12
+WO-3046,2026-01-15,LT-212,INSTRUMENT-FAIL,KO drum level transmitter frozen output,Transmitter replaced; impulse line traced,M. George,2
+WO-3052,2026-02-20,V-210,DEMISTER-DAMAGE,Demister pad partially collapsed found during entry,Pad replaced; carryover history noted (WO-3024),K. Reddy,30
+WO-3058,2026-04-03,C-220,HIGH-DP,DP high again at max rates; antifoam consumption up,Solvent sample sent for lab analysis; monitoring,K. Reddy,0
+WO-3064,2026-05-19,P-201A,BEARING-WEAR,NDE bearing wear detected in vibration spectrum,Bearing replaced at opportunity,D. Nair,10
+WO-3070,2026-06-28,PSV-210,PASSING,PSV suspected passing; downstream pipe warm,Sent for bench test; spare installed,A. Khan,3

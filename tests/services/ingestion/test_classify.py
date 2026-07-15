@@ -1,4 +1,6 @@
-from ingestion.classify import Classifier, DocKind, ROUTE_FOR
+from plantmind_core.queues import DocKind, Flow
+
+from ingestion.classify import Classifier
 from plantmind_core.queues import Routes
 
 
@@ -76,7 +78,7 @@ def test_long_text_pdf_is_manual_short_is_text():
 
 
 def test_every_kind_has_a_route():
-    assert set(ROUTE_FOR) == set(DocKind)
-    assert ROUTE_FOR[DocKind.TABLE] is Routes.parse_workorder
-    assert ROUTE_FOR[DocKind.MANUAL] is Routes.extract_manual
-    assert ROUTE_FOR[DocKind.IMAGE] is Routes.extract_image
+    assert set(Flow.extraction_for) == set(DocKind)
+    assert Flow.extraction_for[DocKind.TABLE] is Routes.parse_workorder
+    assert Flow.extraction_for[DocKind.MANUAL] is Routes.extract_manual
+    assert Flow.extraction_for[DocKind.IMAGE] is Routes.extract_image

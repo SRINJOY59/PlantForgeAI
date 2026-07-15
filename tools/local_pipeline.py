@@ -14,7 +14,9 @@ import hashlib
 
 from plantmind_core.telemetry import get_logger
 
-from ingestion.classify import Classifier, DocKind
+from plantmind_core.queues import DocKind
+
+from ingestion.classify import Classifier
 from extraction.imaging.extractor import ImageLane
 from extraction.mail.extractor import EmailExtractor
 from extraction.manual.extractor import ManualExtractor

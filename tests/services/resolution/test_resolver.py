@@ -7,7 +7,15 @@ from plantmind_core.schemas import (
 )
 
 from resolution.resolver import Resolver
-from resolution.tasks import run_resolve
+from resolution.service import ResolutionService
+
+
+def run_resolve(payload, bus, resolver):
+    """Service resolves (pure); the adapter's bus push is emulated here."""
+    csg = ResolutionService(resolver).resolve(payload)
+    bus.queue_subgraph(csg.model_dump_json())
+    return {"status": "queued_for_write", "doc_id": csg.doc_id,
+            "nodes": len(csg.nodes)}
 
 
 def csg_with(nodes):

@@ -32,6 +32,5 @@ OPTIONS { indexConfig: {
   `vector.similarity_function`: 'cosine'
 }};
 
-// Read-only user for retrieval + agents (writes only via graphd)
-CREATE USER retrieval_ro IF NOT EXISTS SET PASSWORD 'CHANGE_ME' CHANGE NOT REQUIRED;
-GRANT ROLE reader TO retrieval_ro;
+// Access control lives in enterprise.cypher - role grants need Neo4j
+// Enterprise; the community container used for dev has no roles.

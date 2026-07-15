@@ -54,6 +54,34 @@ def test_unresolved_node_raises():
         group_batch([csg])
 
 
+def test_props_are_neo4j_safe():
+    from graphd.batching import clean_props
+
+    cleaned = clean_props({
+        "name": "P-101A",
+        "downtime": None,                              # dropped
+        "ratings": ["7.5 kW", "2900 rpm"],             # flat list kept
+        "series": [{"x": "1", "y": "2"}],              # nested -> json string
+        "embedding": [0.1, 0.2],
+    })
+
+    assert "downtime" not in cleaned
+    assert cleaned["ratings"] == ["7.5 kW", "2900 rpm"]
+    assert isinstance(cleaned["series"], str) and '"x"' in cleaned["series"]
+    assert cleaned["embedding"] == [0.1, 0.2]
+
+
+def test_chart_like_subgraph_groups_with_safe_props():
+    csg = make_subgraph()
+    csg.nodes[0].props = {"series": [{"x": "2026-02-20", "y": "128"}],
+                          "title": "trend"}
+
+    batch = group_batch([csg])
+
+    row = batch.nodes_by_label["Equipment"][0]
+    assert isinstance(row["props"]["series"], str)     # would crash neo4j raw
+
+
 def test_prov_hash_distinguishes_sources():
     p1 = Provenance(doc_id="d1", page=1, extractor_version="v1", confidence=0.9)
     p2 = Provenance(doc_id="d1", page=2, extractor_version="v1", confidence=0.9)

@@ -1,0 +1,9 @@
+wo_id,date,equipment_tag,failure_code,description,action_taken,technician,downtime_hours
+WO-2098,2025-01-09,E-204,FOULING,Gradual outlet temperature drop across exchanger,Performance monitoring started; cleaning deferred to opportunity,V. Iyer,0
+WO-2104,2025-01-28,K-301,VIBRATION,Slightly elevated vibration on NDE bearing during weekly route,Trended; within alert limit,S. Patel,0
+WO-2111,2025-02-19,LT-104,DRIFT,Tank T-101 level reading disagrees with field gauge by 6%,Recalibrated level transmitter,M. George,1
+WO-2118,2025-03-07,P-101B,COUPLING-WEAR,Coupling element cracking found during guard inspection,Replaced coupling element; alignment checked,S. Patel,8
+WO-2125,2025-04-02,V-203,GASKET-LEAK,Weep at level bridle flange,Retorqued flange; gasket replacement planned,A. Khan,2
+WO-2131,2025-04-24,P-102,BEARING-NOISE,Transfer pump noisy at DE bearing,Regreased; vibration reading taken,S. Patel,0
+WO-2140,2025-05-30,T-101,LEVEL-ALARM,Spurious high level alarm during truck unloading,Traced to LT-104 stub blockage; flushed,M. George,3
+WO-2149,2025-06-21,K-301,OIL-LEAK,Seepage at lube oil cooler fitting,Tightened fitting; oil level topped up,S. Patel,1
