@@ -53,6 +53,36 @@ class RedisBus:
     def publish_delta(self, delta_json: str):
         self._r.xadd(keys.DELTA_STREAM, {"payload": delta_json})
 
+    # streams: deltas consumed by agents, alerts produced by them -------------
+    def read_deltas(self, after_id: str = "0", block_ms: int = 15000) -> list:
+        """-> [(entry_id, payload_json)] newer than after_id; blocks up to
+        block_ms so the consumer waits instead of polling."""
+        return self._read_stream(keys.DELTA_STREAM, after_id, block_ms)
+
+    def publish_alert(self, alert_json: str) -> str:
+        return self._r.xadd(keys.ALERT_STREAM, {"payload": alert_json})
+
+    def read_alerts(self, after_id: str = "0", block_ms: int = 15000) -> list:
+        return self._read_stream(keys.ALERT_STREAM, after_id, block_ms)
+
+    def _read_stream(self, stream, after_id, block_ms) -> list:
+        reply = self._r.xread({stream: after_id}, block=block_ms)
+        if not reply:
+            return []
+        return [(entry_id, fields["payload"])
+                for _, entries in reply for entry_id, fields in entries]
+
+    def get_cursor(self, name: str) -> str:
+        return self._r.get(keys.CURSOR_PREFIX + name) or "0"
+
+    def set_cursor(self, name: str, entry_id: str):
+        self._r.set(keys.CURSOR_PREFIX + name, entry_id)
+
+    def claim_alert(self, fingerprint: str) -> bool:
+        """First caller wins - one alert per distinct fact, so re-processing
+        a delta or re-ingesting a file doesn't re-raise the same alert."""
+        return bool(self._r.sadd(keys.ALERTED_SET, fingerprint))
+
     # observability -----------------------------------------------------------
     def depths(self) -> dict:
         """How much work is waiting where. Zero everywhere = pipeline idle."""

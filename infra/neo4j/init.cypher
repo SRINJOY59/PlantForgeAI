@@ -24,11 +24,13 @@ FOR (d:Document) ON (d.doc_number);
 CREATE INDEX chunk_superseded IF NOT EXISTS
 FOR (c:Chunk) ON (c.superseded);
 
-// Vector index for chunk embeddings (tune dimension to embedding model)
+// Vector index for chunk embeddings. Dimensions MUST match what the
+// embedding model actually emits (text-embedding-3-small -> 1536); keep in
+// sync with EMBEDDING_DIM in .env
 CREATE VECTOR INDEX chunk_embedding IF NOT EXISTS
 FOR (c:Chunk) ON (c.embedding)
 OPTIONS { indexConfig: {
-  `vector.dimensions`: 1024,
+  `vector.dimensions`: 1536,
   `vector.similarity_function`: 'cosine'
 }};
 

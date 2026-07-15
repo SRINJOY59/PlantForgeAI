@@ -91,3 +91,15 @@ class Answer(BaseModel):
     mode: QueryMode
     confidence: Literal["high", "medium", "low"]
     graph_version: int                           # for cache freshness checks
+
+
+class Alert(BaseModel):
+    """Raised by the agents service onto the alert stream; the UI shows it."""
+    kind: Literal["failure_pattern", "compliance"]
+    severity: Literal["info", "warning", "critical"]
+    title: str
+    body: str
+    equipment: Optional[str] = None
+    citations: list[Citation] = Field(default_factory=list)
+    fingerprint: str                             # dedup key, one alert per fact
+    graph_version: int = 0

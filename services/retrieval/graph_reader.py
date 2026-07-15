@@ -64,6 +64,10 @@ class GraphReader:
             "c.page AS page LIMIT $limit",
             needle=needle, limit=limit)
 
+    def documents(self):
+        return self._run(
+            "MATCH (d:Document) RETURN d.id AS id, d.filename AS filename")
+
     def chunks_of_doc(self, doc_id: str):
         return self._run(
             "MATCH (c:Chunk) WHERE c.id STARTS WITH $prefix "
@@ -79,9 +83,29 @@ class GraphReader:
             "RETURN type(r) AS type, startNode(r).id AS src, "
             "endNode(r).id AS dst, properties(r) AS props, "
             "m.id AS other_id, m.surface_form AS other_surface, "
-            "[l IN labels(m) WHERE l <> 'Entity'][0] AS other_label "
+            "[l IN labels(m) WHERE l <> 'Entity'][0] AS other_label, "
+            "properties(m) AS other_props "
             "LIMIT $limit",
             id=node_id, limit=limit)
+
+    # -------------------------------------------------- plant-wide digests
+    def overdue_inspections(self, today: str):
+        return self._run(
+            "MATCH (e:Entity)-[g:GOVERNED_BY]->(r:RegulationClause) "
+            "WHERE g.next_due < $today AND g.next_due <> '' "
+            "RETURN e.surface_form AS equipment, r.surface_form AS standard, "
+            "g.inspection_type AS inspection_type, g.next_due AS next_due, "
+            "g.doc_id AS doc_id, g.page AS page ORDER BY g.next_due",
+            today=today)
+
+    def failure_mode_counts(self, limit=10):
+        return self._run(
+            "MATCH (e:Equipment)-[h:HAS_FAILURE]->(f:FailureMode) "
+            "RETURN f.surface_form AS mode, count(h) AS n, "
+            "collect(DISTINCT e.surface_form) AS equipment, "
+            "collect(DISTINCT h.doc_id)[0] AS doc_id "
+            "ORDER BY n DESC LIMIT $limit",
+            limit=limit)
 
     # ------------------------------------------------------------ path mode
     def paths_between(self, src_id, dst_id, types, max_hops, limit=100):

@@ -1,4 +1,5 @@
 from plantmind_core.schemas.contracts import (
+    Alert,
     Answer,
     CandidateEdge,
     CandidateNode,
@@ -12,6 +13,6 @@ from plantmind_core.schemas.contracts import (
 )
 
 __all__ = [
-    "Answer", "CandidateEdge", "CandidateNode", "CandidateSubgraph",
+    "Alert", "Answer", "CandidateEdge", "CandidateNode", "CandidateSubgraph",
     "Citation", "EdgeType", "GraphDelta", "NodeType", "Provenance", "QueryMode",
 ]

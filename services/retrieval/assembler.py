@@ -59,7 +59,16 @@ class ContextAssembler:
         chunks = self._doc_cache.setdefault(
             doc_id, self._reader.chunks_of_doc(doc_id))
         if not chunks:
-            return None
+            # tables and drawings have no chunks - the edge itself, with its
+            # props, is the evidence, cited by document and row/page
+            page = step.props.get("page")
+            facts = ", ".join(f"{k}: {v}" for k, v in step.props.items()
+                              if k not in ("doc_id", "extractor_version",
+                                           "prov_hash", "updated_version"))
+            return Evidence(doc_id=doc_id,
+                            text=f"{step.type}: {facts}",
+                            page=page,
+                            chunk_id=f"edge:{doc_id}:{page}:{step.type}")
 
         best = self._best_chunk(chunks, step.props)
         return Evidence(doc_id=doc_id, text=best["text"],

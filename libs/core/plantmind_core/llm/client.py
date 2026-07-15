@@ -49,25 +49,21 @@ class LLMClient:
         self._max_retries = s.llm_max_retries
         self.meter = TokenMeter()
 
-    async def complete(self, messages, tier=Tier.CHEAP, max_tokens=2048,
-                       temperature=0.0, response_format=None) -> str:
+    async def _create(self, messages, tier, max_tokens, temperature=0.0,
+                      **extra):
+        """The one place that talks to the provider: semaphore, retry,
+        token accounting. Returns the raw response."""
         model = self._models[tier]
-        extra = {"response_format": response_format} if response_format else {}
-
         for attempt in range(self._max_retries + 1):
             try:
                 async with self._sem:
                     resp = await self._client.chat.completions.create(
-                        model=model,
-                        messages=messages,
-                        max_tokens=max_tokens,
-                        temperature=temperature,
-                        **extra,
-                    )
+                        model=model, messages=messages, max_tokens=max_tokens,
+                        temperature=temperature, **extra)
                 if resp.usage:
                     self.meter.record(model, resp.usage.prompt_tokens,
                                       resp.usage.completion_tokens)
-                return resp.choices[0].message.content or ""
+                return resp
             except (APITimeoutError, APIConnectionError) as e:
                 err = e
             except APIStatusError as e:
@@ -77,8 +73,24 @@ class LLMClient:
             if attempt == self._max_retries:
                 raise err
             delay = min(2 ** attempt + random.random(), 30)
-            log.warning("llm retry", model=model, attempt=attempt, delay=round(delay, 1))
+            log.warning("llm retry", model=model, attempt=attempt,
+                        delay=round(delay, 1))
             await asyncio.sleep(delay)
+
+    async def complete(self, messages, tier=Tier.CHEAP, max_tokens=2048,
+                       temperature=0.0, response_format=None) -> str:
+        extra = {"response_format": response_format} if response_format else {}
+        resp = await self._create(messages, tier, max_tokens, temperature,
+                                  **extra)
+        return resp.choices[0].message.content or ""
+
+    async def chat_with_tools(self, messages, tools, tier=Tier.MID,
+                              max_tokens=2048):
+        """One tool-calling turn: returns the assistant message, which may
+        carry tool_calls to execute. The agent loop drives the iteration."""
+        resp = await self._create(messages, tier, max_tokens,
+                                  tools=tools, tool_choice="auto")
+        return resp.choices[0].message
 
     async def structured(self, messages, schema: Type[T], tier=Tier.CHEAP,
                          max_tokens=4096) -> T:

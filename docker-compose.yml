@@ -82,7 +82,7 @@ services:
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: graphd }
     # single writer: concurrency MUST stay 1; beat drives flush + denoise
-    command: celery -A graphd.writer worker -Q q_write -c 1 -B --loglevel=info
+    command: celery -A graphd.tasks worker -Q q_write -c 1 -B --loglevel=info
 
   retrieval:
     <<: *svc

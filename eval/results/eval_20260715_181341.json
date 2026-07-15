@@ -1,0 +1,168 @@
+{
+  "summary": {
+    "cases": 14,
+    "correct": 12,
+    "partial": 1,
+    "wrong": 1,
+    "accuracy": 0.86,
+    "citation_hit_rate": 0.79,
+    "mode_match_rate": 1.0,
+    "mean_seconds": 14.37
+  },
+  "results": [
+    {
+      "id": "q01",
+      "question": "What torque should the gland bolts be tightened to when replacing the mechanical seal on P-101A?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the torque value (45 Nm), the tightening pattern (star pattern), and the revision history (superseding the 40 Nm value from Rev 2), fully matching the key facts in the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 6.59,
+      "answer": "The gland bolts must be torqued to **45 Nm** in a star pattern during mechanical seal replacement [6d6d71a9e053a1bd]. The previous revision (Rev 2) specified 40 Nm, but that was superseded after seal face distortion findings in 2024."
+    },
+    {
+      "id": "q02",
+      "question": "What is the set pressure of PSV-204?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the set pressure as 10.0 barg and confirms it via a pop test record, which aligns with the key facts in the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 5.8,
+      "answer": "The set pressure of PSV-204 is **10.0 barg** [504bb2a40e87251c]. This is confirmed by the relief valve's pop test record, which explicitly states \"Set pressure 10.0 barg confirmed\" in its governing regulation remarks, and by the SOP that lists PSV-204 as set at 10.0 barg [7f48c60d10a65a82]."
+    },
+    {
+      "id": "q03",
+      "question": "How many seal failures has P-101A had and what is the suspected root cause?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the number of seal failures (three) and accurately lists the suspected root causes (cavitation due to low suction pressure, partially blocked strainer, and the 0.8 barg SOP requirement), matching the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 15.26,
+      "answer": "P-101A has one documented **SEAL-LEAK** work order (WO-2201, 2025\u201108\u201114) in the graph [doc:8539df7a762d555c], but a field email from Ravi reports it was the *third time* the gland was weeping since the January seal change [doc:7bb5d5e5e90aaeac]. The failure-mode count shows four SEAL\u2011LEAK work orders across both P-101A and P\u2011101B combined, so the exact number on P\u2011101A alone is not fully disaggregated in the data \u2014 the confirmed count is at least three gland-weeping occurrences.\n\n**Suspected root cause:** Running below the minimum suction pressure (0.5 barg observed on PI\u2011102 vs the 0.8 barg minimum per SOP\u2011U100\u201107), which is linked to cavitation [doc:7bb5d5e5e90aaeac][graph: (P-101A) -HAS_FAILURE (cause: running below minimum suction pressure)-> (CAVITATION)]. The email also flags a likely contributor \u2014 a partially blocked suction strainer, noted during a prior incident (WO\u20112257) [doc:7bb5d5e5e90aaeac]."
+    },
+    {
+      "id": "q04",
+      "question": "P-101B just had a seal leak. Has anything similar happened on identical equipment?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies all key historical facts from the reference: P-101A's three seal failures, the root cause (low suction pressure/cavitation), and P-101B's own failure in January 2026. The response directly and accurately answers the question with relevant supporting details.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 10.85,
+      "answer": "Yes, the identical sister pump P-101A has a history of repeated seal weeping. The morning-round email notes P-101A gland weeping for the third time since its January seal change, caused by suction pressure dropping to 0.5\u202fbarg\u2014below the 0.8\u202fbarg minimum required by SOP-U100-07 [7bb5d5e5e90aaeac]. The SOP itself flags that \u201crepeated seal failures on P-101A have been traced to running below minimum suction pressure (cavitation)\u201d [6d6d71a9e053a1bd section 4]. P-101B\u2019s own seal-leak failure (WO-2233, January 2026) is also recorded in the graph, but the question is about identical equipment, and P-101A is the parallel pump exhibiting the same failure mode."
+    },
+    {
+      "id": "q05",
+      "question": "What is the minimum suction pressure required before starting P-101A?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies both the minimum suction pressure (0.8 barg) and the gauge to check (PI-102), fully matching the key facts in the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 7.45,
+      "answer": "The minimum suction pressure required before starting P-101A is **0.8 barg**, as specified in SOP-U100-07 [6d6d71a9e053a1bd][7bb5d5e5e90aaeac]. The pre-start check requires confirming this on PI-102 [6d6d71a9e053a1bd]."
+    },
+    {
+      "id": "q06",
+      "question": "What equipment is directly downstream of pumps P-101A and P-101B?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies FT-103 as the equipment directly downstream of pumps P-101A and P-101B, aligning with the reference answer. Although the assistant incorrectly claims no further downstream equipment exists, it accurately addresses the specific question regarding the immediate downstream component.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 18.29,
+      "answer": "FT-103 is directly downstream of both P-101A and P-101B. The plant topology shows:\n\n- (P-101A) -CONNECTED_TO-> (FT-103)  \n- (P-101B) -CONNECTED_TO-> (FT-103)  \n\nNo other equipment is shown as connected in the downstream direction from these pumps."
+    },
+    {
+      "id": "q07",
+      "question": "Explain how a trip of K-301 can cause PSV-204 to lift.",
+      "verdict": "wrong",
+      "reason": "The assistant incorrectly claimed the information was missing and refused to answer, whereas the reference answer clearly explains the causal mechanism: a trip of K-301 causes vapour to back up from V-203, raising its pressure until PSV-204 lifts to flare at 10.0 barg.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 3.79,
+      "answer": "The provided material does not contain any information about PSV-204. The graph paths only show connections for K-301, E-210, and V-203, and the source passages are generic connection statements with no equipment details. Without a path or passage linking K-301 to PSV-204, I cannot explain how a trip of K-301 would cause it to lift."
+    },
+    {
+      "id": "q08",
+      "question": "What was the root cause of incident IR-2026-014?",
+      "verdict": "correct",
+      "reason": "The assistant's answer accurately captures all key facts from the reference answer, including the fouled strainer causing degraded cooling water flow, the lack of an intermediate alarm, and the resulting undetected temperature rise leading to a trip. Extra details provided do not detract from the correctness.",
+      "citation_hit": true,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 8.07,
+      "answer": "The root cause was degraded cooling water flow to the K-301 intercooler from a fouled strainer, compounded by no alarm being configured between the normal operating point and the trip point\u2014allowing the rising discharge temperature to go undetected for at least ten days before the trip [504bb2a40e87251c]."
+    },
+    {
+      "id": "q09",
+      "question": "Which statutory inspections in Unit 100 are overdue as of July 2026?",
+      "verdict": "partial",
+      "reason": "The assistant only identified one of the five overdue inspections listed in the reference answer (P-101A). It missed V-203, PSV-204, E-204, and K-301, and incorrectly stated that only one inspection was overdue.",
+      "citation_hit": false,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 17.92,
+      "answer": "Only one statutory inspection in Unit 100 is overdue as of July 2026:\n\n- **P-101A** \u2013 Condition monitoring per OISD-STD-119, was due 2025-09-15 [doc:30842a9e71307998]"
+    },
+    {
+      "id": "q10",
+      "question": "What is the design pressure of V-203?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the design pressure as 12.0 barg, matching the key fact in the reference answer.",
+      "citation_hit": false,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 7.68,
+      "answer": "The design pressure of V-203 is **12.0 barg**, as stated in its hydrostatic test record [OISD-STD-128]."
+    },
+    {
+      "id": "q11",
+      "question": "What is the most frequent failure mode in Unit 100 work orders?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the failure mode (SEAL-LEAK), the count (4), and the associated equipment (P-101A and P-101B), matching all key facts from the reference answer.",
+      "citation_hit": false,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 19.16,
+      "answer": "The most frequent failure mode in Unit 100 work orders is **SEAL-LEAK**, with a count of 4 (on P-101A and P-101B).  \n[plant-digest: Failure modes by work-order count]"
+    },
+    {
+      "id": "q12",
+      "question": "Were there any early warning signs before the K-301 trip in March 2026?",
+      "verdict": "correct",
+      "reason": "The assistant's answer contains all key facts from the reference answer: it confirms the presence of early warning signs, notes the discharge temperature trending up for at least ten days prior to the trip, and mentions the June 2025 inspection flagging the intercooler approach temperature trending up. The additional details provided are consistent and do not contradict the reference.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 20.77,
+      "answer": "Yes, there were clear early warning signs. Compressor K-301's discharge temperature (TI-302) had been rising steadily for at least ten days before the March 3 trip, with the trend visible in operating data. The temperature climbed from 127\u202f\u00b0C on February 20 to 142\u202f\u00b0C by the trip date, crossing a 135\u202f\u00b0C threshold around March 1 [e32d19761eea4940]. No intermediate high-temperature alarm existed at that time to alert operators to the trend [504bb2a40e87251c]. The root cause investigation confirmed the rising discharge temperature was apparent in the trend well before the trip, but it went unaddressed because trend review was not part of the daily operator round checklist and the strainer responsible for cooling water flow degradation was not on any preventive maintenance schedule [504bb2a40e87251c].\n\nAn even earlier, subtler indicator was recorded during a June 2025 performance test: the intercooler approach temperature was already trending upward, with a note to monitor [graph path: K-301 GOVERNED_BY OEM date 2025-06-08]. While not the direct cause of the March 2026 trip, it signaled deteriorating heat transfer that could have prompted a closer look at the cooling water side."
+    },
+    {
+      "id": "q13",
+      "question": "Which instrument measures pump suction pressure in Unit 100?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies PI-102 as the instrument measuring pump suction pressure, which matches the key fact in the reference answer. The additional bracketed text does not affect the correctness of the response.",
+      "citation_hit": true,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 4.24,
+      "answer": "PI-102 [6d6d71a9e053a1bd]"
+    },
+    {
+      "id": "q14",
+      "question": "A technician is about to restart P-101A after the third seal replacement. What should they verify, and why does it matter for this specific pump?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the key verification steps (suction pressure on PI-102 at least 0.8 barg and a clean suction strainer) and accurately explains the specific reason for this pump (seal failures caused by cavitation due to low suction pressure and a previously blocked strainer). It captures all the critical facts from the reference answer regarding the specific pump's operational history and root cause.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 55.27,
+      "answer": "Verify suction pressure on PI-102 is at least 0.8 barg before restart, and confirm the suction strainer is clean.  \n\nP-101A has a documented history of seal failures caused by running below the minimum suction pressure specified in SOP-U100-07. The last event (WO-2201) showed PI-102 reading 0.5 barg at start, well under the 0.8 barg minimum, and the pump was weeping at the gland again [7bb5d5e5e90aaeac]. The graph directly links this condition to cavitation: (P-101A) -HAS_FAILURE (cause: running below minimum suction pressure)-> (CAVITATION). Cavitation destroys mechanical seals rapidly, which is why this pump has needed three replacements. The same email also notes that a half-blocked suction strainer was found previously (WO-2257), so verifying strainer condition addresses the root cause of low suction pressure [7bb5d5e5e90aaeac]."
+    }
+  ]
+}

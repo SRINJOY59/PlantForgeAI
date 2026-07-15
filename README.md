@@ -58,7 +58,7 @@ The .pth puts services/ on sys.path, so module smoke tests run from anywhere:
 
 - `libs/core` — shared pip package: schemas (pydantic contracts), LLM client, config, telemetry
 - `services/<name>/` — the service's python package itself (imported as `<name>`,
-  e.g. `graphd.writer`); container built from the shared
+  e.g. `graphd.tasks`); container built from the shared
   `infra/docker/service.Dockerfile` with `SERVICE: <name>` build arg, deps in
   `infra/docker/requirements/<name>.txt`, command in docker-compose.yml
 - `infra/neo4j/init.cypher` — constraints + indexes (run once)

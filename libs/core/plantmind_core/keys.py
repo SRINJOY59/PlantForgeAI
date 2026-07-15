@@ -7,3 +7,6 @@ WRITE_DLQ = "graphd:write_dlq"           # unparseable buffer items land here
 FLUSH_LOCK = "graphd:flush_lock"
 GRAPH_VERSION = "graph:version"          # INCR on every committed batch
 DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
+ALERT_STREAM = "alerts"                  # agents publish, UI/gateway tail
+CURSOR_PREFIX = "cursor:"                # cursor:<name> = a consumer's position
+ALERTED_SET = "agents:alerted"           # fingerprints of alerts already raised

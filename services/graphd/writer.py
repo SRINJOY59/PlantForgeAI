@@ -1,9 +1,7 @@
 from pydantic import ValidationError
 
 from plantmind_core.bus import RedisBus
-from plantmind_core.celeryapp import WorkerApp
 from plantmind_core.config import get_settings
-from plantmind_core.queues import Routes
 from plantmind_core.schemas import CandidateSubgraph, GraphDelta
 from plantmind_core.telemetry import get_logger
 
@@ -108,30 +106,6 @@ class GraphWriter:
         stats["subgraphs"] += len(subgraphs)
         stats["nodes"] += len(batch.node_ids)
         stats["edges"] += sum(len(v) for v in batch.edges_by_type.values())
-
-
-# ----------------------------- celery adapter ------------------------------
-
-settings = get_settings()
-worker = WorkerApp("graphd")
-worker.schedule(Routes.flush, every_seconds=settings.write_flush_interval_s)
-# denoise gets scheduled here once implemented
-
-celery_app = worker.app  # celery CLI entrypoint: celery -A graphd.writer ...
-
-_writer = None
-
-
-def _instance() -> GraphWriter:
-    global _writer
-    if _writer is None:
-        _writer = GraphWriter.from_settings()
-    return _writer
-
-
-@worker.task(Routes.flush)
-def flush_write_buffer():
-    return _instance().flush()
 
 
 def main():

@@ -60,6 +60,12 @@ class FakeReader:
     def relations_of(self, node_id, types, limit=40):
         return self.relations[:limit]
 
+    def overdue_inspections(self, today):
+        return []
+
+    def failure_mode_counts(self, limit=10):
+        return []
+
     def paths_between(self, src, dst, types, max_hops, limit=100):
         return self.paths
 

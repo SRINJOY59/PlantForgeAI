@@ -20,7 +20,13 @@ def _get_bus() -> RedisBus:
 
 @worker.task(Routes.resolve)
 def resolve(payload: dict):
-    csg = _service.resolve(payload)
+    try:
+        csg = _service.resolve(payload)
+    except Exception:
+        # give the hash claim back so resubmitting the file can heal this
+        content_hash = payload.get("content_hash")
+        if content_hash:
+            _get_bus().release_document(content_hash)
+        raise
     _get_bus().queue_subgraph(csg.model_dump_json())
-    return {"status": "queued_for_write", "doc_id": csg.doc_id,
-            "nodes": len(csg.nodes)}
+    return {"status": "queued_for_write", "doc_id": csg.doc_id, "nodes": len(csg.nodes)}

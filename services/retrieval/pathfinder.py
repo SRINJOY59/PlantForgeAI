@@ -25,11 +25,16 @@ class PathFinder:
         if len(seeds) >= 2:
             for i, a in enumerate(seeds):
                 for b in seeds[i + 1:]:
-                    paths += self._reader.paths_between(
-                        a.node_id, b.node_id, types, self._max_hops)
+                    paths += self._reader.paths_between( a.node_id, b.node_id, types, self._max_hops)
         elif seeds:
-            paths = self._reader.paths_outward(
-                seeds[0].node_id, EVIDENCE_LABELS, types, self._max_hops)
+            paths = self._reader.paths_outward(seeds[0].node_id, EVIDENCE_LABELS, types, self._max_hops)
+
+        # between-paths stop AT the seeds, but questions like "what is
+        # downstream of A and B" need each seed's process neighbourhood too
+        for seed in seeds[:4]:
+            paths += self._reader.paths_outward(
+                seed.node_id, ["Equipment", "Instrument"],
+                ["CONNECTED_TO"], min(2, self._max_hops))
 
         node_ids = set()
         for path in paths:

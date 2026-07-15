@@ -1,0 +1,322 @@
+{
+  "summary": {
+    "cases": 28,
+    "correct": 18,
+    "partial": 6,
+    "wrong": 4,
+    "accuracy": 0.64,
+    "citation_hit_rate": 0.82,
+    "mode_match_rate": 0.93,
+    "mean_seconds": 11.18
+  },
+  "results": [
+    {
+      "id": "q01",
+      "question": "What torque should the gland bolts be tightened to when replacing the mechanical seal on P-101A?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies both key facts from the reference answer: the torque value of 45 Nm and the star pattern tightening sequence.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 9.54,
+      "answer": "45 Nm, in a star pattern [doc:6d6d71a9e053a1bd]."
+    },
+    {
+      "id": "q02",
+      "question": "What is the set pressure of PSV-204?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the set pressure as 10.0 barg, which is the primary key fact requested. It also accurately references the pop-test confirmation, aligning with the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 23.35,
+      "answer": "PSV-204 is set at **10.0 barg** [504bb2a40e87251c] [7f48c60d10a65a82]. The plant knowledge graph also records this value in the pop-test remarks for the valve."
+    },
+    {
+      "id": "q03",
+      "question": "How many seal failures has P-101A had and what is the suspected root cause?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the number of seal failures (three) and accurately states the suspected root cause (cavitation due to running below the minimum suction pressure of 0.8 barg), which aligns with the key facts in the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 14.42,
+      "answer": "P-101A has had at least three seal failures\u2014the latest occurrence is described as the \"third time since the January seal change\" [7bb5d5e5e90aaeac]. The suspected root cause is cavitation resulting from running below the minimum suction pressure of 0.8 barg (PI-102 was observed at 0.5 barg at restart) [7bb5d5e5e90aaeac] [6d6d71a9e053a1bd]. The graph also captures this: (P-101A) -HAS_FAILURE (cause: running below minimum suction pressure) -> (CAVITATION) [score 0.069]. Note that the work-order count across both P-101A and P-101B totals four SEAL-LEAK events, but the breakdown per pump is not given in the material."
+    },
+    {
+      "id": "q04",
+      "question": "P-101B just had a seal leak. Has anything similar happened on identical equipment?",
+      "verdict": "correct",
+      "reason": "The assistant accurately captures all key facts from the reference: it identifies P-101A as the identical unit with a history of three seal failures, correctly cites low suction pressure as the root cause, and confirms P-101B's own failure in January 2026 (WO-2233). The response directly and comprehensively answers the question.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 9.07,
+      "answer": "Yes. P-101A\u2014the identical sister pump\u2014has a history of repeated seal leaks. The graph shows P-101B itself had a seal leak on 2026-01-22 (WO-2233) [graph: P-101B -HAS_FAILURE (wo_id: WO-2233)-> SEAL-LEAK]. On P-101A, an operator reported gland weeping \u201cagain, third time since the January seal change\u201d [7bb5d5e5e90aaeac], and the seal replacement SOP notes that \u201crepeated seal failures on P-101A have been traced to running below minimum suction pressure\u201d [6d6d71a9e053a1bd]. So seal leaks are a known recurring issue on the identical unit."
+    },
+    {
+      "id": "q05",
+      "question": "What is the minimum suction pressure required before starting P-101A?",
+      "verdict": "partial",
+      "reason": "The assistant correctly identifies the pressure value (0.8 barg) but omits the specific instrument location (PI-102) mentioned in the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 8.25,
+      "answer": "0.8 barg [doc:6d6d71a9e053a1bd] [doc:7bb5d5e5e90aaeac]"
+    },
+    {
+      "id": "q06",
+      "question": "What equipment is directly downstream of pumps P-101A and P-101B?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies FT-103 and E-204 as the equipment directly downstream of the pumps, matching the key facts in the reference answer. The reference mentions V-203, but it is downstream of E-204 rather than directly of the pumps, so its omission is acceptable.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 24.26,
+      "answer": "The material identifies two pieces of equipment directly connected to the discharge side of P-101A and P-101B:\n\n* **FT-103** \u2013 The graph paths show both pumps are directly connected to FT-103 [graph: (P-101A) -CONNECTED_TO-> (FT-103); (P-101B) -CONNECTED_TO-> (FT-103)]. While the connection direction is not stated, FT prefix indicates a flow transmitter, which in a pump circuit is typically on the discharge.\n* **E-204** \u2013 The safety prerequisites in the seal-replacement SOP state to close the \u201cdischarge valve to E-204\u201d [doc:6d6d71a9e053a1bd]. This makes E-204 the destination equipment immediately downstream of the pump discharge block valve."
+    },
+    {
+      "id": "q07",
+      "question": "Explain how a trip of K-301 can cause PSV-204 to lift.",
+      "verdict": "correct",
+      "reason": "The assistant's answer accurately captures all key facts from the reference answer, including the process flow (K-301 suction from V-203), the effect of the trip (vapour backup, pressure rise), the PSV-204 lift setpoint (10.0 barg), and the specific incident data (pressure rise from 6.2 to 9.8 barg in ~4 minutes).",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 9.78,
+      "answer": "K\u2011301 takes suction from separator V\u2011203 [V\u2011203 \u2192 K\u2011301 path score 0.136]. When K\u2011301 trips, compression stops and vapour backs up into V\u2011203. Pressure in V\u2011203 rises as a result, and once it approaches the set point of PSV\u2011204 (10.0\u202fbarg), the relief valve lifts and discharges to flare [504bb2a40e87251c, \u201cWhat happened\u201d section]. The timeline confirms: K\u2011301 trip at 14:22, V\u2011203 pressure rose from 6.2 to 9.8\u202fbarg over ~4\u202fminutes, PSV\u2011204 lifted at 14:26 [504bb2a40e87251c, Timeline]."
+    },
+    {
+      "id": "q08",
+      "question": "What was the root cause of incident IR-2026-014?",
+      "verdict": "correct",
+      "reason": "The assistant's answer accurately captures all the key facts from the reference answer, including the root cause (fouled strainer causing degraded cooling water flow), the effect (rising discharge temperature and trip), and the missing alarm. Extra details like the timeframe are acceptable.",
+      "citation_hit": true,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 6.73,
+      "answer": "The root cause was degraded cooling water flow to the K\u2011301 intercooler over several weeks because of a fouled strainer. Rising discharge temperature was visible in the trend for at least ten days before the trip, but no alarm was configured between the normal operating point and the trip point [504bb2a40e87251c]."
+    },
+    {
+      "id": "q09",
+      "question": "Which statutory inspections in Unit 100 are overdue as of July 2026?",
+      "verdict": "wrong",
+      "reason": "The assistant only identified one overdue inspection (P-101A) and incorrectly stated it was the only one, missing four other key overdue inspections listed in the reference (V-203, PSV-204, E-204, and K-301).",
+      "citation_hit": false,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 6.1,
+      "answer": "Only one statutory inspection in Unit 100 is overdue as of July 2026:\n\n- **P-101A**: Condition monitoring per OISD-STD-119, due 2025-09-15 [doc:30842a9e71307998]"
+    },
+    {
+      "id": "q10",
+      "question": "What is the design pressure of V-203?",
+      "verdict": "correct",
+      "reason": "The assistant correctly states the design pressure (12.0 barg) and the test pressure (15.6 barg), fully capturing the key facts from the reference answer.",
+      "citation_hit": false,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 7.21,
+      "answer": "12.0 barg [graph: V-203 -GOVERNED_BY\u2192 OISD-STD-128 (remarks: \"Design pressure 12.0 barg; tested at 15.6 barg\")]"
+    },
+    {
+      "id": "q11",
+      "question": "What is the most frequent failure mode in Unit 100 work orders?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the failure mode (SEAL-LEAK), the count (4 work orders), and the associated equipment (P-101A and P-101B), matching all key facts from the reference answer.",
+      "citation_hit": false,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 14.98,
+      "answer": "The most frequent failure mode in Unit 100 is **SEAL-LEAK**, with 4 work orders (all on P-101A and P-101B). This is taken directly from the failure modes by work-order count list, which shows SEAL-LEAK: 4 (on P-101A, P-101B) as the only failure mode reaching that count, and all associated equipment tags (P-101A, P-101B) carry the Unit 100 prefix. The next highest in Unit 100 are BEARING-NOISE (2, on P-102 and P-101B) and DRIFT (2, on LT-104 and FT-103)."
+    },
+    {
+      "id": "q12",
+      "question": "Were there any early warning signs before the K-301 trip in March 2026?",
+      "verdict": "partial",
+      "reason": "The assistant correctly identifies the rising discharge temperature trend over ten days, but omits the key detail about inspection INS-505 (June 2025) flagging the intercooler approach temperature trending up.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 15.2,
+      "answer": "Yes. The discharge temperature (TI-302) on K-301 showed a clear upward trend for **at least ten days** before the trip on 03 March 2026. It climbed from 127\u202f\u00b0C on 20\u00a0February to 142\u202f\u00b0C on 03\u202fMarch, crossing the later\u2011defined pre\u2011alarm threshold of 135\u202f\u00b0C around 01\u202fMarch [doc:e32d19761eea4940][doc:504bb2a40e87251c]. This trend was visible in the plant historian, but **no intermediate alarm** had been configured between the normal operating point and the 130\u202f\u00b0C trip setpoint at that time, so operators did not receive an active alert [doc:504bb2a40e87251c]. Additional contributing factors: the intercooler cooling\u2011water strainer was not on any preventive maintenance schedule, and daily operator rounds did not include a trend\u2011review step [doc:504bb2a40e87251c]. In short, the rising temperature was an early warning sign that existed but went unnoticed because the monitoring setup and maintenance programme were incomplete."
+    },
+    {
+      "id": "q13",
+      "question": "Which instrument measures pump suction pressure in Unit 100?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies PI-102 as the instrument measuring pump suction pressure, which matches the key fact in the reference answer. The additional bracketed text does not affect the correctness of the response.",
+      "citation_hit": true,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 4.73,
+      "answer": "PI-102 [6d6d71a9e053a1bd]"
+    },
+    {
+      "id": "q14",
+      "question": "A technician is about to restart P-101A after the third seal replacement. What should they verify, and why does it matter for this specific pump?",
+      "verdict": "partial",
+      "reason": "The assistant correctly identifies the critical suction pressure check (PI-102 >= 0.8 barg) and accurately explains the reason (cavitation caused by low suction pressure and a blocked strainer). However, it omits the other standard pre-start checks listed in the reference answer, such as ensuring the casing is vented, starting against a cracked discharge valve, and monitoring the seal for 15 minutes.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 15.29,
+      "answer": "Before starting P-101A, the technician must confirm that suction pressure at **PI-102 reads at least 0.8 barg**. That's step 1 of the pre-start checks in the current seal replacement procedure [6d6d71a9e053a1bd].\n\n**Why it matters for this specific pump:**  \nP-101A has a documented history of repeated seal failures caused by running below minimum suction pressure, which induces cavitation. The SOP explicitly states that \"repeated seal failures on P-101A have been traced to running below minimum suction pressure (cavitation)\" [6d6d71a9e053a1bd]. That failure mechanism matches the field observation from the last restart: the gland was weeping again after PI-102 read only 0.5 barg at startup\u2014well under the 0.8 barg minimum [7bb5d5e5e90aaeac]. The graph corroborates this, linking P-101A directly to a CAVITATION failure with the same root cause [score 0.069]. If that suction condition isn't verified and corrected (e.g., by inspecting for a blocked strainer as suggested), the new seal will fail the same way."
+    },
+    {
+      "id": "q15",
+      "question": "What is the process flow through Unit 200 starting from the K-301 discharge?",
+      "verdict": "correct",
+      "reason": "The assistant accurately traces the main process flow from K-301 discharge through E-210, V-210, and into C-220, perfectly matching the reference. It correctly notes the absence of additional routing in the provided context, which explains the omission of the lean solvent feed mentioned in the reference. The core flow path requested is fully and correctly described.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "local",
+      "seconds": 24.02,
+      "answer": "From K-301 discharge, the vapour flows through aftercooler E-210 into knockout drum V-210 [doc:ad7010fcc9b89d91]. The next step implied by the same source is from V-210 to the absorber column (C-220), as the procedure warns against liquid carryover into that column. No other discharge routing is shown in the provided material. (V-203, though connected to K-301, appears on the suction side\u2014it saw reverse flow during the trip incident [doc:504bb2a40e87251c]\u2014and is not part of the normal discharge path.)"
+    },
+    {
+      "id": "q16",
+      "question": "Why did the P-201B motor trip in November 2025?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the key facts from the reference: the pump was started with the discharge valve closed, ran dead-headed for approximately four minutes, and the motor tripped on thermal overload. The additional context about the operator and the graph reference does not detract from the accuracy of the core explanation.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 7.5,
+      "answer": "The P-201B motor tripped on thermal overload because the pump was started with its discharge valve still closed and ran dead-headed for approximately four minutes. The outside operator was called away after starting the pump but before opening the valve [84248b7be46ba725]. This matches the failure path recorded in the graph: dead-headed operation leading to motor thermal overload trip."
+    },
+    {
+      "id": "q17",
+      "question": "What is the dead-head time limit when starting standby pump P-201B?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the 60-second time limit and accurately includes all key contextual details from the reference answer, such as the restriction against running against a closed discharge valve, the specific SOP revision (SOP-U200-07 Rev 2), and the WO-3039 motor trip investigation.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 7.83,
+      "answer": "60 seconds.\n\nThe changeover procedure SOP-U200-07 Rev 2 explicitly states: \"Open standby discharge fully within 60 seconds of start. Running dead-headed longer trips the motor on overload\" [40c0b9b4e471ee73]. The absorber operation SOP reinforces this: \"Do not start the standby against a closed discharge valve for more than 60 seconds\" [ad7010fcc9b89d91]. This limit was added after the P-201B motor trip investigation (WO-3039) [40c0b9b4e471ee73]."
+    },
+    {
+      "id": "q18",
+      "question": "What causes rising differential pressure on absorber C-220?",
+      "verdict": "partial",
+      "reason": "The assistant correctly identifies foaming and the steady rate trend as key indicators, but omits other important facts from the reference, specifically liquid carryover from V-210 and the 180 mbar pre-alarm threshold.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 12.67,
+      "answer": "Rising differential pressure on C\u2011220 is caused by **foaming**, driven by heavy hydrocarbon accumulation (solvent degradation) [ba2e1d94cb5de843] [ad7010fcc9b89d91]. The graph path also connects C\u2011220 to FOAMING with the cause \u201cheavy hydrocarbon accumulation\u201d [(C-220) -HAS_FAILURE (cause: heavy hydrocarbon accumulation)-> (FOAMING)]. Progressive fouling or loading is noted as a broader indicator, but the specific root cause tied to the observed rise is solvent degradation leading to foaming [ba2e1d94cb5de843]; the SOP states that a rising DP trend at steady rates indicates foaming [ad7010fcc9b89d91]."
+    },
+    {
+      "id": "q19",
+      "question": "What is the recent trend in C-220 absorber differential pressure?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies the rising trend, the approach to the 180 mbar pre-alarm threshold, and attributes it to foaming, which aligns perfectly with the reference answer while providing additional specific data points.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 15.61,
+      "answer": "The differential pressure across C-220 is on a steady upward trend. Weekly averages rose from 148 mbar on 01 Jun to 172 mbar on 02 Jul, approaching the 180 mbar pre-alarm threshold and sitting well above the typical clean-solvent band of ~145 mbar [30afcf8f5113f8cd]. An email from the same period notes the DP at 165\u2013175 mbar at full rates, consistent with a slower repeat of a prior foaming event [ba2e1d94cb5de843]."
+    },
+    {
+      "id": "q20",
+      "question": "What is the serial number of pump P-101A?",
+      "verdict": "wrong",
+      "reason": "The assistant incorrectly claims that the serial number is not available, while the reference answer explicitly provides the serial number SN-88231-B7.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 6.63,
+      "answer": "The provided material does not contain a serial number for pump P-101A. No graph path or source passage includes that data point."
+    },
+    {
+      "id": "q21",
+      "question": "What is the motor rating of compressor K-301?",
+      "verdict": "wrong",
+      "reason": "The assistant incorrectly states that the motor rating information is not available, whereas the reference answer provides the specific values (160 kW, 2975 RPM, 3.3 kV).",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 5.27,
+      "answer": "The provided material does not contain the motor rating of compressor K-301. None of the graph paths, source passages, procedures, work orders, or incident reports listed include that specification."
+    },
+    {
+      "id": "q22",
+      "question": "What equipment connects Unit 100 to Unit 200?",
+      "verdict": "wrong",
+      "reason": "The assistant incorrectly claims that no equipment connects Unit 100 to Unit 200, whereas the reference answer explicitly identifies Compressor K-301 as the connecting equipment.",
+      "citation_hit": false,
+      "mode_expected": "path",
+      "mode_actual": "vector",
+      "seconds": 9.99,
+      "answer": "The provided material does not identify any equipment that connects Unit 100 to Unit 200. No graph paths or source passages describe cross-unit connectivity between these areas."
+    },
+    {
+      "id": "q23",
+      "question": "Who reported the P-101A gland weeping issue and what did they recommend?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies Ravi as the reporter and accurately states the recommendation to inspect the suction strainer before swapping back to the pump, capturing all key facts from the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 5.41,
+      "answer": "Ravi reported the P-101A gland weeping issue and recommended a suction strainer inspection before swapping back to the pump [7bb5d5e5e90aaeac]."
+    },
+    {
+      "id": "q24",
+      "question": "Which statutory inspections are overdue across all units as of July 2026?",
+      "verdict": "correct",
+      "reason": "The assistant correctly identifies all four key inspections from the reference answer (V-203, PSV-204, E-204, and K-301) along with their accurate due dates and descriptions. The inclusion of an additional item (P-101A) does not contradict the reference and falls under acceptable extra detail, making the response fully correct.",
+      "citation_hit": false,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 13.0,
+      "answer": "All five inspections in the plant digest\u2019s \u201cpast their due date\u201d list are overdue as of July 2026. The four with statutory regulatory references are:\n\n- **P-101A** \u2013 Condition monitoring per OISD-STD-119, due 2025-09-15 [doc:30842a9e71307998]\n- **PSV-204** \u2013 Pop test per IBR/OISD-STD-132, due 2026-01-20 [doc:30842a9e71307998]\n- **V-203** \u2013 Hydrostatic test per OISD-STD-128, due 2026-02-10 [doc:30842a9e71307998]\n- **E-204** \u2013 Tube thickness survey per OISD-STD-128, due 2026-02-12 [doc:30842a9e71307998]\n\nThe fifth, **K-301** \u2013 Performance test per OEM, due 2026-06-08, is also overdue but the OEM reference may not carry the same statutory weight as the IBR/OISD mandates. The digest does not classify it otherwise, so flag it accordingly."
+    },
+    {
+      "id": "q25",
+      "question": "Why did the V-210 demister pad collapse?",
+      "verdict": "correct",
+      "reason": "The assistant's answer correctly identifies that repeated fast rate ramp-ups pulled liquid off the demister pad, causing it to collapse, and correctly notes that this exceeded the 10% per 15 minutes limit mentioned in the reference. All key facts are present.",
+      "citation_hit": true,
+      "mode_expected": "path",
+      "mode_actual": "path",
+      "seconds": 5.79,
+      "answer": "The V-210 demister pad collapsed because it was repeatedly subjected to fast feed-rate ramp-ups that far exceeded the 10%-per-15\u2011minutes limit. These fast swings pulled liquid off the demister, progressively weakening it until the pad failed. [ec09a8bdd97becb4] [ad7010fcc9b89d91]  \nGraph path: (V-210) -HAS_FAILURE (cause: repeated fast ramp-ups)\u2192 (DEMISTER-PAD-COLLAPSE)."
+    },
+    {
+      "id": "q26",
+      "question": "How should a pressure safety valve that lifted in service be handled before reuse?",
+      "verdict": "partial",
+      "reason": "The assistant correctly states that the valve requires a full overhaul instead of just a pop test, but omits the requirement to bench-check it as-found before cleaning.",
+      "citation_hit": true,
+      "mode_expected": "vector",
+      "mode_actual": "vector",
+      "seconds": 7.29,
+      "answer": "A pressure safety valve that lifted in service must receive a full overhaul, not just a pop test [7f48c60d10a65a82]."
+    },
+    {
+      "id": "q27",
+      "question": "What is the set pressure of PSV-210?",
+      "verdict": "correct",
+      "reason": "The assistant correctly states the set pressure as 8.5 barg, which matches the key fact in the reference answer.",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 7.54,
+      "answer": "The set pressure of PSV-210 is 8.5 barg. [doc:7f48c60d10a65a82] [graph:(PSV-210)-GOVERNED_BY-(IBR/OISD-STD-132)]"
+    },
+    {
+      "id": "q28",
+      "question": "What is the failure history of product transfer pump P-301?",
+      "verdict": "partial",
+      "reason": "The assistant correctly identifies three of the four failure events listed in the reference (loss of prime/airlock, discharge flange leak, and motor overheating) but omits the fourth key fact (repeated outlet strainer choking after tank cleaning).",
+      "citation_hit": true,
+      "mode_expected": "local",
+      "mode_actual": "local",
+      "seconds": 15.53,
+      "answer": "P-301\u2019s failure history consists of three documented events, all tied to work orders and corrective actions:\n\n1. **Losing prime after tank switches** (PUMP-AIRLOCK)  \n   - WO-4005, 2025\u201108\u201106  \n   - Description: \u201cProduct transfer pump losing prime after tank switch\u201d  \n   - Action: vent routine added to transfer procedure; downtime 2.0\u202fh; technician D.\u202fNair.  \n   - Confirmed in the T\u2011301 receipt SOP, which states \u201cverify P\u2011301 vented and primed \u2013 it loses prime after tank switches (WO\u20114005)\u201d [a8111ac05fa09b6d].  \n   - Graph also records the failure modes LOSES-PRIME-AFTER-TANK-SWITCHES and LOSES-PRIME (cause: after tank switches).\n\n2. **Discharge flange leak at gasket** (FLANGE-LEAK)  \n   - WO-4026, 2026\u201101\u201108  \n   - Description: \u201cDischarge flange weep at gasket\u201d  \n   - Action: retorqued cold; gasket change planned; downtime 1.0\u202fh; technician D.\u202fNair.\n\n3. **Motor overheating at high ambient** (MOTOR-OVERHEAT)  \n   - WO-4033, 2026\u201103\u201125  \n   - Description: \u201cMotor running hot at high ambient\u201d  \n   - Action: cooling fins cleaned; thermal scan added to route; downtime 4.0\u202fh; technician S.\u202fPatel.  \n   - Later confirmed in the June 2026 reliability summary: \u201cP\u2011301 thermal scan added to routes after the March overheating (WO\u20114033)\u201d [91d2379f67692fb1].\n\nThese are the only failure events recorded in the provided material."
+    }
+  ]
+}

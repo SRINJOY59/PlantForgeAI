@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     embedding_base_url: str = "https://openrouter.ai/api/v1"
     embedding_api_key: str = ""                      # falls back to openrouter key
     embedding_model: str = "openai/text-embedding-3-small"
-    embedding_dim: int = 1024
+    embedding_dim: int = 1536      # what the model emits; index must match
 
     # --- pipeline tuning ---
     extraction_batch_size: int = 8
