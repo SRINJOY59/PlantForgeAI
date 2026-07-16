@@ -73,7 +73,8 @@ export default function Ask() {
         <Composer input={input} setInput={setInput} onSend={() => send(input)} busy={busy}
           onClear={() => { setTurns([]); setFocused(null); }} hasTurns={turns.length > 0} />
       </div>
-      <EvidencePanel answer={focusedTurn?.answer} activeDoc={activeDoc} onClose={() => setActiveDoc(null)} />
+      <EvidencePanel answer={focusedTurn?.answer} activeDoc={activeDoc}
+        onSelect={doc => setActiveDoc(doc)} onClose={() => setActiveDoc(null)} />
     </div>
   );
 }

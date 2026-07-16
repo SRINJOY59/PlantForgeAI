@@ -1,0 +1,45 @@
+[
+  {
+    "type": "folder",
+    "id": "inbox",
+    "path": "data/inbox"
+  },
+
+  {
+    "_comment": "SAP Plant Maintenance over OData. Field names are NOT mapped here - the table lane's MappingInferrer resolves AUFNR/EQUNR/etc onto the ontology.",
+    "type": "sap",
+    "id": "sap-pm",
+    "base_url": "https://sap.example.com/sap/opu/odata/sap/ZPM_SRV",
+    "entity": "MaintenanceOrderSet",
+    "username_env": "SAP_USER",
+    "password_env": "SAP_PASSWORD",
+    "changed_field": "LastChangeDate",
+    "plant": "1000"
+  },
+
+  {
+    "_comment": "OSIsoft PI Historian. Emits a markdown trend summary per tag; the equipment tag in the heading links it into the graph.",
+    "type": "pi",
+    "id": "pi-historian",
+    "base_url": "https://pi.example.com/piwebapi",
+    "tags": [
+      "\\\\PISRV\\\\K-301.TI302",
+      "\\\\PISRV\\\\C-220.PDI221"
+    ],
+    "username_env": "PI_USER",
+    "password_env": "PI_PASSWORD",
+    "days": 7,
+    "interval": "1h"
+  },
+
+  {
+    "_comment": "SharePoint / OneDrive over Microsoft Graph, app-only auth.",
+    "type": "sharepoint",
+    "id": "plant-docs",
+    "tenant_id": "00000000-0000-0000-0000-000000000000",
+    "client_id": "00000000-0000-0000-0000-000000000000",
+    "secret_env": "SHAREPOINT_SECRET",
+    "drive_id": "b!REPLACE_WITH_DRIVE_ID",
+    "folder": "/Maintenance"
+  }
+]

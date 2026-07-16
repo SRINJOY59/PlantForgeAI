@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     neo4j_ro_password: str = "change_me"
     redis_url: str = "redis://redis:6379/0"
     retrieval_url: str = "http://localhost:8001"     # gateway proxies Q&A here
+
+    # Supabase JWT secret (dashboard > Settings > API > JWT Secret). Empty
+    # disables auth so local dev / demos still run open.
+    supabase_jwt_secret: str = ""
     minio_endpoint: str = "http://minio:9000"
     minio_user: str = "plantmind"
     minio_password: str = "change_me"

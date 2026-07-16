@@ -14,6 +14,16 @@ x-service-base: &svc
     minio: { condition: service_started }
   restart: unless-stopped
 
+# celery reads SIGTERM as a warm shutdown: finish the running task, ack it,
+# then exit. Docker SIGKILLs after stop_grace_period, and the 10s default is
+# nowhere near our 600s task_time_limit - a worker killed mid-task leaves it
+# unacked, and the redis broker will not redeliver until visibility_timeout,
+# an hour later. So the grace matches the task limit. Idle workers still exit
+# in about a second; this is a ceiling, not a wait.
+x-worker: &worker
+  <<: *svc
+  stop_grace_period: 600s
+
 services:
   # ---------- infrastructure ----------
   neo4j:
@@ -78,7 +88,7 @@ services:
     ports: ["8000:8000"]
 
   ingestion:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -86,7 +96,7 @@ services:
     command: celery -A ingestion.tasks worker -Q q_classify -c 4
 
   extraction-wo:
-    <<: *svc
+    <<: *worker
     build: &extraction-build
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -94,17 +104,17 @@ services:
     command: celery -A extraction.tasks worker -Q q_parse_wo -c 8
 
   extraction-pnid:
-    <<: *svc
+    <<: *worker
     build: *extraction-build
     command: celery -A extraction.tasks worker -Q q_extract_pnid -c 4
 
   extraction-text:
-    <<: *svc
+    <<: *worker
     build: *extraction-build
     command: celery -A extraction.tasks worker -Q q_extract_text -c 32
 
   resolution:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -112,16 +122,18 @@ services:
     command: celery -A resolution.tasks worker -Q q_resolve -c 4
 
   graphd:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: graphd }
-    # single writer: concurrency MUST stay 1; beat drives flush + denoise
+    # single writer: concurrency MUST stay 1; beat drives flush + denoise.
+    # the autoscaler pins this too (ComposeFleet.SPECS), so it is guarded in
+    # two places.
     command: celery -A graphd.tasks worker -Q q_write -c 1 -B --loglevel=info
 
   connectors:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -149,6 +161,28 @@ services:
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: agents }
     command: python -m agents.consumer
+
+  # watches queue depth and scales the worker services to match. It is the one
+  # service that talks to the docker daemon rather than to redis alone, which
+  # is why it gets the socket and its own image.
+  autoscaler:
+    build:
+      context: .
+      dockerfile: infra/docker/autoscaler.Dockerfile
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # the same compose file the host uses, so the two cannot drift. .env
+      # rides along because compose needs it to resolve ${NEO4J_PASSWORD}
+      # when it parses that file.
+      - ./docker-compose.yml:/srv/docker-compose.yml:ro
+      - ./.env:/srv/.env:ro
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+    command: python -m tools.autoscale
 
 volumes:
   neo4j_data:

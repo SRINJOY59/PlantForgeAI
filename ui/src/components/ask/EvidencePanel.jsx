@@ -1,7 +1,39 @@
+import { useEffect, useState } from "react";
 import { ExternalLink, FileText, X, BookOpen } from "lucide-react";
-import { documentUrl } from "../../lib/api";
+import { fetchDocumentUrl } from "../../lib/api";
 
-export default function EvidencePanel({ answer, activeDoc, onClose }) {
+// The document endpoint needs the JWT, which an <iframe src> can't send, so
+// the bytes are fetched with auth and shown from a blob URL (revoked on
+// close so we don't leak object URLs as the user clicks through citations).
+function useDocumentBlob(docId) {
+  const [url, setUrl] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!docId) return;
+    let revoked = false;
+    let objectUrl = null;
+    setUrl(null);
+    setError(null);
+
+    fetchDocumentUrl(docId)
+      .then((u) => {
+        if (revoked) return URL.revokeObjectURL(u);
+        objectUrl = u;
+        setUrl(u);
+      })
+      .catch((e) => setError(e.message));
+
+    return () => {
+      revoked = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [docId]);
+
+  return { url, error };
+}
+
+export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) {
   if (!answer) {
     return (
       <aside
@@ -27,19 +59,7 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
       style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
     >
       {activeDoc ? (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex items-center gap-2 px-4 py-3"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-panel)" }}>
-            <span className="tag flex-1 truncate text-xs">{activeDoc}</span>
-            <button onClick={onClose} className="btn-ghost px-1.5 py-1"><X size={14} /></button>
-          </div>
-          <iframe title="source" src={documentUrl(activeDoc)} className="min-h-0 flex-1 bg-[var(--bg-panel)]" />
-          <a href={documentUrl(activeDoc)} target="_blank" rel="noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors"
-            style={{ borderTop: "1px solid var(--border)", color: "var(--blue)", background: "var(--bg-panel)" }}>
-            Open full document <ExternalLink size={11} />
-          </a>
-        </div>
+        <SourceViewer docId={activeDoc} onClose={onClose} />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="mb-4 flex items-center justify-between">
@@ -51,7 +71,8 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
 
           <div className="space-y-2">
             {citations.map((c, i) => (
-              <div key={i} className="rounded-xl p-3 transition-all duration-150"
+              <button key={i} type="button" onClick={() => onSelect?.(c.doc_id)}
+                className="block w-full rounded-xl p-3 text-left transition-all duration-150"
                 style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.06)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.03)"; }}
@@ -74,7 +95,7 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
                     {c.snippet}
                   </p>
                 )}
-              </div>
+              </button>
             ))}
             {!citations.length && (
               <p className="py-6 text-center text-xs" style={{ color: "var(--muted-lt)" }}>No sources for this answer.</p>
@@ -83,6 +104,41 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
         </div>
       )}
     </aside>
+  );
+}
+
+function SourceViewer({ docId, onClose }) {
+  const { url, error } = useDocumentBlob(docId);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-2 px-4 py-3"
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-panel)" }}>
+        <span className="tag flex-1 truncate text-xs">{docId}</span>
+        <button onClick={onClose} className="btn-ghost px-1.5 py-1"><X size={14} /></button>
+      </div>
+
+      {error ? (
+        <div className="flex-1 p-4 text-xs" style={{ color: "var(--danger)" }}>
+          Couldn't load this source: {error}
+        </div>
+      ) : url ? (
+        <iframe title="source" src={url}
+          className="min-h-0 flex-1 bg-[var(--bg-panel)]" />
+      ) : (
+        <div className="flex-1 p-4 text-xs" style={{ color: "var(--muted)" }}>
+          Loading source…
+        </div>
+      )}
+
+      {url && (
+        <a href={url} target="_blank" rel="noreferrer"
+          className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors"
+          style={{ borderTop: "1px solid var(--border)", color: "var(--blue)", background: "var(--bg-panel)" }}>
+          Open full document <ExternalLink size={11} />
+        </a>
+      )}
+    </div>
   );
 }
 

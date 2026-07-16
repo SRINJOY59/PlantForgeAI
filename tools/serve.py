@@ -12,9 +12,10 @@ import sys
 import time
 from pathlib import Path
 
+from plantmind_core.bus import RedisBus
 from plantmind_core.config import get_settings
 
-from infra import Infrastructure, WorkerFleet
+from infra import Infrastructure, QueueAutoscaler, WorkerFleet
 
 REPO = Path(__file__).resolve().parents[1]
 LOGS = REPO / "logs"
@@ -38,6 +39,9 @@ def main():
     infra.apply_schema()
     fleet.start()
 
+    autoscaler = QueueAutoscaler(fleet, RedisBus.from_settings())
+    autoscaler.start(interval=5.0)
+
     LOGS.mkdir(exist_ok=True)
     for name, cmd in SERVERS:
         logfile = open(LOGS / f"{name}.log", "a", encoding="utf-8")
@@ -52,6 +56,7 @@ def main():
     print("  gateway   http://localhost:8000   (point the UI here)")
     print("  retrieval http://localhost:8001")
     print("  neo4j     http://localhost:7474   minio http://localhost:9001")
+    print("autoscaler on: extraction/ingestion/resolution follow queue depth")
     print("logs in logs/ — ctrl+c to stop.\n")
 
     try:
@@ -60,6 +65,7 @@ def main():
     except KeyboardInterrupt:
         print("\nstopping...")
     finally:
+        autoscaler.stop()          # before the fleet, so it can't respawn
         for name, proc, logfile in servers:
             proc.terminate()
             logfile.close()
