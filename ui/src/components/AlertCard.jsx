@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 const SEVERITY = {
   critical: { border: "#fca5a5", bg: "#fff1f2", iconBg: "#fee2e2", color: "#991b1b", chipBg: "#fee2e2" },
   warning:  { border: "#fcd34d", bg: "#fffbeb", iconBg: "#fef3c7", color: "#92400e", chipBg: "#fef3c7" },
-  info:     { border: "#93c5fd", bg: "#f0f9ff", iconBg: "#dbeafe", color: "#1d4ed8", chipBg: "#dbeafe" },
+  info:     { border: "var(--blue-mid)", bg: "#f0f9ff", iconBg: "#dbeafe", color: "#1d4ed8", chipBg: "#dbeafe" },
 };
 
 export default function AlertCard({ alert }) {
@@ -16,7 +16,7 @@ export default function AlertCard({ alert }) {
     <div
       className="animate-slide-up rounded-xl p-4 transition-all duration-150"
       style={{
-        background: "#ffffff",
+        background: "var(--bg-panel)",
         border: "1px solid var(--border)",
         borderLeft: `3px solid ${s.border}`,
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",

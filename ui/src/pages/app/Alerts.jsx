@@ -35,7 +35,7 @@ export default function Alerts() {
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150"
               style={filter === f.id
                 ? { background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe" }
-                : { background: "#fff", color: "var(--muted)", border: "1px solid var(--border)" }
+                : { background: "var(--bg-panel)", color: "var(--muted)", border: "1px solid var(--border)" }
               }
             >
               <f.icon size={12} /> {f.label}
@@ -46,7 +46,7 @@ export default function Alerts() {
 
       {alerts.length > 0 && (
         <div className="mb-4 flex items-center gap-4 rounded-xl px-4 py-3 text-xs"
-          style={{ background: "#fff", border: "1px solid var(--border)" }}>
+          style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>
           <span style={{ color: "var(--muted)" }}>{alerts.length} total</span>
           <span className="h-3 w-px" style={{ background: "var(--border)" }} />
           <span style={{ color: "#dc2626" }}>{alerts.filter(a => a.kind === "failure_pattern").length} failures</span>
@@ -59,7 +59,7 @@ export default function Alerts() {
         {shown.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <div className="grid h-16 w-16 place-items-center rounded-2xl"
-              style={{ background: "#f1f5f9", border: "1px solid var(--border)" }}>
+              style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
               <BellOff size={28} style={{ color: "var(--muted-lt)" }} />
             </div>
             <div>

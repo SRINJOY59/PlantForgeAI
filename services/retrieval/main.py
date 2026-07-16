@@ -51,6 +51,12 @@ async def ask_stream(request: AskRequest):
     return StreamingResponse(events(), media_type="text/event-stream")
 
 
+@app.get("/graph")
+def graph(limit: int = 400):
+    """The plant graph for the explorer and the documents view."""
+    return _service.graph_snapshot(limit)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

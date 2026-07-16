@@ -22,7 +22,7 @@ export default function TopBar() {
     <header
       className="flex h-14 flex-shrink-0 items-center gap-4 px-4"
       style={{
-        background: "#ffffff",
+        background: "var(--bg-panel)",
         borderBottom: "1px solid var(--border)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
       }}

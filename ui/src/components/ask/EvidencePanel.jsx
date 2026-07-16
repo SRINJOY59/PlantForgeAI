@@ -6,7 +6,7 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
     return (
       <aside
         className="hidden lg:flex w-72 shrink-0 flex-col items-center justify-center p-6 text-center"
-        style={{ borderLeft: "1px solid var(--border)", background: "#f8fafc" }}
+        style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
       >
         <div className="mb-3 grid h-12 w-12 place-items-center rounded-xl"
           style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}>
@@ -24,19 +24,19 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
   return (
     <aside
       className="hidden lg:flex w-72 shrink-0 flex-col"
-      style={{ borderLeft: "1px solid var(--border)", background: "#f8fafc" }}
+      style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
     >
       {activeDoc ? (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-center gap-2 px-4 py-3"
-            style={{ borderBottom: "1px solid var(--border)", background: "#fff" }}>
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-panel)" }}>
             <span className="tag flex-1 truncate text-xs">{activeDoc}</span>
             <button onClick={onClose} className="btn-ghost px-1.5 py-1"><X size={14} /></button>
           </div>
-          <iframe title="source" src={documentUrl(activeDoc)} className="min-h-0 flex-1 bg-white" />
+          <iframe title="source" src={documentUrl(activeDoc)} className="min-h-0 flex-1 bg-[var(--bg-panel)]" />
           <a href={documentUrl(activeDoc)} target="_blank" rel="noreferrer"
             className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors"
-            style={{ borderTop: "1px solid var(--border)", color: "var(--blue)", background: "#fff" }}>
+            style={{ borderTop: "1px solid var(--border)", color: "var(--blue)", background: "var(--bg-panel)" }}>
             Open full document <ExternalLink size={11} />
           </a>
         </div>
@@ -52,8 +52,8 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
           <div className="space-y-2">
             {citations.map((c, i) => (
               <div key={i} className="rounded-xl p-3 transition-all duration-150"
-                style={{ background: "#fff", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#93c5fd"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.06)"; }}
+                style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.06)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.03)"; }}
               >
                 <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function EvidencePanel({ answer, activeDoc, onClose }) {
                   <span className="tag flex-1 truncate text-[11px]">{c.doc_id}</span>
                   {c.page != null && (
                     <span className="rounded px-1.5 py-0.5 text-[10px]"
-                      style={{ background: "#f1f5f9", color: "var(--muted)" }}>
+                      style={{ background: "var(--bg-subtle)", color: "var(--muted)" }}>
                       p{c.page}
                     </span>
                   )}

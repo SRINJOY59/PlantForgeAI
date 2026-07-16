@@ -43,7 +43,7 @@ export default function Ask() {
   const focusedTurn = focused != null ? turns[focused] : null;
 
   return (
-    <div className="flex h-full" style={{ background: "#f8fafc" }}>
+    <div className="flex h-full" style={{ background: "var(--bg-surface)" }}>
       <div className="flex min-w-0 flex-1 flex-col">
         <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
           {turns.length === 0
@@ -88,14 +88,14 @@ function Turn({ turn, active, onFocus, onCite }) {
       className="animate-slide-up rounded-2xl overflow-hidden transition-all duration-200"
       onClick={onFocus}
       style={{
-        background: "#ffffff",
+        background: "var(--bg-panel)",
         border: active ? "1px solid #bfdbfe" : "1px solid var(--border)",
         boxShadow: active ? "0 0 0 3px rgba(37,99,235,0.06), 0 2px 8px rgba(0,0,0,0.04)" : "0 1px 3px rgba(0,0,0,0.04)",
         cursor: active ? "default" : "pointer",
       }}
     >
       {/* Question */}
-      <div className="px-5 py-4" style={{ background: "#f8fafc", borderBottom: "1px solid var(--border)" }}>
+      <div className="px-5 py-4" style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-start gap-3">
           <div
             className="mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full text-[11px] font-bold"
@@ -171,8 +171,8 @@ function Welcome({ onPick }) {
         {SUGGESTIONS.map(s => (
           <button key={s.text} onClick={() => onPick(s.text)}
             className="group text-left rounded-xl px-4 py-4 transition-all duration-150"
-            style={{ background: "#fff", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#93c5fd"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.08)"; }}
+            style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.08)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; }}
           >
             <span className="mr-2 text-base">{s.icon}</span>
@@ -188,11 +188,11 @@ function Composer({ input, setInput, onSend, busy, onClear, hasTurns }) {
   return (
     <div
       className="flex-shrink-0 px-4 py-4"
-      style={{ background: "#fff", borderTop: "1px solid var(--border)", boxShadow: "0 -1px 4px rgba(0,0,0,0.03)" }}
+      style={{ background: "var(--bg-panel)", borderTop: "1px solid var(--border)", boxShadow: "0 -1px 4px rgba(0,0,0,0.03)" }}
     >
       <div
         className="mx-auto max-w-3xl rounded-2xl overflow-hidden"
-        style={{ border: "1px solid var(--border-md)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+        style={{ border: "1px solid var(--border-md)", background: "var(--bg-panel)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
       >
         <form onSubmit={e => { e.preventDefault(); onSend(); }}>
           <textarea

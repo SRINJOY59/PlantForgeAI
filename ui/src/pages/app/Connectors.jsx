@@ -36,7 +36,7 @@ export default function Connectors() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="page-title">Connectors</h1>
-          <p className="text-sm mt-1" style={{ color: "#475569" }}>
+          <p className="text-sm mt-1" style={{ color: "var(--text-md)" }}>
             Point a connector at a system and the brain stays current on its own.
           </p>
         </div>
@@ -62,7 +62,7 @@ export default function Connectors() {
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
           >
             <div className="text-2xl font-bold font-display" style={{ color }}>{value}</div>
-            <div className="text-xs mt-1" style={{ color: "#475569" }}>{label}</div>
+            <div className="text-xs mt-1" style={{ color: "var(--text-md)" }}>{label}</div>
           </div>
         ))}
       </div>
@@ -98,13 +98,13 @@ export default function Connectors() {
                       className="rounded px-1.5 py-0.5 text-[10px] font-medium"
                       style={{
                         background: "rgba(255,255,255,0.05)",
-                        color: "#475569",
+                        color: "var(--text-md)",
                       }}
                     >
                       {c.type}
                     </span>
                   </div>
-                  <div className="mt-0.5 font-mono text-[11px]" style={{ color: "#475569" }}>
+                  <div className="mt-0.5 font-mono text-[11px]" style={{ color: "var(--text-md)" }}>
                     {c.detail}
                   </div>
                   {c.lastSync && (

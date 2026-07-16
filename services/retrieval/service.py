@@ -202,6 +202,9 @@ class RetrievalService:
         return "PLANT DIGEST (live graph queries):\n" + "\n".join(lines) \
             if lines else ""
 
+    def graph_snapshot(self, limit: int = 400) -> dict:
+        return self._reader.graph_snapshot(limit)
+
     # ------------------------------------------------------------- helpers
     async def _embed(self, text: str) -> list:
         (embedding,) = await self._embedder.embed([text])

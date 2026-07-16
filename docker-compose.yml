@@ -1,9 +1,18 @@
 x-service-base: &svc
   env_file: .env
-  depends_on: [redis, neo4j, minio]
+  # .env carries localhost URLs so the same file works for local dev
+  # (tools.serve); inside the compose network the infra is reachable by
+  # service name, and these overrides win over env_file.
+  environment:
+    NEO4J_URI: bolt://neo4j:7687
+    REDIS_URL: redis://redis:6379/0
+    MINIO_ENDPOINT: http://minio:9000
+    RETRIEVAL_URL: http://retrieval:8001
+  depends_on:
+    redis: { condition: service_healthy }
+    neo4j: { condition: service_healthy }
+    minio: { condition: service_started }
   restart: unless-stopped
-  volumes:
-    - ./libs/core:/opt/libs/core:ro
 
 services:
   # ---------- infrastructure ----------
@@ -14,12 +23,39 @@ services:
       NEO4J_PLUGINS: '["graph-data-science"]'
     ports: ["7474:7474", "7687:7687"]
     volumes: ["neo4j_data:/data", "./infra/neo4j:/init:ro"]
+    healthcheck:
+      # single $ so compose substitutes the password here at parse time: the
+      # neo4j container has no NEO4J_PASSWORD of its own (and NEO4J_* vars
+      # would be read as neo4j config settings, which this is not)
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p '${NEO4J_PASSWORD}' 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  # one-shot: applies constraints + the vector index once neo4j is up.
+  # Without this the graph has no indexes and vector search fails.
+  graph-init:
+    image: neo4j:5-community
+    depends_on:
+      neo4j: { condition: service_healthy }
+    environment:
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    volumes: ["./infra/neo4j:/init:ro"]
+    entrypoint: ["bash", "-c",
+      "cypher-shell -a bolt://neo4j:7687 -u neo4j -p $${NEO4J_PASSWORD} -f /init/init.cypher && echo schema applied"]
+    restart: "no"
 
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
     command: redis-server --appendonly yes
     volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   minio:
     image: minio/minio
@@ -90,6 +126,10 @@ services:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: connectors }
+    # the connector definitions and the watched folder live outside the image
+    volumes:
+      - ./connectors.json:/srv/connectors.json:ro
+      - ./data/inbox:/srv/data/inbox
     # beat drives scheduled data-source syncs into the pipeline
     command: celery -A connectors.tasks worker -Q q_connectors -c 2 -B --loglevel=info
 

@@ -22,7 +22,7 @@ export default function SideRail() {
       style={{
         width: "220px",
         minWidth: "220px",
-        background: "#ffffff",
+        background: "var(--bg-panel)",
         borderRight: "1px solid var(--border)",
       }}
     >

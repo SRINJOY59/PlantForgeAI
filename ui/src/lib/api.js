@@ -46,8 +46,11 @@ export async function askStream(question, onToken, signal) {
   return done;
 }
 
-export function subscribeAlerts(onAlert) {
-  const source = new EventSource(`${BASE}/alerts`);
+// after=0 replays the alerts already on the stream before following live
+// ones; the default ('$') would only ever show alerts raised after connecting,
+// so a freshly opened feed would look empty.
+export function subscribeAlerts(onAlert, after = "0") {
+  const source = new EventSource(`${BASE}/alerts?after=${encodeURIComponent(after)}`);
   source.addEventListener("alert", (e) => onAlert(JSON.parse(e.data)));
   return () => source.close();
 }

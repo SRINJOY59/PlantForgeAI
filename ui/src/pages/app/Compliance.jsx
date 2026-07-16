@@ -57,7 +57,7 @@ export default function Compliance() {
             <button key={key} onClick={() => setFilterStatus(f => f === key ? "all" : key)}
               className="rounded-xl px-4 py-4 text-center transition-all duration-150"
               style={{
-                background: active ? bg : "#fff",
+                background: active ? bg : "var(--bg-panel)",
                 border: `1px solid ${active ? border : "var(--border)"}`,
                 boxShadow: active ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 2px rgba(0,0,0,0.04)",
               }}
@@ -84,7 +84,7 @@ export default function Compliance() {
           return (
             <div key={item.id} className="rounded-xl overflow-hidden transition-all duration-200"
               style={{
-                background: "#fff",
+                background: "var(--bg-panel)",
                 border: isOpen ? `1px solid ${border}` : "1px solid var(--border)",
                 boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 2px rgba(0,0,0,0.04)",
               }}>
@@ -97,7 +97,7 @@ export default function Compliance() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium" style={{ color: "var(--text)" }}>{item.title}</span>
                     <span className="rounded px-1.5 py-0.5 text-[10px] font-mono"
-                      style={{ background: "#f1f5f9", color: "var(--muted)" }}>{item.id}</span>
+                      style={{ background: "var(--bg-subtle)", color: "var(--muted)" }}>{item.id}</span>
                   </div>
                   <div className="mt-0.5 flex items-center gap-2 text-xs" style={{ color: "var(--muted)" }}>
                     <span>{item.unit}</span><span>·</span><span>{item.type}</span><span>·</span><span>Due {item.dueDate}</span>

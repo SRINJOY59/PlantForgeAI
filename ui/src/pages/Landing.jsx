@@ -27,7 +27,7 @@ const stats = [
 
 export default function Landing() {
   return (
-    <div className="min-h-full overflow-y-auto" style={{ background: "#f8fafc" }}>
+    <div className="min-h-full overflow-y-auto" style={{ background: "var(--bg-surface)" }}>
       {/* Header */}
       <header
         className="sticky top-0 z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-4"
@@ -94,7 +94,7 @@ export default function Landing() {
             <span
               key={t}
               className="rounded-full px-3 py-1 text-xs font-medium"
-              style={{ background: "#f1f5f9", color: "#475569", border: "1px solid var(--border)" }}
+              style={{ background: "var(--bg-subtle)", color: "var(--text-md)", border: "1px solid var(--border)" }}
             >
               {t}
             </span>
@@ -110,7 +110,7 @@ export default function Landing() {
               key={f.title}
               className="group rounded-2xl p-6 transition-all duration-200 cursor-default"
               style={{
-                background: "#ffffff",
+                background: "var(--bg-panel)",
                 border: "1px solid var(--border)",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
               }}
@@ -159,7 +159,7 @@ export default function Landing() {
               >
                 {value}
               </div>
-              <div className="text-xs leading-relaxed" style={{ color: "#475569" }}>{label}</div>
+              <div className="text-xs leading-relaxed" style={{ color: "var(--text-md)" }}>{label}</div>
             </div>
           ))}
         </div>
@@ -170,7 +170,7 @@ export default function Landing() {
           <span className="text-sm" style={{ color: "var(--muted-lt)" }}>
             PlantMind — built for industrial engineering.
           </span>
-          <span className="text-xs font-mono" style={{ color: "#cbd5e1" }}>v2.0 · PathRAG</span>
+          <span className="text-xs font-mono" style={{ color: "var(--border-md)" }}>v2.0 · PathRAG</span>
         </div>
       </footer>
     </div>

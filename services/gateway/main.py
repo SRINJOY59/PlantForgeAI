@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from plantmind_core.config import get_settings
 from gateway import deps
-from gateway.routes import documents, events, qa, system
+from gateway.routes import documents, events, graph, qa, system
 from gateway.service import GatewayService
 
 
@@ -32,5 +32,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
 
 app.include_router(qa.router)
 app.include_router(documents.router)
+app.include_router(graph.router)
 app.include_router(events.router)
 app.include_router(system.router)

@@ -11,6 +11,17 @@ const TYPE_CFG = {
   email:      { label: "Email",      Icon: FileText,   color: "#0284c7", bg: "#e0f2fe" },
 };
 
+function docTypeFromName(name) {
+  const n = name.toLowerCase();
+  if (n.endsWith(".eml") || n.startsWith("email")) return "email";
+  if (n.endsWith(".svg") || n.includes("pnid") || n.includes("dwg")) return "drawing";
+  if (/\.(png|jpe?g|webp)$/.test(n)) return "drawing";
+  if (n.startsWith("sop") || n.includes("procedure")) return "sop";
+  if (n.includes("incident") || n.startsWith("ir-")) return "incident";
+  if (/\.(csv|xlsx?|tsv)$/.test(n)) return "work_order";
+  return "manual";
+}
+
 export default function Documents() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -28,22 +39,18 @@ export default function Documents() {
         const eqIds = connectedEdges.map(e => e.src === n.id ? e.dst : e.src);
         const eqNodes = nodes.filter(x => eqIds.includes(x.id) && x.label === "Equipment");
 
-        let docType = n.props?.doc_type || "manual";
-        if (!TYPE_CFG[docType]) docType = "manual";
-
-        let dateStr = "Unknown Date";
-        if (n.props?.timestamp) {
-          dateStr = new Date(n.props.timestamp * 1000).toISOString().split('T')[0];
-        }
+        // the graph stores filename + content_hash on a Document; the kind is
+        // read back off the filename the same way ingestion classified it
+        const filename = n.props?.filename || n.surface || n.id;
 
         return {
           id: n.id,
-          title: n.surface || n.id,
-          type: docType,
-          date: dateStr,
+          title: filename,
+          type: docTypeFromName(filename),
+          date: "",
           author: "System",
           equipment: eqNodes.map(e => e.surface || e.id),
-          tags: n.props?.summary ? ["indexed"] : []
+          tags: [`${connectedEdges.length} links`]
         };
       });
       
@@ -80,14 +87,14 @@ export default function Documents() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }} />
           <input className="input pl-9" placeholder="Search title, ID, equipment…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div className="flex items-center gap-1.5 rounded-lg p-1 overflow-x-auto whitespace-nowrap scrollbar-hide" style={{ background: "#f8fafc", border: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-1.5 rounded-lg p-1 overflow-x-auto whitespace-nowrap scrollbar-hide" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <button onClick={() => setTypeFilter("all")}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${typeFilter === "all" ? "bg-white shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"}`}>
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${typeFilter === "all" ? "bg-[var(--bg-panel)] shadow-sm text-blue-600" : "text-[var(--muted)] hover:text-[var(--text)]"}`}>
             All
           </button>
           {Object.entries(TYPE_CFG).map(([k, cfg]) => (
             <button key={k} onClick={() => setTypeFilter(k)}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${typeFilter === k ? "bg-white shadow-sm" : "hover:bg-slate-100"}`}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${typeFilter === k ? "bg-[var(--bg-panel)] shadow-sm" : "hover:bg-[var(--bg-subtle)]"}`}
               style={{ color: typeFilter === k ? cfg.color : "var(--muted)" }}>
               <cfg.Icon size={12} /> {cfg.label}
             </button>
@@ -96,13 +103,13 @@ export default function Documents() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center py-20 text-slate-400">
+        <div className="flex justify-center items-center py-20 text-[var(--muted-lt)]">
           <Loader2 className="animate-spin mr-2" size={20} /> Loading documents...
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.length === 0 && (
-             <div className="text-center py-10 text-slate-400 text-sm border rounded-xl border-dashed">
+             <div className="text-center py-10 text-[var(--muted-lt)] text-sm border rounded-xl border-dashed">
                No documents found.
              </div>
           )}
@@ -110,8 +117,8 @@ export default function Documents() {
             const cfg = TYPE_CFG[doc.type] ?? TYPE_CFG.manual;
             return (
               <div key={doc.id} className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-150 cursor-pointer"
-                style={{ background: "#fff", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#93c5fd"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.06)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.06)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.03)"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg" style={{ background: cfg.bg }}>
@@ -129,11 +136,11 @@ export default function Documents() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {doc.equipment.map(eq => (
-                      <span key={eq} className="rounded-md px-1.5 py-0.5 text-[10px] font-mono" style={{ background: "#f1f5f9", color: "#475569", border: "1px solid var(--border)" }}>
+                      <span key={eq} className="rounded-md px-1.5 py-0.5 text-[10px] font-mono" style={{ background: "var(--bg-subtle)", color: "var(--text-md)", border: "1px solid var(--border)" }}>
                         {eq}
                       </span>
                     ))}
-                    {doc.equipment.length > 0 && <div className="h-3 w-px bg-slate-200 mx-1" />}
+                    {doc.equipment.length > 0 && <div className="h-3 w-px bg-[var(--border)] mx-1" />}
                     {doc.tags.map(t => (
                       <span key={t} className="text-[10px]" style={{ color: "var(--muted-lt)" }}>#{t}</span>
                     ))}
