@@ -1,27 +1,20 @@
-const MODE_LABEL = {
-  vector: "Vector",
-  local: "Local",
-  path: "PathRAG",
+const MODE_CONFIG = {
+  vector: { label: "Vector",  bg: "#ede9fe", color: "#5b21b6" },
+  local:  { label: "Local",   bg: "#dbeafe", color: "#1d4ed8" },
+  path:   { label: "PathRAG", bg: "#dcfce7", color: "#166534" },
+};
+const CONF_CONFIG = {
+  high:   { bg: "#dcfce7", color: "#166534" },
+  medium: { bg: "#fef3c7", color: "#92400e" },
+  low:    { bg: "#f1f5f9", color: "#475569" },
 };
 
 export function ModeBadge({ mode }) {
-  return (
-    <span className="rounded border border-steel-200 bg-steel-50 px-1.5 py-0.5 text-[11px] font-medium text-steel-700 dark:border-steel-800 dark:bg-steel-950 dark:text-steel-300">
-      {MODE_LABEL[mode] ?? mode}
-    </span>
-  );
+  const cfg = MODE_CONFIG[mode] ?? { label: mode ?? "—", bg: "#f1f5f9", color: "#475569" };
+  return <span className="badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>;
 }
 
-const CONF_STYLE = {
-  high: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
-  medium: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
-  low: "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400",
-};
-
 export function ConfidencePill({ confidence }) {
-  return (
-    <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${CONF_STYLE[confidence] ?? CONF_STYLE.low}`}>
-      {confidence} confidence
-    </span>
-  );
+  const cfg = CONF_CONFIG[confidence] ?? CONF_CONFIG.low;
+  return <span className="badge" style={{ background: cfg.bg, color: cfg.color }}>{confidence ?? "—"} confidence</span>;
 }

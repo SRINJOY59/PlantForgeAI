@@ -6,15 +6,41 @@ export default {
     extend: {
       colors: {
         steel: {
-          50: "#f2f6fa", 100: "#e2ebf3", 200: "#c5d7e6", 300: "#9bb8d1",
-          400: "#6a92b6", 500: "#47739c", 600: "#375c82", 700: "#2e4b6a",
-          800: "#294059", 900: "#26374b", 950: "#182433",
+          50: "#f0f4f8", 100: "#dbeafe", 200: "#bfdbfe", 300: "#93c5fd",
+          400: "#60a5fa", 500: "#3b82f6", 600: "#2563eb", 700: "#1d4ed8",
+          800: "#1e40af", 900: "#1e3a8a", 950: "#172554",
         },
       },
       fontFamily: {
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        sans:    ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Plus Jakarta Sans", "Inter", "ui-sans-serif", "sans-serif"],
+        mono:    ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+      },
+      boxShadow: {
+        "card":    "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06)",
+        "card-md": "0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04)",
+        "card-lg": "0 8px 24px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04)",
+        "blue":    "0 4px 14px rgba(37,99,235,0.18)",
+        "blue-sm": "0 1px 4px rgba(37,99,235,0.2)",
+      },
+      animation: {
+        "slide-up":  "slideUp 0.3s ease-out",
+        "fade-in":   "fadeIn 0.2s ease-out",
+        "pulse-slow":"pulse 3s ease-in-out infinite",
+      },
+      keyframes: {
+        slideUp: {
+          "0%":   { opacity: 0, transform: "translateY(6px)" },
+          "100%": { opacity: 1, transform: "translateY(0)" },
+        },
+        fadeIn: {
+          "0%":   { opacity: 0 },
+          "100%": { opacity: 1 },
+        },
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require("@tailwindcss/typography")
+  ],
 };

@@ -1,28 +1,45 @@
-// Renders answer text with [doc:id] / [doc:id p3] citation markers turned
-// into clickable chips. onCite(docId) opens the source in the evidence panel.
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-const CITE_RE = /\[doc:([a-zA-Z0-9_-]+)(?:\s*p(\d+))?\]/g;
+// Matches [doc:ID], [doc:ID p3], [ID], or [ID p3]
+// Assuming ID is at least 8 alphanumeric/underscore/dash chars
+const CITE_RE = /\[(?:doc:)?([a-zA-Z0-9_-]{8,})(?:\s*p(\d+))?\]/g;
 
 export default function AnswerText({ text, onCite }) {
-  const parts = [];
-  let last = 0;
-  let m;
-  let key = 0;
-  while ((m = CITE_RE.exec(text)) !== null) {
-    if (m.index > last) parts.push(text.slice(last, m.index));
-    const [, docId, page] = m;
-    parts.push(
-      <button
-        key={`c${key++}`}
-        onClick={() => onCite(docId)}
-        className="mx-0.5 rounded bg-steel-100 px-1 py-px align-baseline font-mono text-[11px] text-steel-700 hover:bg-steel-200 dark:bg-steel-900 dark:text-steel-300"
-      >
-        {docId.slice(0, 6)}{page ? `·p${page}` : ""}
-      </button>
-    );
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
+  const processedText = (text || "").replace(CITE_RE, (match, docId, page) => {
+    const label = docId.slice(0, 6) + (page ? `·p${page}` : "");
+    const href = `cite:${docId}${page ? `?p=${page}` : ""}`;
+    return `[${label}](${href})`;
+  });
 
-  return <p className="whitespace-pre-wrap leading-relaxed">{parts}</p>;
+  return (
+    <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-p:leading-relaxed prose-li:my-0.5">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ node, href, children, ...props }) => {
+            if (href && href.startsWith("cite:")) {
+              const idPart = href.slice(5).split("?")[0];
+              return (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onCite(idPart);
+                  }}
+                  className="mx-0.5 inline-flex items-center rounded px-1.5 py-0.5 align-baseline font-mono text-[10px] font-bold transition-colors"
+                  style={{ background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe", textDecoration: "none" }}
+                  title="View source document"
+                >
+                  {children}
+                </button>
+              );
+            }
+            return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+          }
+        }}
+      >
+        {processedText}
+      </ReactMarkdown>
+    </div>
+  );
 }

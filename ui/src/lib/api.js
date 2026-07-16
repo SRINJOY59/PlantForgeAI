@@ -70,6 +70,12 @@ export function documentUrl(docId) {
   return `${BASE}/documents/${docId}`;
 }
 
+export async function getGraph() {
+  const res = await fetch(`${BASE}/graph`);
+  if (!res.ok) throw new Error(`graph failed: ${res.status}`);
+  return res.json();
+}
+
 function parseSse(frame) {
   let name = "message";
   const dataLines = [];
