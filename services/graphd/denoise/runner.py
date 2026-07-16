@@ -58,7 +58,8 @@ class DenoiseRunner:
                 canonical_of[group.canonical.upper()] = cid
                 vids = [by_label[v.upper()] for v in group.variants
                         if v.upper() in by_label]
-                stats["merged"] += self._graph.merge_failure_modes(cid, vids)
+                if vids:      # nothing to merge for a solo canonical
+                    stats["merged"] += self._graph.merge_failure_modes(cid, vids)
 
             for link in plan.causal:
                 cause_id = canonical_of.get(link.cause.upper(),

@@ -66,7 +66,10 @@ class RedisBus:
         return self._read_stream(keys.ALERT_STREAM, after_id, block_ms)
 
     def _read_stream(self, stream, after_id, block_ms) -> list:
-        reply = self._r.xread({stream: after_id}, block=block_ms)
+        # block_ms > 0 waits; 0/None returns immediately. (Raw redis treats
+        # BLOCK 0 as block-forever - we don't want that footgun.)
+        kwargs = {"block": block_ms} if block_ms else {}
+        reply = self._r.xread({stream: after_id}, **kwargs)
         if not reply:
             return []
         return [(entry_id, fields["payload"])

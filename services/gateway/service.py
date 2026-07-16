@@ -2,10 +2,8 @@
 fetch an original document for a citation click, gather metrics. The
 FastAPI layer (main.py) owns request/response and proxying to retrieval."""
 
-import uuid
-
 from plantmind_core.bus import RedisBus
-from plantmind_core.queues import Flow
+from plantmind_core.pipeline import stage_and_enqueue
 from plantmind_core.storage import ObjectStore
 from plantmind_core.telemetry import get_logger
 
@@ -27,10 +25,7 @@ class GatewayService:
     def ingest(self, filename: str, data: bytes, source="upload") -> dict:
         """Stage the bytes and drop a classify note - the synchronous half of
         an async pipeline: we acknowledge 'accepted', not 'processed'."""
-        staging_key = f"staging/{uuid.uuid4().hex}/{filename}"
-        self._store.put(staging_key, data)
-        self._send(Flow.ingest, {"staging_key": staging_key,
-                                 "filename": filename, "source": source})
+        stage_and_enqueue(self._store, self._send, filename, data, source)
         log.info("accepted upload", filename=filename, size=len(data))
         return {"status": "accepted", "filename": filename}
 

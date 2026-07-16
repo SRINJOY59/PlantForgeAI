@@ -11,7 +11,7 @@ import time
 from datetime import date
 
 from plantmind_core.bus import RedisBus
-from plantmind_core.schemas import GraphDelta
+from plantmind_core.schemas import Answer, Citation, GraphDelta, QueryMode
 from plantmind_core.telemetry import get_logger
 
 from agents.investigator import InvestigatorAgent
@@ -25,18 +25,25 @@ COMPLIANCE_INTERVAL_S = 3600
 
 
 class AgentsRuntime:
-    def __init__(self, bus, reader, investigator=None,
-                 compliance_interval=COMPLIANCE_INTERVAL_S):
+    def __init__(self, bus, reader, investigator=None, cache=None,
+                 embedder=None, compliance_interval=COMPLIANCE_INTERVAL_S,
+                 block_ms=15000):
         self._bus = bus
         self._failures = FailureWatcher(reader)
         self._investigator = investigator or InvestigatorAgent(reader)
         self._compliance = ComplianceScanner(reader)
+        self._cache = cache            # speculative pre-fill + invalidation
+        self._embedder = embedder
         self._interval = compliance_interval
+        self._block_ms = block_ms
         self._last_compliance = 0.0
 
     @classmethod
     def from_settings(cls) -> "AgentsRuntime":
-        return cls(RedisBus.from_settings(), AgentReader.from_settings())
+        from plantmind_core.cache import AnswerCache
+        from plantmind_core.llm import get_embedder
+        return cls(RedisBus.from_settings(), AgentReader.from_settings(),
+                   cache=AnswerCache.from_settings(), embedder=get_embedder())
 
     def run(self):
         log.info("agents runtime started")
@@ -46,7 +53,7 @@ class AgentsRuntime:
 
     def tick(self):
         cursor = self._bus.get_cursor(CURSOR)
-        for entry_id, payload in self._bus.read_deltas(cursor, block_ms=15000):
+        for entry_id, payload in self._bus.read_deltas(cursor, self._block_ms):
             self._on_delta(payload)
             self._bus.set_cursor(CURSOR, entry_id)
         if time.time() - self._last_compliance >= self._interval:
@@ -54,6 +61,11 @@ class AgentsRuntime:
 
     def _on_delta(self, payload: str):
         delta = GraphDelta.model_validate_json(payload)
+        # any change invalidates cached answers that depend on the touched
+        # nodes, so a stale answer never outlives a change to its subject
+        if self._cache:
+            self._cache.invalidate(delta.touched_node_ids)
+
         if "HAS_FAILURE" not in delta.new_edge_types:
             return
         # deterministic detection, then agentic investigation per trigger
@@ -62,10 +74,41 @@ class AgentsRuntime:
             if not self._bus.claim_alert(
                     f"failure:{trigger.tag}:{trigger.mode}:{trigger.count}"):
                 continue
-            alert = asyncio.run(self._investigator.investigate(trigger))
-            self._bus.publish_alert(alert.model_dump_json())
-            log.info("alert raised", kind=alert.kind, severity=alert.severity,
-                     title=alert.title)
+            asyncio.run(self._handle_trigger(trigger))
+
+    async def _handle_trigger(self, trigger):
+        alert = await self._investigator.investigate(trigger)
+        self._bus.publish_alert(alert.model_dump_json())
+        log.info("alert raised", kind=alert.kind, severity=alert.severity,
+                 title=alert.title)
+        await self._speculate(trigger, alert)
+
+    async def _speculate(self, trigger, alert):
+        """The optimisation: the investigation we just ran to make the alert
+        IS the answer someone is about to ask for. Pre-fill the answer cache
+        keyed on the questions they'll ask, so the query is an instant hit -
+        an answer computed at write time, for free."""
+        if not (self._cache and self._embedder):
+            return
+        questions = [
+            f"what should I do about {trigger.tag} {trigger.mode.lower()}?",
+            f"{trigger.tag} failure history and recommendation",
+            f"is the {trigger.tag} failure related to its sibling equipment?",
+        ]
+        answer = Answer(
+            text=alert.body,
+            citations=[Citation(doc_id=c.doc_id, snippet="")
+                       for c in alert.citations],
+            mode=QueryMode.LOCAL,
+            confidence="high" if alert.verified else "medium",
+            graph_version=alert.graph_version).model_dump(mode="json")
+        cited = [f"equip:{trigger.tag}"] + [f"equip:{s['tag']}"
+                                            for s in trigger.siblings]
+        embeddings = await self._embedder.embed(questions)
+        for q, emb in zip(questions, embeddings):
+            self._cache.put(q, emb, answer, cited)
+        log.info("speculative answers cached", tag=trigger.tag,
+                 questions=len(questions))
 
     def run_compliance(self):
         self._last_compliance = time.time()

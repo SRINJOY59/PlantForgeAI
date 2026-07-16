@@ -26,12 +26,14 @@ DIGEST_WORDS = ("overdue", "statutory", "inspection", "compliance",
 class RetrievalService:
     """Three retrieval modes behind one ask(): vector for single facts,
     local for asset-centric questions, PathRAG for causal/multi-entity
-    reasoning. The router picks; every mode ends in the same answerer."""
+    reasoning. The router picks; every mode ends in the same answerer. A
+    semantic answer cache short-circuits repeated questions."""
 
-    def __init__(self, reader, llm, embedder, bus=None):
+    def __init__(self, reader, llm, embedder, bus=None, cache=None):
         self._reader = reader
         self._embedder = embedder
         self._bus = bus
+        self._cache = cache
         self._linker = QueryLinker(reader)
         self._router = ModeRouter()
         self._pathfinder = PathFinder(reader)
@@ -42,52 +44,76 @@ class RetrievalService:
     @classmethod
     def from_settings(cls) -> "RetrievalService":
         from plantmind_core.bus import RedisBus
+        from plantmind_core.cache import AnswerCache
         from plantmind_core.llm import get_embedder, get_llm
 
         from retrieval.graph_reader import GraphReader
 
-        return cls(GraphReader.from_settings(), get_llm(), get_embedder(),bus=RedisBus.from_settings())
+        return cls(GraphReader.from_settings(), get_llm(), get_embedder(),
+                   bus=RedisBus.from_settings(),
+                   cache=AnswerCache.from_settings())
 
     async def ask(self, question: str) -> Answer:
-        mode, context, evidence = await self._prepare(question)
-        return await self._answerer.answer(
+        embedding = await self._embed(question)
+        cached = self._cache_get(embedding)
+        if cached:
+            return cached
+
+        mode, context, evidence, cited = await self._prepare(question, embedding)
+        answer = await self._answerer.answer(
             question, context, evidence, mode, self._graph_version())
+        self._cache_put(question, embedding, answer, cited)
+        return answer
 
     async def ask_stream(self, question: str):
         """Yields ('token', text) deltas while generating, then a final
-        ('done', Answer-with-citations). Retrieval finishes before the first
-        token, so the meta envelope is fully known up front."""
-        mode, context, evidence = await self._prepare(question)
-        async for delta in self._answerer.stream(question, context):
-            yield "token", delta
-        yield "done", self._answerer.build_meta(evidence, mode,
-                                                self._graph_version())
+        ('done', Answer). A cache hit streams the cached text so the client
+        path is identical."""
+        embedding = await self._embed(question)
+        cached = self._cache_get(embedding)
+        if cached:
+            yield "token", cached.text
+            yield "done", cached
+            return
 
-    async def _prepare(self, question: str):
-        """Shared by ask() and ask_stream(): the whole retrieval pipeline up
-        to (but not including) generation -> (mode, context, evidence)."""
+        mode, context, evidence, cited = await self._prepare(question, embedding)
+        chunks = []
+        async for delta in self._answerer.stream(question, context):
+            chunks.append(delta)
+            yield "token", delta
+        answer = self._answerer.build_meta(evidence, mode, self._graph_version())
+        answer.text = "".join(chunks)
+        self._cache_put(question, embedding, answer, cited)
+        yield "done", answer
+
+    async def _prepare(self, question: str, embedding: list):
+        """The whole retrieval pipeline up to (not including) generation ->
+        (mode, context, evidence, cited_node_ids)."""
         seeds = self._linker.link(question)
         mode = self._router.route(question, seeds)
         log.info("routing", mode=mode.value, seeds=len(seeds))
 
         if mode == QueryMode.VECTOR:
-            context, evidence = await self._vector_context(question)
+            context, evidence = self._vector_context(embedding)
         elif mode == QueryMode.LOCAL:
-            context, evidence = await self._local_context(question, seeds[0])
+            context, evidence = self._local_context(seed=seeds[0],
+                                                    embedding=embedding)
         else:
-            context, evidence = await self._path_context(question, seeds)
+            context, evidence = self._path_context(question, seeds, embedding)
             if not context:                        # no paths at all: degrade
                 mode = QueryMode.VECTOR
-                context, evidence = await self._vector_context(question)
+                context, evidence = self._vector_context(embedding)
 
         digest = self._plant_digest(question)
         if digest:
             context = digest + "\n\n" + context
-        return mode, context, evidence
+
+        cited = ([s.node_id for s in seeds]
+                 + [f"doc:{e.doc_id}" for e in evidence])
+        return mode, context, evidence, cited
 
     # ---------------------------------------------------------------- modes
-    async def _vector_context(self, question: str):
-        (embedding,) = await self._embedder.embed([question])
+    def _vector_context(self, embedding: list):
         chunks = self._reader.vector_chunks(embedding)
         evidence = [Evidence(doc_id=_doc_of(c["id"]), text=c["text"],
                              context=c.get("context") or "",
@@ -98,7 +124,7 @@ class RetrievalService:
             + e.context + e.text for e in evidence)
         return context, evidence
 
-    async def _local_context(self, question: str, seed):
+    def _local_context(self, seed, embedding: list):
         relations = self._reader.relations_of(seed.node_id, LOCAL_TYPES)
         rel_lines, edge_evidence, seen = [], [], set()
         for r in relations:
@@ -119,7 +145,6 @@ class RetrievalService:
         # hybrid: exact-text mentions AND semantic matches - the chunk that
         # answers may never name the tag (e.g. torque steps inside its SOP)
         chunks = {c["id"]: c for c in self._reader.chunks_containing(seed.surface)}
-        (embedding,) = await self._embedder.embed([question])
         for c in self._reader.vector_chunks(embedding, k=4):
             chunks.setdefault(c["id"], c)
         chunk_evidence = [Evidence(doc_id=_doc_of(c["id"]), text=c["text"],
@@ -136,7 +161,7 @@ class RetrievalService:
                 for e in chunk_evidence)
         return context, evidence
 
-    async def _path_context(self, question: str, seeds):
+    def _path_context(self, question: str, seeds, embedding: list):
         paths, degrees = self._pathfinder.find(question, seeds)
         if not paths:
             return "", []
@@ -146,14 +171,12 @@ class RetrievalService:
 
         # structure alone isn't enough: the narrative behind the topology
         # (incident timelines, SOP steps) lives in chunks
-        (embedding,) = await self._embedder.embed([question])
-        extra = []
         seen = {e.chunk_id for e in evidence}
-        for c in self._reader.vector_chunks(embedding, k=3):
-            if c["id"] not in seen:
-                extra.append(Evidence(doc_id=_doc_of(c["id"]), text=c["text"],
-                                      context=c.get("context") or "",
-                                      page=c.get("page"), chunk_id=c["id"]))
+        extra = [Evidence(doc_id=_doc_of(c["id"]), text=c["text"],
+                          context=c.get("context") or "",
+                          page=c.get("page"), chunk_id=c["id"])
+                 for c in self._reader.vector_chunks(embedding, k=3)
+                 if c["id"] not in seen]
         if extra:
             context += "\n\nRELATED PASSAGES:\n\n" + "\n\n".join(
                 f"[{e.doc_id}]\n" + e.context + e.text[:600] for e in extra)
@@ -178,6 +201,25 @@ class RetrievalService:
                       for r in counts]
         return "PLANT DIGEST (live graph queries):\n" + "\n".join(lines) \
             if lines else ""
+
+    # ------------------------------------------------------------- helpers
+    async def _embed(self, text: str) -> list:
+        (embedding,) = await self._embedder.embed([text])
+        return embedding
+
+    def _cache_get(self, embedding: list):
+        if not self._cache:
+            return None
+        hit = self._cache.get(embedding)
+        if hit:
+            log.info("answer cache hit")
+            return Answer.model_validate(hit)
+        return None
+
+    def _cache_put(self, question, embedding, answer: Answer, cited: list):
+        if self._cache:
+            self._cache.put(question, embedding, answer.model_dump(mode="json"),
+                            cited)
 
     def _graph_version(self) -> int:
         return self._bus.graph_version() if self._bus else 0

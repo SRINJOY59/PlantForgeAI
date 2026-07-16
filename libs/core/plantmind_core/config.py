@@ -57,7 +57,10 @@ class Settings(BaseSettings):
     pathrag_max_hops: int = 4
     pathrag_top_paths: int = 15
     cache_semantic_threshold: float = 0.95
+    answer_cache_max: int = 300            # LRU cap on cached answers
     denoise_interval_s: int = 3600
+    connectors_config: str = "connectors.json"    # data-source definitions
+    connector_sync_interval_s: int = 300
 
 
 @lru_cache

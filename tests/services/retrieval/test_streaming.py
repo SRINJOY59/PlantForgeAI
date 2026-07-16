@@ -32,8 +32,8 @@ def test_ask_stream_yields_tokens_then_done():
     done = events[-1][1]
     assert isinstance(done, Answer)
     assert done.mode == QueryMode.VECTOR
-    assert done.citations[0].doc_id == "doc9"      # meta known despite empty text
-    assert done.text == ""
+    assert done.citations[0].doc_id == "doc9"      # meta known from evidence
+    assert "10 barg" in done.text                  # full text assembled for the cache
 
 
 def test_stream_and_ask_take_the_same_route():

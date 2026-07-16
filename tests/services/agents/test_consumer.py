@@ -37,7 +37,7 @@ def runtime(reader):
     bus = RedisBus(fakeredis.FakeRedis(decode_responses=True))
     inv = StubInvestigator()
     return bus, inv, AgentsRuntime(bus, reader, investigator=inv,
-                                   compliance_interval=10_000)
+                                   compliance_interval=10_000, block_ms=0)
 
 
 def alerts_on(bus):

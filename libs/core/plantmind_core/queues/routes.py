@@ -26,6 +26,7 @@ class Routes:
     resolve = Route("resolution.tasks.resolve", "q_resolve")
     flush = Route("graphd.tasks.flush_write_buffer", "q_write")
     denoise = Route("graphd.tasks.run_denoise", "q_write")
+    sync_connectors = Route("connectors.tasks.sync_all", "q_connectors")
 
     @classmethod
     def all(cls) -> list[Route]:

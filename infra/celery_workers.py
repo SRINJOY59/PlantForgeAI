@@ -19,6 +19,7 @@ class WorkerFleet:
          "q_parse_wo,q_extract_pnid,q_extract_text", "threads", 8, False),
         ("resolution", "resolution.tasks", "q_resolve", "threads", 4, False),
         ("graphd", "graphd.tasks", "q_write", "solo", 1, True),
+        ("connectors", "connectors.tasks", "q_connectors", "threads", 2, True),
     ]
 
     def __init__(self):

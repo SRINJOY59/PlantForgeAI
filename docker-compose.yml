@@ -84,6 +84,15 @@ services:
     # single writer: concurrency MUST stay 1; beat drives flush + denoise
     command: celery -A graphd.tasks worker -Q q_write -c 1 -B --loglevel=info
 
+  connectors:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: connectors }
+    # beat drives scheduled data-source syncs into the pipeline
+    command: celery -A connectors.tasks worker -Q q_connectors -c 2 -B --loglevel=info
+
   retrieval:
     <<: *svc
     build:

@@ -10,3 +10,5 @@ DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
 ALERT_STREAM = "alerts"                  # agents publish, UI/gateway tail
 CURSOR_PREFIX = "cursor:"                # cursor:<name> = a consumer's position
 ALERTED_SET = "agents:alerted"           # fingerprints of alerts already raised
+ANSWER_CACHE = "answercache:entries"     # id -> cached (question, answer, deps)
+ANSWER_CACHE_LRU = "answercache:lru"     # id -> ts, for eviction

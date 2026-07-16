@@ -76,12 +76,13 @@ class ToolAgent:
             args = {}
         tool = self._tools.get(name)
         if tool is None:
-            return {"error": f"unknown tool {name}"}
-        try:
-            result = tool.fn(**args)
-        except Exception as e:
-            log.warning("tool call failed", tool=name, error=str(e)[:200])
-            result = {"error": str(e)[:200]}
+            result = {"error": f"unknown tool {name}"}
+        else:
+            try:
+                result = tool.fn(**args)
+            except Exception as e:
+                log.warning("tool call failed", tool=name, error=str(e)[:200])
+                result = {"error": str(e)[:200]}
         trace.append((name, args, result))
         return result
 
