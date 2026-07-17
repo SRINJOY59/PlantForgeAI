@@ -11,6 +11,10 @@ from plantmind_core.config import get_settings
 @pytest.fixture(autouse=True)
 def fresh_settings(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    # Settings walks up to the real .env, so a developer with auth configured
+    # would otherwise see these tests 401. Tests pin their own world: default
+    # to auth off, and let the auth tests opt in with their own secret.
+    monkeypatch.setenv("SUPABASE_JWT_SECRET", "")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

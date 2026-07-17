@@ -12,6 +12,10 @@ from retrieval.models import Path, Step
 
 VALID_EDGE_TYPES = {t.value for t in EdgeType}
 
+# never ship these to a client: a 1536-float embedding per node would make
+# the graph payload megabytes
+HEAVY_PROPS = {"embedding", "text", "context"}
+
 
 def _edge_pattern(types) -> str:
     bad = set(types) - VALID_EDGE_TYPES
@@ -68,6 +72,31 @@ class GraphReader:
         return self._run(
             "MATCH (d:Document) RETURN d.id AS id, d.filename AS filename")
 
+    # ------------------------------------------------------- graph snapshot
+    def graph_snapshot(self, limit: int = 400) -> dict:
+        """The plant graph for visualisation. Chunks and Sections are left
+        out (they're the text layer, not the plant), heavy props are stripped,
+        and edges are restricted to the returned nodes so nothing dangles."""
+        rows = self._run(
+            "MATCH (n:Entity) WHERE NOT n:Chunk AND NOT n:Section "
+            "AND coalesce(n.superseded, false) = false "
+            "RETURN n.id AS id, "
+            "[l IN labels(n) WHERE l <> 'Entity'][0] AS label, "
+            "n.surface_form AS surface, properties(n) AS props "
+            "LIMIT $limit", limit=limit)
+
+        nodes = [{"id": r["id"], "label": r["label"], "surface": r["surface"],
+                  "props": {k: v for k, v in (r["props"] or {}).items()
+                            if k not in HEAVY_PROPS}}
+                 for r in rows]
+        ids = [n["id"] for n in nodes]
+        edges = self._run(
+            "MATCH (a:Entity)-[r]->(b:Entity) "
+            "WHERE a.id IN $ids AND b.id IN $ids "
+            "RETURN a.id AS src, b.id AS dst, type(r) AS type", ids=ids) \
+            if ids else []
+        return {"nodes": nodes, "edges": edges}
+
     def chunks_of_doc(self, doc_id: str):
         return self._run(
             "MATCH (c:Chunk) WHERE c.id STARTS WITH $prefix "
@@ -87,6 +116,27 @@ class GraphReader:
             "properties(m) AS other_props "
             "LIMIT $limit",
             id=node_id, limit=limit)
+
+    # ------------------------------------------------------- graph of mistakes
+    def corrections_of(self, doc_ids) -> list:
+        """Which of these documents has an engineer overturned, and what did
+        they say?
+
+        The point of recording a mistake is being reminded of it at the moment
+        it would be repeated. An answer built from a document somebody has
+        already corrected must not be able to quote it as though nothing
+        happened.
+        """
+        if not doc_ids:
+            return []
+        return self._run(
+            "MATCH (d:Document)-[c:CORRECTED_BY]->(fix:Document) "
+            "WHERE d.surface_form IN $doc_ids "
+            "RETURN d.surface_form AS doc_id, "
+            "fix.surface_form AS correction_id, "
+            "fix.text AS correction, "
+            "coalesce(fix.author, c.corrected_by, 'an engineer') AS author",
+            doc_ids=list(doc_ids))
 
     # -------------------------------------------------- plant-wide digests
     def overdue_inspections(self, today: str):

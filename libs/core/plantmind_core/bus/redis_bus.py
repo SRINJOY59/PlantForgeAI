@@ -8,6 +8,21 @@ import redis
 from plantmind_core import keys
 from plantmind_core.config import get_settings
 
+# The longest a caller may park on a blocking stream read, and the socket
+# timeout that has to outlast it.
+#
+# These two are a pair, and the ordering between them is load-bearing: a
+# blocking XREAD holds the socket idle for the whole block, so a socket timeout
+# shorter than the block hangs up on redis mid-wait and raises TimeoutError
+# while redis is behaving perfectly. Never let SOCKET_TIMEOUT_S drop below
+# MAX_BLOCK_MS; raise them together.
+#
+# It is set explicitly rather than left to the client's default because that
+# default is not ours to rely on - redis-py <=5 used None (wait forever) and 8.0
+# changed it to 5s, which silently inverted this ordering on the next rebuild.
+MAX_BLOCK_MS = 15000
+SOCKET_TIMEOUT_S = MAX_BLOCK_MS / 1000 + 5
+
 
 class RedisBus:
     def __init__(self, client):
@@ -16,7 +31,8 @@ class RedisBus:
     @classmethod
     def from_settings(cls) -> "RedisBus":
         s = get_settings()
-        return cls(redis.Redis.from_url(s.redis_url, decode_responses=True))
+        return cls(redis.Redis.from_url(s.redis_url, decode_responses=True,
+                                        socket_timeout=SOCKET_TIMEOUT_S))
 
     # document dedup ledger -------------------------------------------------
     def claim_document(self, content_hash: str) -> bool:
@@ -68,6 +84,13 @@ class RedisBus:
     def _read_stream(self, stream, after_id, block_ms) -> list:
         # block_ms > 0 waits; 0/None returns immediately. (Raw redis treats
         # BLOCK 0 as block-forever - we don't want that footgun.)
+        if block_ms and block_ms > MAX_BLOCK_MS:
+            # refuse rather than let the socket time out mid-block and report a
+            # dead redis that is in fact fine
+            raise ValueError(
+                f"block_ms={block_ms} exceeds MAX_BLOCK_MS={MAX_BLOCK_MS}; the "
+                f"socket would time out at {SOCKET_TIMEOUT_S}s while redis is "
+                f"still waiting. Raise both together.")
         kwargs = {"block": block_ms} if block_ms else {}
         reply = self._r.xread({stream: after_id}, **kwargs)
         if not reply:
@@ -85,6 +108,16 @@ class RedisBus:
         """First caller wins - one alert per distinct fact, so re-processing
         a delta or re-ingesting a file doesn't re-raise the same alert."""
         return bool(self._r.sadd(keys.ALERTED_SET, fingerprint))
+
+    # standards watch ---------------------------------------------------------
+    def known_revision(self, standard: str):
+        """The revision of a standard the watcher last saw published, or None
+        if we have never looked. None means 'establish a baseline', not
+        'everything changed'."""
+        return self._r.get(keys.STANDARD_REVISION_PREFIX + standard)
+
+    def set_known_revision(self, standard: str, revision: str):
+        self._r.set(keys.STANDARD_REVISION_PREFIX + standard, revision)
 
     # observability -----------------------------------------------------------
     def depths(self) -> dict:

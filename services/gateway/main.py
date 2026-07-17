@@ -9,12 +9,13 @@ later auth/rate-limit). The endpoints live in routes/; this file wires them.
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from plantmind_core.config import get_settings
 from gateway import deps
-from gateway.routes import documents, events, qa, system
+from gateway.auth import current_user
+from gateway.routes import documents, events, graph, qa, system
 from gateway.service import GatewayService
 
 
@@ -30,7 +31,11 @@ app = FastAPI(title="plantmind-gateway", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
                    allow_headers=["*"])
 
-app.include_router(qa.router)
-app.include_router(documents.router)
-app.include_router(events.router)
-app.include_router(system.router)
+# auth is applied per-router rather than per-endpoint: a new endpoint is
+# protected by default instead of by remembering to protect it
+protected = [Depends(current_user)]
+app.include_router(qa.router, dependencies=protected)
+app.include_router(documents.router, dependencies=protected)
+app.include_router(graph.router, dependencies=protected)
+app.include_router(events.router, dependencies=protected)
+app.include_router(system.router)   # /health must stay open for healthchecks

@@ -141,6 +141,22 @@ class LLMClient:
                                       response_format=response_format)
             return schema.model_validate_json(_strip_fences(raw))
 
+    async def web_search(self, prompt: str, tier=Tier.CHEAP,
+                         max_tokens=1024) -> tuple:
+        """-> (text, [{'url', 'title'}]). Openrouter runs the search itself as
+        a server-side tool and hands back the answer plus url_citation
+        annotations, so there is no tool loop for us to drive.
+
+        Billed per search on top of tokens, and it reaches the public internet,
+        so this is not on the answer path - only a watcher that runs on a slow
+        clock calls it.
+        """
+        resp = await self._create(
+            [{"role": "user", "content": prompt}], tier, max_tokens,
+            tools=[{"type": "web_search"}])
+        message = resp.choices[0].message
+        return message.content or "", _url_citations(message)
+
     async def vision(self, prompt: str, images_b64: list[str],
                      max_tokens=4096) -> str:
         content = [{"type": "text", "text": prompt}]
@@ -162,6 +178,26 @@ class LLMClient:
             })
         return await self.structured([{"role": "user", "content": content}],
                                      schema, tier=Tier.VISION, max_tokens=max_tokens)
+
+
+def _url_citations(message) -> list:
+    """Pull url_citation annotations off a web-search reply.
+
+    Defensive on purpose: annotations are a newer, still-moving part of the
+    openrouter surface, and a provider that returns none should cost us the
+    links, not the answer.
+    """
+    out = []
+    for note in getattr(message, "annotations", None) or []:
+        note = note if isinstance(note, dict) else getattr(note, "model_dump",
+                                                           lambda: {})()
+        if note.get("type") != "url_citation":
+            continue
+        citation = note.get("url_citation") or {}
+        url = citation.get("url")
+        if url:
+            out.append({"url": url, "title": citation.get("title", "")})
+    return out
 
 
 _client = None

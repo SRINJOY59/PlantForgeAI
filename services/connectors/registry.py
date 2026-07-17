@@ -8,10 +8,19 @@ from plantmind_core.telemetry import get_logger
 
 from connectors.bucket import BucketConnector
 from connectors.folder import FolderConnector
+from connectors.pi import PiHistorianConnector
+from connectors.sap import SapPmConnector
+from connectors.sharepoint import SharePointConnector
 
 log = get_logger("connectors.registry")
 
-TYPES = {"folder": FolderConnector, "bucket": BucketConnector}
+TYPES = {
+    "folder": FolderConnector,
+    "bucket": BucketConnector,
+    "sap": SapPmConnector,
+    "pi": PiHistorianConnector,
+    "sharepoint": SharePointConnector,
+}
 
 
 def load_connectors(config_path: str) -> list:

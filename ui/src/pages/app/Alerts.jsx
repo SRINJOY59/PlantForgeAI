@@ -1,19 +1,27 @@
 import { useEffect, useState } from "react";
-import { Bell, BellOff, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Bell, BellOff, AlertTriangle, Globe, ShieldAlert, Factory } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
-import AlertCard from "../../components/AlertCard";
+import AlertCard, { WEB_KINDS } from "../../components/AlertCard";
 
 const FILTERS = [
-  { id: "all",             label: "All",        icon: Bell },
-  { id: "failure_pattern", label: "Failures",   icon: AlertTriangle },
-  { id: "compliance",      label: "Compliance", icon: ShieldAlert },
+  { id: "all",               label: "All",        icon: Bell },
+  { id: "failure_pattern",   label: "Failures",   icon: AlertTriangle },
+  { id: "compliance",        label: "Compliance", icon: ShieldAlert },
+  { id: "standard_revision", label: "Standards",  icon: Globe },
 ];
 
 export default function Alerts() {
   const { alerts, connected, markAllRead } = useAlerts();
   const [filter, setFilter] = useState("all");
   useEffect(() => { markAllRead(); }, [markAllRead]);
+
   const shown = alerts.filter(a => filter === "all" || a.kind === filter);
+  // Split by where the evidence came from, not by topic. A failure pattern and
+  // an overdue inspection are both things we read in this plant's own
+  // documents; a standard revision is something we read on the internet. They
+  // do not deserve the same trust, so they do not share a list.
+  const plant = shown.filter(a => !WEB_KINDS.has(a.kind));
+  const web = shown.filter(a => WEB_KINDS.has(a.kind));
 
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col px-6 py-6">
@@ -35,7 +43,7 @@ export default function Alerts() {
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150"
               style={filter === f.id
                 ? { background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe" }
-                : { background: "#fff", color: "var(--muted)", border: "1px solid var(--border)" }
+                : { background: "var(--bg-panel)", color: "var(--muted)", border: "1px solid var(--border)" }
               }
             >
               <f.icon size={12} /> {f.label}
@@ -45,30 +53,85 @@ export default function Alerts() {
       </div>
 
       {alerts.length > 0 && (
-        <div className="mb-4 flex items-center gap-4 rounded-xl px-4 py-3 text-xs"
-          style={{ background: "#fff", border: "1px solid var(--border)" }}>
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-4 py-3 text-xs"
+          style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>
           <span style={{ color: "var(--muted)" }}>{alerts.length} total</span>
-          <span className="h-3 w-px" style={{ background: "var(--border)" }} />
-          <span style={{ color: "#dc2626" }}>{alerts.filter(a => a.kind === "failure_pattern").length} failures</span>
-          <span className="h-3 w-px" style={{ background: "var(--border)" }} />
-          <span style={{ color: "#d97706" }}>{alerts.filter(a => a.kind === "compliance").length} compliance</span>
+          <Divider />
+          <span style={{ color: "#dc2626" }}>{count(alerts, "failure_pattern")} failures</span>
+          <Divider />
+          <span style={{ color: "#d97706" }}>{count(alerts, "compliance")} compliance</span>
+          <Divider />
+          <span style={{ color: "var(--muted)" }}>{count(alerts, "standard_revision")} standards</span>
         </div>
       )}
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {shown.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl"
-              style={{ background: "#f1f5f9", border: "1px solid var(--border)" }}>
-              <BellOff size={28} style={{ color: "var(--muted-lt)" }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: "var(--text-md)" }}>No alerts yet</p>
-              <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Ingest a new failure and the agents will react here.</p>
-            </div>
+          <Empty />
+        ) : (
+          <div className="space-y-6">
+            {plant.length > 0 && (
+              <Section icon={Factory} title="From your plant"
+                subtitle="Grounded in documents you own" count={plant.length}>
+                {plant.map(a => <AlertCard key={a.id} alert={a} />)}
+              </Section>
+            )}
+
+            {web.length > 0 && (
+              <Section icon={Globe} title="From the web"
+                subtitle="External sources — not in your knowledge graph"
+                count={web.length}>
+                <div className="mb-3 flex items-start gap-2 rounded-lg px-3 py-2 text-[11px] leading-relaxed"
+                  style={{ background: "rgba(217,119,6,0.07)", color: "var(--warning)",
+                           border: "1px solid rgba(217,119,6,0.2)" }}>
+                  <Globe size={12} className="mt-0.5 flex-shrink-0" />
+                  <span>
+                    These were read on the open internet, not from your documents.
+                    Nothing here has entered the knowledge graph — treat each as a
+                    lead to verify, and load the source document to act on it.
+                  </span>
+                </div>
+                {web.map(a => <AlertCard key={a.id} alert={a} />)}
+              </Section>
+            )}
           </div>
-        ) : shown.map(a => <AlertCard key={a.id} alert={a} />)}
+        )}
       </div>
     </div>
   );
 }
+
+function Section({ icon: Icon, title, subtitle, count, children }) {
+  return (
+    <section>
+      <div className="mb-2.5 flex items-center gap-2">
+        <Icon size={13} style={{ color: "var(--muted)" }} />
+        <h2 className="text-[10px] font-semibold uppercase tracking-widest"
+          style={{ color: "var(--muted)" }}>
+          {title}
+        </h2>
+        <span className="badge badge-blue">{count}</span>
+        <span className="text-[10px]" style={{ color: "var(--muted-lt)" }}>{subtitle}</span>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function Empty() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+      <div className="grid h-16 w-16 place-items-center rounded-2xl"
+        style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}>
+        <BellOff size={28} style={{ color: "var(--muted-lt)" }} />
+      </div>
+      <div>
+        <p className="text-sm font-medium" style={{ color: "var(--text-md)" }}>No alerts yet</p>
+        <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Ingest a new failure and the agents will react here.</p>
+      </div>
+    </div>
+  );
+}
+
+const Divider = () => <span className="h-3 w-px" style={{ background: "var(--border)" }} />;
+const count = (alerts, kind) => alerts.filter(a => a.kind === kind).length;

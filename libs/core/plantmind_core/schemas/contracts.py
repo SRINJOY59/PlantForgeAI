@@ -101,22 +101,68 @@ class Citation(BaseModel):
     snippet: str
 
 
+class CorrectionNote(BaseModel):
+    """A document behind this answer that an engineer has already overturned.
+
+    Carried on the answer so the UI can say so out loud. The correction is in
+    the model's prompt either way, but "trust me, I read it" is not something a
+    reader can check - this is.
+    """
+    doc_id: str                                  # the document that was wrong
+    correction_id: str                           # the correction record
+    author: str
+    text: str
+
+
 class Answer(BaseModel):
     text: str
     citations: list[Citation]
-    mode: QueryMode
+    corrections: list[CorrectionNote] = Field(default_factory=list)
+    mode: QueryMode                              # how we retrieved
     confidence: Literal["high", "medium", "low"]
+    # Where the answer came from, checked against its own citations rather
+    # than asserted. "documents" = it cited sources we gave it. "general" = it
+    # cited nothing, so it answered from what the model knows - true for
+    # "what is barg", and not a fact about this plant. "unverified" = it cited
+    # a document that was never in its context, which is a fabricated
+    # provenance claim.
+    grounding: Literal["documents", "general", "unverified"] = "documents"
     graph_version: int                           # for cache freshness checks
+
+
+class Turn(BaseModel):
+    """One past exchange, sent back with a follow-up so it can be understood.
+
+    The client owns its session and hands the history in on every ask, so the
+    gateway and retrieval stay stateless: no session store to expire, and no
+    way for one user's thread to leak into another's.
+    """
+    question: str
+    answer: str = ""
+
+
+class WebSource(BaseModel):
+    """A page a watcher read on the open web.
+
+    Deliberately not a Citation. A Citation points at a document this plant
+    owns, sitting in our object store, that we parsed ourselves - the strongest
+    thing we have. A web page is somebody else's claim. Keeping them in
+    separate fields means the UI cannot accidentally present one as the other,
+    and neither can we.
+    """
+    url: str
+    title: str = ""
 
 
 class Alert(BaseModel):
     """Raised by the agents service onto the alert stream; the UI shows it."""
-    kind: Literal["failure_pattern", "compliance"]
+    kind: Literal["failure_pattern", "compliance", "standard_revision"]
     severity: Literal["info", "warning", "critical"]
     title: str
     body: str
     equipment: Optional[str] = None
     citations: list[Citation] = Field(default_factory=list)
+    web_sources: list[WebSource] = Field(default_factory=list)
     fingerprint: str                             # dedup key, one alert per fact
     graph_version: int = 0
     # grounding: did every tag the agent named actually appear in its

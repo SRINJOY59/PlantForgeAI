@@ -1,9 +1,28 @@
 x-service-base: &svc
   env_file: .env
-  depends_on: [redis, neo4j, minio]
+  # .env carries localhost URLs so the same file works for local dev
+  # (tools.serve); inside the compose network the infra is reachable by
+  # service name, and these overrides win over env_file.
+  environment:
+    NEO4J_URI: bolt://neo4j:7687
+    REDIS_URL: redis://redis:6379/0
+    MINIO_ENDPOINT: http://minio:9000
+    RETRIEVAL_URL: http://retrieval:8001
+  depends_on:
+    redis: { condition: service_healthy }
+    neo4j: { condition: service_healthy }
+    minio: { condition: service_started }
   restart: unless-stopped
-  volumes:
-    - ./libs/core:/opt/libs/core:ro
+
+# celery reads SIGTERM as a warm shutdown: finish the running task, ack it,
+# then exit. Docker SIGKILLs after stop_grace_period, and the 10s default is
+# nowhere near our 600s task_time_limit - a worker killed mid-task leaves it
+# unacked, and the redis broker will not redeliver until visibility_timeout,
+# an hour later. So the grace matches the task limit. Idle workers still exit
+# in about a second; this is a ceiling, not a wait.
+x-worker: &worker
+  <<: *svc
+  stop_grace_period: 600s
 
 services:
   # ---------- infrastructure ----------
@@ -14,12 +33,39 @@ services:
       NEO4J_PLUGINS: '["graph-data-science"]'
     ports: ["7474:7474", "7687:7687"]
     volumes: ["neo4j_data:/data", "./infra/neo4j:/init:ro"]
+    healthcheck:
+      # single $ so compose substitutes the password here at parse time: the
+      # neo4j container has no NEO4J_PASSWORD of its own (and NEO4J_* vars
+      # would be read as neo4j config settings, which this is not)
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p '${NEO4J_PASSWORD}' 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  # one-shot: applies constraints + the vector index once neo4j is up.
+  # Without this the graph has no indexes and vector search fails.
+  graph-init:
+    image: neo4j:5-community
+    depends_on:
+      neo4j: { condition: service_healthy }
+    environment:
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    volumes: ["./infra/neo4j:/init:ro"]
+    entrypoint: ["bash", "-c",
+      "cypher-shell -a bolt://neo4j:7687 -u neo4j -p $${NEO4J_PASSWORD} -f /init/init.cypher && echo schema applied"]
+    restart: "no"
 
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
     command: redis-server --appendonly yes
     volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   minio:
     image: minio/minio
@@ -42,7 +88,7 @@ services:
     ports: ["8000:8000"]
 
   ingestion:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -50,7 +96,7 @@ services:
     command: celery -A ingestion.tasks worker -Q q_classify -c 4
 
   extraction-wo:
-    <<: *svc
+    <<: *worker
     build: &extraction-build
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -58,17 +104,17 @@ services:
     command: celery -A extraction.tasks worker -Q q_parse_wo -c 8
 
   extraction-pnid:
-    <<: *svc
+    <<: *worker
     build: *extraction-build
     command: celery -A extraction.tasks worker -Q q_extract_pnid -c 4
 
   extraction-text:
-    <<: *svc
+    <<: *worker
     build: *extraction-build
     command: celery -A extraction.tasks worker -Q q_extract_text -c 32
 
   resolution:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
@@ -76,20 +122,26 @@ services:
     command: celery -A resolution.tasks worker -Q q_resolve -c 4
 
   graphd:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: graphd }
-    # single writer: concurrency MUST stay 1; beat drives flush + denoise
+    # single writer: concurrency MUST stay 1; beat drives flush + denoise.
+    # the autoscaler pins this too (ComposeFleet.SPECS), so it is guarded in
+    # two places.
     command: celery -A graphd.tasks worker -Q q_write -c 1 -B --loglevel=info
 
   connectors:
-    <<: *svc
+    <<: *worker
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: connectors }
+    # the connector definitions and the watched folder live outside the image
+    volumes:
+      - ./connectors.json:/srv/connectors.json:ro
+      - ./data/inbox:/srv/data/inbox
     # beat drives scheduled data-source syncs into the pipeline
     command: celery -A connectors.tasks worker -Q q_connectors -c 2 -B --loglevel=info
 
@@ -109,6 +161,28 @@ services:
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: agents }
     command: python -m agents.consumer
+
+  # watches queue depth and scales the worker services to match. It is the one
+  # service that talks to the docker daemon rather than to redis alone, which
+  # is why it gets the socket and its own image.
+  autoscaler:
+    build:
+      context: .
+      dockerfile: infra/docker/autoscaler.Dockerfile
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # the same compose file the host uses, so the two cannot drift. .env
+      # rides along because compose needs it to resolve ${NEO4J_PASSWORD}
+      # when it parses that file.
+      - ./docker-compose.yml:/srv/docker-compose.yml:ro
+      - ./.env:/srv/.env:ro
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+    command: python -m tools.autoscale
 
 volumes:
   neo4j_data:

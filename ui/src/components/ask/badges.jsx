@@ -6,11 +6,11 @@ const MODE_CONFIG = {
 const CONF_CONFIG = {
   high:   { bg: "#dcfce7", color: "#166534" },
   medium: { bg: "#fef3c7", color: "#92400e" },
-  low:    { bg: "#f1f5f9", color: "#475569" },
+  low:    { bg: "var(--bg-subtle)", color: "var(--text-md)" },
 };
 
 export function ModeBadge({ mode }) {
-  const cfg = MODE_CONFIG[mode] ?? { label: mode ?? "—", bg: "#f1f5f9", color: "#475569" };
+  const cfg = MODE_CONFIG[mode] ?? { label: mode ?? "—", bg: "var(--bg-subtle)", color: "var(--text-md)" };
   return <span className="badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>;
 }
 

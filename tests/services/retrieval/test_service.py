@@ -50,11 +50,15 @@ def test_causal_question_answers_through_paths():
 def test_no_seeds_falls_to_vector_mode():
     reader = FakeReader()
     reader.vector_results = [dict(CHUNK)]
+    # cite the doc the chunk actually came from: a source is listed because the
+    # answer leaned on it, not because retrieval happened to fetch it
+    llm = FakeLLM("It discharges to flare [doc:doc14]")
 
-    answer = ask(reader, "what happens when a relief valve lifts?")
+    answer = ask(reader, "what happens when a relief valve lifts?", llm)
 
     assert answer.mode == QueryMode.VECTOR
     assert answer.citations[0].doc_id == "doc14"     # parsed from chunk id
+    assert answer.grounding == "documents"
 
 
 def test_single_seed_uses_local_mode():
@@ -79,8 +83,9 @@ def test_path_mode_without_paths_degrades_to_vector():
     reader = k301_reader()
     reader.paths = []                                # graph has no route
     reader.vector_results = [dict(CHUNK)]
+    llm = FakeLLM("PSV-204 lifted and discharged to flare [doc:doc14]")
 
-    answer = ask(reader, "Could a K-301 trip cause PSV-204 to lift?")
+    answer = ask(reader, "Could a K-301 trip cause PSV-204 to lift?", llm)
 
     assert answer.mode == QueryMode.VECTOR           # honest fallback
     assert answer.citations

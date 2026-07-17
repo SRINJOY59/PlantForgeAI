@@ -11,6 +11,8 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from plantmind_core.schemas import Turn
+
 from retrieval.service import RetrievalService
 
 _service = None
@@ -28,6 +30,8 @@ app = FastAPI(title="plantmind-retrieval", lifespan=lifespan)
 
 class AskRequest(BaseModel):
     question: str
+    # the client sends its own thread back; nothing is stored here
+    history: list[Turn] = []
 
 
 def _sse(event: str, data: dict) -> str:
@@ -36,19 +40,26 @@ def _sse(event: str, data: dict) -> str:
 
 @app.post("/ask")
 async def ask(request: AskRequest):
-    answer = await _service.ask(request.question)
+    answer = await _service.ask(request.question, request.history)
     return answer.model_dump(mode="json")
 
 
 @app.post("/ask/stream")
 async def ask_stream(request: AskRequest):
     async def events():
-        async for kind, payload in _service.ask_stream(request.question):
+        async for kind, payload in _service.ask_stream(request.question,
+                                                       request.history):
             if kind == "token":
                 yield _sse("token", {"text": payload})
             else:
                 yield _sse("done", payload.model_dump(mode="json"))
     return StreamingResponse(events(), media_type="text/event-stream")
+
+
+@app.get("/graph")
+def graph(limit: int = 400):
+    """The plant graph for the explorer and the documents view."""
+    return _service.graph_snapshot(limit)
 
 
 @app.get("/health")

@@ -23,6 +23,8 @@ class Routes:
     extract_manual = Route("extraction.tasks.extract_manual", "q_extract_text")
     extract_email = Route("extraction.tasks.extract_email", "q_extract_text")
     extract_image = Route("extraction.tasks.extract_image", "q_extract_pnid")
+    extract_correction = Route("extraction.tasks.extract_correction",
+                               "q_extract_text")
     resolve = Route("resolution.tasks.resolve", "q_resolve")
     flush = Route("graphd.tasks.flush_write_buffer", "q_write")
     denoise = Route("graphd.tasks.run_denoise", "q_write")

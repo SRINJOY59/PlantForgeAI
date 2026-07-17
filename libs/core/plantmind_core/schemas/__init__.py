@@ -5,16 +5,19 @@ from plantmind_core.schemas.contracts import (
     CandidateNode,
     CandidateSubgraph,
     Citation,
+    CorrectionNote,
     EdgeType,
     GraphDelta,
     NodeType,
     Provenance,
     QueryMode,
     Source,
+    Turn,
+    WebSource,
 )
 
 __all__ = [
     "Alert", "Answer", "CandidateEdge", "CandidateNode", "CandidateSubgraph",
-    "Citation", "EdgeType", "GraphDelta", "NodeType", "Provenance", "QueryMode",
-    "Source",
+    "Citation", "CorrectionNote", "EdgeType", "GraphDelta", "NodeType",
+    "Provenance", "QueryMode", "Source", "Turn", "WebSource",
 ]

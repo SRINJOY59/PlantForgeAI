@@ -64,6 +64,23 @@ class AgentReader:
             "ORDER BY w.date DESC LIMIT $limit",
             tag=tag, limit=limit)
 
+    def governing_standards(self) -> list:
+        """Every standard the plant is actually held to, and what it holds.
+
+        This is the whole point of watching revisions here rather than
+        subscribing to a newsletter: a newsletter says OISD-STD-129 changed,
+        this says which fourteen vessels that lands on and when each was last
+        inspected against it.
+        """
+        return self._run(
+            "MATCH (e:Entity)-[g:GOVERNED_BY]->(r:RegulationClause) "
+            "RETURN r.surface_form AS standard, "
+            "collect(DISTINCT e.surface_form) AS equipment, "
+            "count(DISTINCT e) AS affected, "
+            "max(g.date) AS last_inspection, "
+            "[d IN collect(DISTINCT g.doc_id) WHERE d IS NOT NULL] AS docs "
+            "ORDER BY affected DESC")
+
     def overdue_inspections(self, today: str) -> list:
         return self._run(
             "MATCH (e:Entity)-[g:GOVERNED_BY]->(r:RegulationClause) "

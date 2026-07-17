@@ -17,6 +17,10 @@ class DocKind(str, Enum):
     MANUAL = "manual"    # long structured documents (OEM manuals, handbooks)
     EMAIL = "email"
     IMAGE = "image"      # standalone images: charts, nameplates, scans
+    # an engineer telling us we got something wrong. A document like any other:
+    # it has an author, a date and a body, so it takes the same road into the
+    # graph - only its provenance says HUMAN instead of DOCUMENT.
+    CORRECTION = "correction"
 
 
 class Flow:
@@ -29,6 +33,7 @@ class Flow:
         DocKind.MANUAL: Routes.extract_manual,
         DocKind.EMAIL: Routes.extract_email,
         DocKind.IMAGE: Routes.extract_image,
+        DocKind.CORRECTION: Routes.extract_correction,
     }
 
     after_extraction = Routes.resolve

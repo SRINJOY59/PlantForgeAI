@@ -40,6 +40,7 @@ class FakeReader:
         self.text_chunks = []       # chunks_containing results
         self.vector_results = []
         self.relations = []
+        self.corrections = []       # corrections_of results
 
     def entity_by_surface(self, surface):
         return self.entities.get(surface)
@@ -59,6 +60,9 @@ class FakeReader:
 
     def relations_of(self, node_id, types, limit=40):
         return self.relations[:limit]
+
+    def corrections_of(self, doc_ids):
+        return [c for c in self.corrections if c["doc_id"] in set(doc_ids)]
 
     def overdue_inspections(self, today):
         return []
@@ -91,6 +95,12 @@ class FakeLLM:
         self.prompts.append(messages[-1]["content"])
         for word in self.reply.split(" "):
             yield word + " "
+
+    async def structured(self, messages, schema, tier=None, max_tokens=None):
+        # only the condenser asks for this, and only when a call carries
+        # history; a question asked with none never gets here
+        self.prompts.append(messages[-1]["content"])
+        return schema(is_follow_up=True, question="condensed")
 
 
 class FakeEmbedder:

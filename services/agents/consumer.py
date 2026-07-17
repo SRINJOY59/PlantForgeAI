@@ -16,34 +16,50 @@ from plantmind_core.telemetry import get_logger
 
 from agents.investigator import InvestigatorAgent
 from agents.reader import AgentReader
+from agents.standards import StandardsWatcher, WebRevisionSource
 from agents.watchers import ComplianceScanner, FailureWatcher
 
 log = get_logger("agents.consumer")
 
 CURSOR = "agents-deltas"
 COMPLIANCE_INTERVAL_S = 3600
+# standards move a few times a decade, and each check is a billed web search
+# against the open internet. Daily is already generous.
+STANDARDS_INTERVAL_S = 86400
 
 
 class AgentsRuntime:
     def __init__(self, bus, reader, investigator=None, cache=None,
                  embedder=None, compliance_interval=COMPLIANCE_INTERVAL_S,
+                 standards=None, standards_interval=STANDARDS_INTERVAL_S,
                  block_ms=15000):
         self._bus = bus
         self._failures = FailureWatcher(reader)
         self._investigator = investigator or InvestigatorAgent(reader)
         self._compliance = ComplianceScanner(reader)
+        # optional: a plant on an air-gapped network has no web to watch, and
+        # the rest of the runtime must not care
+        self._standards = standards
         self._cache = cache            # speculative pre-fill + invalidation
         self._embedder = embedder
         self._interval = compliance_interval
+        self._standards_interval = standards_interval
         self._block_ms = block_ms
         self._last_compliance = 0.0
+        self._last_standards = 0.0
 
     @classmethod
     def from_settings(cls) -> "AgentsRuntime":
         from plantmind_core.cache import AnswerCache
-        from plantmind_core.llm import get_embedder
-        return cls(RedisBus.from_settings(), AgentReader.from_settings(),
-                   cache=AnswerCache.from_settings(), embedder=get_embedder())
+        from plantmind_core.config import get_settings
+        from plantmind_core.llm import get_embedder, get_llm
+
+        bus = RedisBus.from_settings()
+        reader = AgentReader.from_settings()
+        standards = (StandardsWatcher(reader, bus, WebRevisionSource(get_llm()))
+                     if get_settings().standards_watch_enabled else None)
+        return cls(bus, reader, cache=AnswerCache.from_settings(),
+                   embedder=get_embedder(), standards=standards)
 
     def run(self):
         log.info("agents runtime started")
@@ -58,6 +74,9 @@ class AgentsRuntime:
             self._bus.set_cursor(CURSOR, entry_id)
         if time.time() - self._last_compliance >= self._interval:
             self.run_compliance()
+        if self._standards and (time.time() - self._last_standards
+                                >= self._standards_interval):
+            self.run_standards_watch()
 
     def _on_delta(self, payload: str):
         delta = GraphDelta.model_validate_json(payload)
@@ -114,6 +133,19 @@ class AgentsRuntime:
         self._last_compliance = time.time()
         alerts = self._compliance.scan(date.today().isoformat(),
                                        self._bus.graph_version())
+        self._emit(alerts)
+
+    def run_standards_watch(self):
+        """Reaches the open internet, so it is the one sweep allowed to fail
+        without taking the runtime with it: a DNS blip on a daily check is not
+        a reason to stop watching the graph."""
+        self._last_standards = time.time()
+        try:
+            alerts = asyncio.run(
+                self._standards.scan(self._bus.graph_version()))
+        except Exception as e:
+            log.warning("standards watch failed", error=str(e)[:160])
+            return
         self._emit(alerts)
 
     def _emit(self, alerts: list):

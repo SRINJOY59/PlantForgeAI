@@ -4,15 +4,22 @@ here: it forwards the request and relays the SSE stream unchanged."""
 import httpx
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from plantmind_core.schemas import Turn
 
 from gateway.deps import get_http
 
 router = APIRouter()
 
+# a thread only has to reach back far enough to resolve a reference, and the
+# body is user-supplied - cap it here rather than trust the client
+MAX_HISTORY = 8
+
 
 class AskRequest(BaseModel):
     question: str
+    history: list[Turn] = Field(default_factory=list, max_length=MAX_HISTORY)
 
 
 @router.post("/ask")

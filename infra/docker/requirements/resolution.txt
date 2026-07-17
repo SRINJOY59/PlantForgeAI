@@ -1,2 +1,2 @@
-celery[redis]>=5.4
-redis>=5.0
+﻿celery[redis]>=5.4
+redis>=5.0,<9

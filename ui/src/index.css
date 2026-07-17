@@ -5,10 +5,13 @@
 @tailwind utilities;
 
 @layer base {
+  /* Every colour in the app resolves through these tokens - that is what
+     makes the dark theme a variable swap rather than a rewrite. */
   :root {
     --bg-base:    #f0f4f8;
     --bg-panel:   #ffffff;
     --bg-surface: #f8fafc;
+    --bg-subtle:  #f1f5f9;
     --border:     #e2e8f0;
     --border-md:  #cbd5e1;
     --blue:       #2563eb;
@@ -22,6 +25,29 @@
     --success:    #16a34a;
     --warning:    #d97706;
     --danger:     #dc2626;
+    --shadow:     rgba(15, 23, 42, 0.08);
+  }
+
+  /* Control-room dark: desaturated navy, not pure black - long shifts */
+  .dark {
+    --bg-base:    #0a0f1a;
+    --bg-panel:   #131c2e;
+    --bg-surface: #0f1725;
+    --bg-subtle:  #1c2942;
+    --border:     #23304a;
+    --border-md:  #334765;
+    --blue:       #4f8ef7;
+    --blue-light: #1b2f52;
+    --blue-mid:   #2f6fd0;
+    --blue-dark:  #7aa9f9;   /* hover brightens in dark instead of darkening */
+    --text:       #e8edf5;
+    --text-md:    #c3cede;
+    --muted:      #8b9ab0;
+    --muted-lt:   #6b7c94;
+    --success:    #34d399;
+    --warning:    #fbbf24;
+    --danger:     #f87171;
+    --shadow:     rgba(0, 0, 0, 0.5);
   }
 
   html, body, #root {
@@ -33,13 +59,14 @@
     background-color: var(--bg-base);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* Clean scrollbar */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: #f1f5f9; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  ::-webkit-scrollbar-track { background: var(--bg-subtle); }
+  ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted-lt); }
 
   * { box-sizing: border-box; }
 }
@@ -51,10 +78,10 @@
     border: 1px solid var(--border);
   }
   .card {
-    background: #ffffff;
+    background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px var(--shadow);
   }
   .card:hover {
     border-color: var(--blue-mid);
@@ -86,20 +113,20 @@
     color: var(--muted);
     background: transparent;
   }
-  .btn-ghost:hover { background: #f1f5f9; color: var(--text); }
+  .btn-ghost:hover { background: var(--bg-subtle); color: var(--text); }
 
   .btn-outline {
     @apply btn;
-    background: #fff;
+    background: var(--bg-panel);
     color: var(--blue);
-    border: 1px solid #bfdbfe;
+    border: 1px solid var(--blue-mid);
   }
-  .btn-outline:hover { background: #eff6ff; border-color: var(--blue); }
+  .btn-outline:hover { background: var(--blue-light); border-color: var(--blue); }
 
   /* ── Inputs ── */
   .input {
     @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all duration-150;
-    background: #fff;
+    background: var(--bg-panel);
     border-color: var(--border-md);
     color: var(--text);
   }
@@ -118,7 +145,15 @@
   .badge-red    { background: #fee2e2; color: #991b1b; }
   .badge-green  { background: #dcfce7; color: #166534; }
   .badge-purple { background: #ede9fe; color: #5b21b6; }
-  .badge-gray   { background: #f1f5f9; color: #475569; }
+  .badge-gray   { background: var(--bg-subtle); color: var(--text-md); }
+
+  /* in dark, semantic chips become translucent tints of themselves so they
+     read as accents rather than glowing light blocks */
+  .dark .badge-blue   { background: rgba(59,130,246,0.16);  color: #93c5fd; }
+  .dark .badge-amber  { background: rgba(245,158,11,0.16);  color: #fcd34d; }
+  .dark .badge-red    { background: rgba(239,68,68,0.16);   color: #fca5a5; }
+  .dark .badge-green  { background: rgba(34,197,94,0.16);   color: #86efac; }
+  .dark .badge-purple { background: rgba(139,92,246,0.16);  color: #c4b5fd; }
 
   /* ── Page sections ── */
   .page-header { @apply flex items-center gap-3 mb-6; }

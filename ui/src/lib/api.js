@@ -1,13 +1,37 @@
-// Client for the PlantMind gateway. Streaming endpoints use SSE: /ask/stream
-// over fetch (POST bodies rule out EventSource), /alerts over EventSource.
+// Client for the PlantMind gateway. Every call carries the Supabase JWT; the
+// gateway verifies it (this side only attaches it). Streaming uses SSE over
+// fetch rather than EventSource - EventSource cannot send an Authorization
+// header, and a token in the query string would leak into logs and history.
+
+import { supabase } from "./supabase";
 
 const BASE = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8000";
 
-export async function ask(question) {
+async function authHeaders() {
+  if (!supabase) return {};                 // demo mode: gateway is open
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// The thread travels with the question - the backend keeps no session, so a
+// follow-up like "what about its sibling?" is only answerable if we send the
+// turns that gave it meaning. Last few only: the gateway caps it anyway, and
+// older turns just drag stale tags into a question that has moved on.
+const HISTORY_TURNS = 4;
+
+export function toHistory(turns) {
+  return turns
+    .filter((t) => t.answer && !t.error)      // a failed turn explains nothing
+    .slice(-HISTORY_TURNS)
+    .map((t) => ({ question: t.question, answer: t.text }));
+}
+
+export async function ask(question, history = []) {
   const res = await fetch(`${BASE}/ask`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ question, history }),
   });
   if (!res.ok) throw new Error(`ask failed: ${res.status}`);
   return res.json();
@@ -15,11 +39,11 @@ export async function ask(question) {
 
 // Streams the answer. Calls onToken(text) for each delta and returns the
 // final answer object (citations, mode, confidence) from the 'done' event.
-export async function askStream(question, onToken, signal) {
+export async function askStream(question, onToken, history = [], signal) {
   const res = await fetch(`${BASE}/ask/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ question, history }),
     signal,
   });
   if (!res.ok) throw new Error(`stream failed: ${res.status}`);
@@ -46,22 +70,79 @@ export async function askStream(question, onToken, signal) {
   return done;
 }
 
-export function subscribeAlerts(onAlert) {
-  const source = new EventSource(`${BASE}/alerts`);
-  source.addEventListener("alert", (e) => onAlert(JSON.parse(e.data)));
-  return () => source.close();
+// after=0 replays the alerts already on the stream before following live
+// ones; the default ('$') would only ever show alerts raised after connecting,
+// so a freshly opened feed would look empty.
+//
+// fetch instead of EventSource so the JWT rides in a header. EventSource
+// reconnects on its own; here we do it explicitly, resuming from the last
+// alert id so a dropped connection doesn't replay or skip.
+export function subscribeAlerts(onAlert, after = "0") {
+  const control = new AbortController();
+  let cursor = after;
+
+  (async () => {
+    while (!control.signal.aborted) {
+      try {
+        const res = await fetch(
+          `${BASE}/alerts?after=${encodeURIComponent(cursor)}`,
+          { headers: await authHeaders(), signal: control.signal });
+        if (!res.ok) throw new Error(`alerts failed: ${res.status}`);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const frames = buffer.split("\n\n");
+          buffer = frames.pop() || "";
+          for (const frame of frames) {
+            const event = parseSse(frame);
+            if (event?.name !== "alert") continue;
+            cursor = event.data.id ?? cursor;
+            onAlert(event.data);
+          }
+        }
+      } catch (e) {
+        if (control.signal.aborted) return;
+      }
+      await new Promise((r) => setTimeout(r, 3000));   // backoff, then resume
+    }
+  })();
+
+  return () => control.abort();
 }
 
 export async function ingest(file) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE}/ingest`, { method: "POST", body: form });
+  // no Content-Type: the browser sets the multipart boundary itself
+  const res = await fetch(`${BASE}/ingest`, {
+    method: "POST", body: form, headers: await authHeaders(),
+  });
   if (!res.ok) throw new Error(`ingest failed: ${res.status}`);
   return res.json();
 }
 
+// An engineer overturning something we said. It goes in as a document and
+// comes back as graph facts at the human tier - so this is the one call in the
+// app that changes what the plant knows. The author is not sent: the gateway
+// takes it off the verified token.
+export async function submitCorrection({ question, answer, correction, citedDocs }) {
+  const res = await fetch(`${BASE}/corrections`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ question, answer, correction,
+                           cited_docs: citedDocs ?? [] }),
+  });
+  if (!res.ok) throw new Error(`correction failed: ${res.status}`);
+  return res.json();
+}
+
 export async function metrics() {
-  const res = await fetch(`${BASE}/metrics`);
+  const res = await fetch(`${BASE}/metrics`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`metrics failed: ${res.status}`);
   return res.json();
 }
@@ -70,8 +151,18 @@ export function documentUrl(docId) {
   return `${BASE}/documents/${docId}`;
 }
 
+// /documents needs the JWT, but an <iframe src> can't carry a header - so
+// fetch the bytes with auth and hand back a blob URL. Caller must revoke it.
+export async function fetchDocumentUrl(docId) {
+  const res = await fetch(`${BASE}/documents/${docId}`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`document failed: ${res.status}`);
+  return URL.createObjectURL(await res.blob());
+}
+
 export async function getGraph() {
-  const res = await fetch(`${BASE}/graph`);
+  const res = await fetch(`${BASE}/graph`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`graph failed: ${res.status}`);
   return res.json();
 }

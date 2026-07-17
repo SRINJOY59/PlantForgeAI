@@ -3,6 +3,7 @@ import pytest
 
 from plantmind_core import keys
 from plantmind_core.bus import RedisBus
+from plantmind_core.bus.redis_bus import MAX_BLOCK_MS, SOCKET_TIMEOUT_S
 
 
 @pytest.fixture
@@ -48,3 +49,43 @@ def test_parked_subgraphs_kept_separate_from_buffer(bus):
 
     assert bus.take_subgraphs(10) == ["good"]
     assert bus._r.lrange(keys.WRITE_DLQ, 0, -1) == ["bad"]
+
+
+def test_socket_outlasts_the_longest_block():
+    # the ordering that matters: a socket timeout inside the block hangs up on
+    # redis mid-wait and raises while redis is behaving perfectly
+    assert SOCKET_TIMEOUT_S * 1000 > MAX_BLOCK_MS
+
+
+def test_the_client_sets_its_own_socket_timeout(monkeypatch):
+    """The bug this pins: the client used to inherit redis-py's default, which
+    was None on <=5 and 5s on 8.0 - shorter than our 15s block. A rebuild that
+    resolved a newer redis turned every idle read into a crash."""
+    captured = {}
+
+    def fake_from_url(url, **kwargs):
+        captured.update(kwargs)
+        return fakeredis.FakeRedis(decode_responses=True)
+
+    monkeypatch.setattr("plantmind_core.bus.redis_bus.redis.Redis.from_url",
+                        fake_from_url)
+    RedisBus.from_settings()
+
+    assert captured["socket_timeout"] == SOCKET_TIMEOUT_S
+    assert captured["socket_timeout"] * 1000 > MAX_BLOCK_MS
+
+
+def test_a_block_longer_than_the_socket_is_refused_not_attempted(bus):
+    with pytest.raises(ValueError, match="exceeds MAX_BLOCK_MS"):
+        bus.read_deltas("0", MAX_BLOCK_MS + 1)
+
+
+def test_blocks_up_to_the_maximum_are_passed_through(bus):
+    # both production callers sit exactly on the limit, so the guard must not
+    # be off-by-one against them. Records the call rather than making it -
+    # fakeredis honours BLOCK, and a real 15s wait here would be 15s of suite.
+    seen = {}
+    bus._r.xread = lambda streams, **kw: seen.update(streams=streams, **kw) or []
+
+    assert bus.read_deltas("$", MAX_BLOCK_MS) == []
+    assert seen["block"] == MAX_BLOCK_MS

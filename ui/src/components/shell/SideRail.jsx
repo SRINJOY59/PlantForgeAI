@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import {
-  Bell, GitBranch, MessageSquare, FileStack, ShieldCheck, Plug, Leaf,
+  Bell, GitBranch, MessageSquare, FileStack, ShieldCheck, Plug, Leaf, UserRound,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 
@@ -11,6 +11,7 @@ const nav = [
   { to: "/app/documents",  icon: FileStack,     label: "Documents"   },
   { to: "/app/compliance", icon: ShieldCheck,   label: "Compliance"  },
   { to: "/app/connectors", icon: Plug,          label: "Connectors"  },
+  { to: "/app/profile",    icon: UserRound,     label: "Profile"     },
 ];
 
 export default function SideRail() {
@@ -22,7 +23,7 @@ export default function SideRail() {
       style={{
         width: "220px",
         minWidth: "220px",
-        background: "#ffffff",
+        background: "var(--bg-panel)",
         borderRight: "1px solid var(--border)",
       }}
     >

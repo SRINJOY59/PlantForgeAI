@@ -1,17 +1,28 @@
 import { useNavigate } from "react-router-dom";
 import { LogOut, Leaf, ChevronDown, Moon, Sun } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
+import { useProfile } from "../../state/ProfileContext";
+import { displayName, initials } from "../../lib/profile";
 import { useTheme } from "../../lib/theme";
 import FreshnessPill from "./FreshnessPill";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const UNITS = ["All units", "Unit 100", "Unit 200", "Unit 300"];
 
 export default function TopBar() {
   const { dark, toggle } = useTheme();
   const { user, signOut, demoMode } = useAuth();
+  const { profile } = useProfile();
   const nav = useNavigate();
   const [unit, setUnit] = useState("All units");
+
+  // the unit someone owns is the unit they almost always mean, so the filter
+  // starts there rather than at "All units"
+  useEffect(() => {
+    if (profile?.home_unit && UNITS.includes(profile.home_unit)) {
+      setUnit(profile.home_unit);
+    }
+  }, [profile?.home_unit]);
 
   async function handleSignOut() {
     await signOut();
@@ -22,7 +33,7 @@ export default function TopBar() {
     <header
       className="flex h-14 flex-shrink-0 items-center gap-4 px-4"
       style={{
-        background: "#ffffff",
+        background: "var(--bg-panel)",
         borderBottom: "1px solid var(--border)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
       }}
@@ -73,37 +84,42 @@ export default function TopBar() {
       </button>
 
       {/* User section */}
-      <div
-        className="flex items-center gap-3 border-l pl-3"
+      <button
+        onClick={() => nav("/app/profile")}
+        className="flex items-center gap-3 border-l pl-3 text-left transition-opacity hover:opacity-80"
         style={{ borderColor: "var(--border)" }}
+        title="Your profile"
       >
         <div className="hidden sm:block text-right">
           <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>
-            {user?.email ?? "Demo user"}
+            {displayName(profile, user)}
           </div>
           <div
             className="text-[10px] font-medium"
-            style={{ color: demoMode ? "var(--warning)" : "var(--success)" }}
+            style={{ color: profile?.job_title ? "var(--muted)"
+                            : demoMode ? "var(--warning)" : "var(--success)" }}
           >
-            {demoMode ? "demo mode" : "● signed in"}
+            {profile?.job_title
+              ? [profile.job_title, profile.home_unit].filter(Boolean).join(" · ")
+              : demoMode ? "demo mode" : "● signed in"}
           </div>
         </div>
 
         <div
-          className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-xs font-bold uppercase"
+          className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-[10px] font-bold uppercase"
           style={{
             background: "#dbeafe",
             color: "var(--blue)",
             border: "1px solid #bfdbfe",
           }}
         >
-          {(user?.email?.[0] ?? "D")}
+          {initials(profile, user)}
         </div>
+      </button>
 
-        <button onClick={handleSignOut} className="btn-ghost px-2 py-1.5" title="Sign out">
-          <LogOut size={15} />
-        </button>
-      </div>
+      <button onClick={handleSignOut} className="btn-ghost px-2 py-1.5" title="Sign out">
+        <LogOut size={15} />
+      </button>
     </header>
   );
 }

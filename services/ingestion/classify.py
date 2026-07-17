@@ -11,6 +11,9 @@ IMAGE_EXTS = ("png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff")
 MAIL_HEADER_RE = re.compile(r"^(From|To|Subject|Received|Return-Path|Date):",
                             re.MULTILINE)
 MANUAL_MIN_PAGES = 16
+# the gateway names correction documents, so this is a contract with it rather
+# than a guess about a user's filename
+CORRECTION_SUFFIX = ".correction.md"
 
 
 class Classifier:
@@ -25,6 +28,10 @@ class Classifier:
         name = filename.lower()
         ext = name.rsplit(".", 1)[-1] if "." in name else ""
 
+        # first: a correction is prose, and every prose rule below would claim
+        # it. It must reach the lane that marks its provenance HUMAN.
+        if name.endswith(CORRECTION_SUFFIX):
+            return DocKind.CORRECTION
         if ext in ("csv", "tsv", "xlsx", "xls", "xlsm"):
             return DocKind.TABLE
         if ext in ("eml", "msg") or (ext == "" and MAIL_HEADER_RE.search(sniff)):

@@ -1,9 +1,16 @@
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // Matches [doc:ID], [doc:ID p3], [ID], or [ID p3]
 // Assuming ID is at least 8 alphanumeric/underscore/dash chars
 const CITE_RE = /\[(?:doc:)?([a-zA-Z0-9_-]{8,})(?:\s*p(\d+))?\]/g;
+
+// react-markdown only trusts http/https/irc/mailto/xmpp and rewrites anything
+// else to "" - which silently turned every citation into <a href=""> pointing
+// at the current page. Let our own scheme through and hand everything else to
+// the stock sanitiser, which is the part that stops javascript: URLs.
+const urlTransform = (url) =>
+  url.startsWith("cite:") ? url : defaultUrlTransform(url);
 
 export default function AnswerText({ text, onCite }) {
   const processedText = (text || "").replace(CITE_RE, (match, docId, page) => {
@@ -16,6 +23,7 @@ export default function AnswerText({ text, onCite }) {
     <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-p:leading-relaxed prose-li:my-0.5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        urlTransform={urlTransform}
         components={{
           a: ({ node, href, children, ...props }) => {
             if (href && href.startsWith("cite:")) {

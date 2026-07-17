@@ -97,7 +97,7 @@ export function AuthShell({ title, subtitle, children, foot }) {
         <div
           className="rounded-2xl p-8"
           style={{
-            background: "#ffffff",
+            background: "var(--bg-panel)",
             border: "1px solid var(--border)",
             boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
           }}

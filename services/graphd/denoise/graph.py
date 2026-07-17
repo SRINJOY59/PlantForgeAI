@@ -40,9 +40,19 @@ class DenoiseGraph:
     # -------------------------------------------------------------- writes
     def prune_node(self, node_id: str) -> int:
         """Detach a mistyped/noise node. Reversible in spirit: we only ever
-        call this on nodes the deterministic doc-ref rule flags."""
+        call this on nodes the deterministic doc-ref rule flags.
+
+        Except when a person is involved. This is the one irreversible write
+        in the system, and an agent quietly deleting something an engineer
+        told us is the fastest way to lose their trust in the whole thing -
+        so a node touched by a human correction is not ours to remove, even
+        if our rule thinks it is noise. If the rule and the engineer disagree,
+        the engineer is right.
+        """
         rows = self._run(
-            "MATCH (n {id: $id}) DETACH DELETE n RETURN 1 AS done", id=node_id)
+            "MATCH (n {id: $id}) "
+            "WHERE NOT EXISTS { MATCH (n)-[r]-() WHERE r.source = 'human' } "
+            "DETACH DELETE n RETURN 1 AS done", id=node_id)
         return len(rows)
 
     def merge_failure_modes(self, canonical_id: str, variant_ids: list) -> int:

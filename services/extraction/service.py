@@ -1,5 +1,6 @@
 import asyncio
 
+from plantmind_core import corrections
 from plantmind_core.schemas import CandidateSubgraph
 from plantmind_core.storage import ObjectStore
 
@@ -13,7 +14,8 @@ class ExtractionService:
     the pipeline topology's decision, applied by the task adapter."""
 
     def __init__(self, store: ObjectStore, table=None, text=None,
-                 pnid=None, manual=None, email=None, image=None):
+                 pnid=None, manual=None, email=None, image=None,
+                 correction=None):
         self._store = store
         self._table = table
         self._text = text
@@ -21,11 +23,13 @@ class ExtractionService:
         self._manual = manual
         self._email = email
         self._image = image
+        self._correction = correction
 
     @classmethod
     def from_settings(cls) -> "ExtractionService":
         from plantmind_core.llm import get_embedder, get_llm
 
+        from extraction.correction.extractor import CorrectionExtractor
         from extraction.imaging.extractor import ImageLane
         from extraction.mail.extractor import EmailExtractor
         from extraction.manual.extractor import ManualExtractor
@@ -42,6 +46,7 @@ class ExtractionService:
             manual=ManualExtractor(llm, embedder),
             email=EmailExtractor(text),
             image=ImageLane(llm, embedder, pnid, text),
+            correction=CorrectionExtractor(llm),
         )
 
     # ------------------------------------------------------------- handlers
@@ -69,6 +74,14 @@ class ExtractionService:
     def extract_image(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
         return asyncio.run(self._image.extract(*doc, data))
+
+    def extract_correction(self, payload: dict) -> CandidateSubgraph:
+        (doc_id, content_hash, _), data = self._fetch(payload)
+        c = corrections.parse(data.decode("utf-8", errors="replace"))
+        return asyncio.run(self._correction.extract(
+            doc_id=doc_id, content_hash=content_hash, question=c.question,
+            answer=c.answer, correction=c.correction, author=c.author,
+            wrong_doc_ids=c.cited_docs))
 
     def _fetch(self, payload: dict):
         """-> ((doc_id, content_hash, filename), raw bytes)"""

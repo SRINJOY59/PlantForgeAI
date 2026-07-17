@@ -1,8 +1,11 @@
-from plantmind_core.schemas import Answer, QueryMode
+from dataclasses import dataclass, field
+
+from plantmind_core.schemas import Answer, CorrectionNote, QueryMode
 from plantmind_core.telemetry import get_logger
 
 from retrieval.answerer import Answerer
 from retrieval.assembler import ContextAssembler
+from retrieval.condenser import QuestionCondenser
 from retrieval.linker import QueryLinker
 from retrieval.models import Evidence
 from retrieval.pathfinder import PathFinder
@@ -23,17 +26,33 @@ DIGEST_WORDS = ("overdue", "statutory", "inspection", "compliance",
                 "most frequent", "most common", "how many", "which equipment")
 
 
+@dataclass
+class Prepared:
+    """Everything retrieval worked out before a token was generated. A tuple
+    stopped being readable at four fields and this needed a fifth."""
+    mode: QueryMode
+    context: str
+    evidence: list
+    cited: list
+    corrections: list = field(default_factory=list)
+
+
 class RetrievalService:
     """Three retrieval modes behind one ask(): vector for single facts,
     local for asset-centric questions, PathRAG for causal/multi-entity
     reasoning. The router picks; every mode ends in the same answerer. A
-    semantic answer cache short-circuits repeated questions."""
+    semantic answer cache short-circuits repeated questions.
+
+    A follow-up is condensed into a standalone question before any of that
+    runs, so the rest of the pipeline never has to know a conversation
+    existed."""
 
     def __init__(self, reader, llm, embedder, bus=None, cache=None):
         self._reader = reader
         self._embedder = embedder
         self._bus = bus
         self._cache = cache
+        self._condenser = QuestionCondenser(llm)
         self._linker = QueryLinker(reader)
         self._router = ModeRouter()
         self._pathfinder = PathFinder(reader)
@@ -53,22 +72,27 @@ class RetrievalService:
                    bus=RedisBus.from_settings(),
                    cache=AnswerCache.from_settings())
 
-    async def ask(self, question: str) -> Answer:
+    async def ask(self, question: str, history: list | None = None) -> Answer:
+        question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
         cached = self._cache_get(embedding)
         if cached:
             return cached
 
-        mode, context, evidence, cited = await self._prepare(question, embedding)
+        prepared = await self._prepare(question, embedding)
         answer = await self._answerer.answer(
-            question, context, evidence, mode, self._graph_version())
-        self._cache_put(question, embedding, answer, cited)
+            question, prepared.context, prepared.evidence, prepared.mode,
+            self._graph_version(), prepared.corrections)
+        self._cache_put(question, embedding, answer, prepared.cited)
         return answer
 
-    async def ask_stream(self, question: str):
+    async def ask_stream(self, question: str, history: list | None = None):
         """Yields ('token', text) deltas while generating, then a final
         ('done', Answer). A cache hit streams the cached text so the client
         path is identical."""
+        # everything below - the cache key included - is about the standalone
+        # question, never the words the user typed into a thread
+        question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
         cached = self._cache_get(embedding)
         if cached:
@@ -76,19 +100,21 @@ class RetrievalService:
             yield "done", cached
             return
 
-        mode, context, evidence, cited = await self._prepare(question, embedding)
+        prepared = await self._prepare(question, embedding)
         chunks = []
-        async for delta in self._answerer.stream(question, context):
+        async for delta in self._answerer.stream(question, prepared.context):
             chunks.append(delta)
             yield "token", delta
-        answer = self._answerer.build_meta(evidence, mode, self._graph_version())
-        answer.text = "".join(chunks)
-        self._cache_put(question, embedding, answer, cited)
+        # the finished text, not an empty envelope: grounding is read out of
+        # what the answer cited, so it cannot be decided before it exists
+        answer = self._answerer.build_meta(
+            "".join(chunks), prepared.evidence, prepared.mode,
+            self._graph_version(), prepared.corrections)
+        self._cache_put(question, embedding, answer, prepared.cited)
         yield "done", answer
 
-    async def _prepare(self, question: str, embedding: list):
-        """The whole retrieval pipeline up to (not including) generation ->
-        (mode, context, evidence, cited_node_ids)."""
+    async def _prepare(self, question: str, embedding: list) -> "Prepared":
+        """The whole retrieval pipeline up to (not including) generation."""
         seeds = self._linker.link(question)
         mode = self._router.route(question, seeds)
         log.info("routing", mode=mode.value, seeds=len(seeds))
@@ -108,9 +134,29 @@ class RetrievalService:
         if digest:
             context = digest + "\n\n" + context
 
+        corrections = self._corrections(evidence)
+        if corrections:
+            # first in the prompt, above the material it overrules. A
+            # correction is the highest tier we have, and a model that reads it
+            # last has already formed the answer the correction exists to
+            # prevent.
+            context = _corrections_block(corrections) + "\n\n" + context
+
         cited = ([s.node_id for s in seeds]
                  + [f"doc:{e.doc_id}" for e in evidence])
-        return mode, context, evidence, cited
+        return Prepared(mode=mode, context=context, evidence=evidence,
+                        cited=cited, corrections=corrections)
+
+    def _corrections(self, evidence: list) -> list:
+        rows = self._reader.corrections_of({e.doc_id for e in evidence})
+        if rows:
+            log.info("evidence includes corrected documents",
+                     docs=[r["doc_id"] for r in rows])
+        return [CorrectionNote(doc_id=r["doc_id"],
+                               correction_id=r["correction_id"],
+                               author=r["author"] or "an engineer",
+                               text=r["correction"] or "")
+                for r in rows]
 
     # ---------------------------------------------------------------- modes
     def _vector_context(self, embedding: list):
@@ -202,6 +248,9 @@ class RetrievalService:
         return "PLANT DIGEST (live graph queries):\n" + "\n".join(lines) \
             if lines else ""
 
+    def graph_snapshot(self, limit: int = 400) -> dict:
+        return self._reader.graph_snapshot(limit)
+
     # ------------------------------------------------------------- helpers
     async def _embed(self, text: str) -> list:
         (embedding,) = await self._embedder.embed([text])
@@ -223,6 +272,18 @@ class RetrievalService:
 
     def _graph_version(self) -> int:
         return self._bus.graph_version() if self._bus else 0
+
+
+def _corrections_block(corrections: list) -> str:
+    lines = ["CORRECTIONS FROM ENGINEERS AT THIS PLANT",
+             "These override the passages below. Where a source and a "
+             "correction disagree, the correction is right - say so in the "
+             "answer, and cite the correction.", ""]
+    for c in corrections:
+        lines.append(f"  [doc:{c.doc_id}] was corrected by {c.author} "
+                     f"[doc:{c.correction_id}]:")
+        lines.append(f"    \"{c.text}\"")
+    return "\n".join(lines)
 
 
 def _doc_of(chunk_id: str) -> str:

@@ -75,3 +75,8 @@ def extract_email(payload: dict):
 @worker.task(Routes.extract_image)
 def extract_image(payload: dict):
     return _run_lane(_instance().extract_image, payload, "image")
+
+
+@worker.task(Routes.extract_correction)
+def extract_correction(payload: dict):
+    return _run_lane(_instance().extract_correction, payload, "correction")

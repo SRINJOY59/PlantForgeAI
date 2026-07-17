@@ -10,6 +10,7 @@ import Documents from "./pages/app/Documents";
 import GraphExplorer from "./pages/app/GraphExplorer";
 import Compliance from "./pages/app/Compliance";
 import Connectors from "./pages/app/Connectors";
+import Profile from "./pages/app/Profile";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="documents" element={<Documents />} />
         <Route path="compliance" element={<Compliance />} />
         <Route path="connectors" element={<Connectors />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
     </Routes>
   );

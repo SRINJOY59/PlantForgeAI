@@ -28,12 +28,12 @@ export default function FreshnessPill() {
       style={
         live
           ? { background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" }
-          : { background: "#f1f5f9", color: "var(--muted)", border: "1px solid var(--border)" }
+          : { background: "var(--bg-subtle)", color: "var(--muted)", border: "1px solid var(--border)" }
       }
     >
       <span
         className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-        style={{ background: live ? "#16a34a" : "#cbd5e1" }}
+        style={{ background: live ? "#16a34a" : "var(--border-md)" }}
       />
       {live ? `graph v${version ?? "—"} · live` : "brain offline"}
     </div>
