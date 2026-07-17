@@ -24,9 +24,17 @@ class FakeAgentReader:
         self.procedures = {}    # tag -> [rows]
         self.connections = {}   # tag -> [rows]
         self.work_orders = {}   # tag -> [rows]
+        self.clauses = {}       # node_id -> [rows]
+        self.mentions = {}      # node_id -> [rows]
 
     def equipment_failures(self, node_id):
         return self.failures.get(node_id, [])
+
+    def governing_clauses(self, node_id):
+        return self.clauses.get(node_id, [])
+
+    def documents_mentioning(self, node_id):
+        return self.mentions.get(node_id, [])
 
     def family_history(self, family, mode, exclude_tag):
         return [r for r in self.family.get((family, mode), [])

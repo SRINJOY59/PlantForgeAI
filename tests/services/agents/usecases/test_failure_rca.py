@@ -5,7 +5,7 @@ LLM is scripted to call one tool then answer, so we verify the whole path
 import asyncio
 from types import SimpleNamespace
 
-from agents.investigator import InvestigatorAgent
+from agents.usecases.failure_rca import InvestigatorAgent
 from agents.watchers import Trigger
 from conftest import FakeAgentReader
 

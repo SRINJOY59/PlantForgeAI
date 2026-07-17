@@ -7,8 +7,9 @@ import pytest
 
 from plantmind_core.schemas import Alert
 
-from agents.standards import (Published, Revision, RevisionSource,
-                              StandardsWatcher, WebRevisionSource, _json_of)
+from agents.usecases.standards_watch import (Published, Revision,
+                                             RevisionSource, StandardsWatcher,
+                                             WebRevisionSource, _json_of)
 
 STANDARD = "OISD-STD-129"
 

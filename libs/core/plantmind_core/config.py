@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     neo4j_ro_password: str = "change_me"
     redis_url: str = "redis://redis:6379/0"
     retrieval_url: str = "http://localhost:8001"     # gateway proxies Q&A here
+    agents_url: str = "http://localhost:8002"        # ... and assessments here
 
     # Supabase JWT secret (dashboard > Settings > API > JWT Secret). Empty
     # disables auth so local dev / demos still run open.

@@ -14,10 +14,10 @@ from plantmind_core.bus import RedisBus
 from plantmind_core.schemas import Answer, Citation, GraphDelta, QueryMode
 from plantmind_core.telemetry import get_logger
 
-from agents.investigator import InvestigatorAgent
 from agents.reader import AgentReader
-from agents.standards import StandardsWatcher, WebRevisionSource
-from agents.watchers import ComplianceScanner, FailureWatcher
+from agents.usecases import (ComplianceScanner, InvestigatorAgent,
+                             StandardsWatcher, WebRevisionSource)
+from agents.watchers import FailureWatcher
 
 log = get_logger("agents.consumer")
 

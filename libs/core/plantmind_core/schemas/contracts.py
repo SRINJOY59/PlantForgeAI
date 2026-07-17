@@ -169,3 +169,39 @@ class Alert(BaseModel):
     # evidence? unverified alerts are shown but marked, never trusted blindly
     verified: bool = True
     unverified_claims: list[str] = Field(default_factory=list)
+
+
+class ChangeProposal(BaseModel):
+    """A change somebody wants to make, before they make it.
+
+    Deliberately loose. The plant's own MOC form has thirty fields; none of
+    them help the graph decide what a change touches, and demanding them up
+    front is how the tool goes unused. A tag and a sentence is enough to
+    start walking.
+    """
+    tag: str                                     # P-101A
+    summary: str                                 # "replace mechanical seal ..."
+    proposed_by: str = ""
+
+
+class ImpactAssessment(BaseModel):
+    """What a proposed change touches - the section of a Management of Change
+    review that is filled in from memory today.
+
+    There is no verdict here, on purpose. Approving a change is a legal act by
+    a competent person; a system that prints "proceed" is either ignored or
+    dangerous. This is evidence for the human who signs, not the signature.
+
+    The lists are harvested from what the tools returned, not from what the
+    model wrote - so the model cannot invent a clause into governing_clauses,
+    only into body, where check_grounding catches it.
+    """
+    proposal: ChangeProposal
+    body: str
+    affected_equipment: list[str] = Field(default_factory=list)
+    documents_to_revise: list[str] = Field(default_factory=list)
+    governing_clauses: list[str] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
+    graph_version: int = 0
+    verified: bool = True
+    unverified_claims: list[str] = Field(default_factory=list)

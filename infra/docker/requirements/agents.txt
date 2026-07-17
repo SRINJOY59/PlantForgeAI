@@ -1,4 +1,8 @@
-﻿neo4j>=5.28
+neo4j>=5.28
 redis>=5.0,<9
 openai>=1.40
 httpx>=0.27
+# the same image runs two commands: the delta-driven consumer, and the HTTP
+# door a person knocks on (agents.main). Only the second needs these.
+fastapi>=0.115
+uvicorn[standard]>=0.30

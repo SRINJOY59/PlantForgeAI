@@ -8,6 +8,7 @@ x-service-base: &svc
     REDIS_URL: redis://redis:6379/0
     MINIO_ENDPOINT: http://minio:9000
     RETRIEVAL_URL: http://retrieval:8001
+    AGENTS_URL: http://agents-api:8002
   depends_on:
     redis: { condition: service_healthy }
     neo4j: { condition: service_healthy }
@@ -161,6 +162,20 @@ services:
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: agents }
     command: python -m agents.consumer
+
+  # the same image and the same reasoning as `agents`, reached the other way
+  # round: the consumer waits for the plant to change, this waits for a person
+  # to ask. Separate processes because the consumer's job is to never stop
+  # tailing the delta stream, and a request that blocks on an LLM for half a
+  # minute has no business sharing that loop.
+  agents-api:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: agents }
+    command: uvicorn agents.main:app --host 0.0.0.0 --port 8002
+    ports: ["8002:8002"]
 
   # watches queue depth and scales the worker services to match. It is the one
   # service that talks to the docker daemon rather than to redis alone, which

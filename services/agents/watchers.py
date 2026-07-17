@@ -1,12 +1,13 @@
-"""Deterministic detection. FailureWatcher decides THAT a failure pattern
-is worth investigating (cheap, reliable Cypher - never an LLM for a yes/no
-this crisp); the InvestigatorAgent then reasons about it. ComplianceScanner
-stays fully deterministic - 'is next_due < today' needs no investigation."""
+"""Deterministic detection: deciding THAT something is worth investigating.
+
+Cheap, reliable Cypher - never an LLM for a yes/no this crisp. What a trigger
+MEANS is the job of a use-case; this only decides that there is something to
+mean. The scanners that emit a finished artifact rather than a trigger live in
+usecases/ instead.
+"""
 
 import re
 from dataclasses import dataclass
-
-from plantmind_core.schemas import Alert, Citation
 
 FAMILY_SUFFIX = re.compile(r"[A-Z]+$")   # P-101A -> family P-101
 
@@ -48,27 +49,3 @@ class FailureWatcher:
             return None      # isolated first-time failure: nothing to learn yet
         return Trigger(tag=tag, mode=mode, count=count, family=family,
                        siblings=siblings, graph_version=graph_version)
-
-
-class ComplianceScanner:
-    def __init__(self, reader):
-        self._reader = reader
-
-    def scan(self, today: str, graph_version: int) -> list:
-        alerts = []
-        for row in self._reader.overdue_inspections(today):
-            alerts.append(Alert(
-                kind="compliance", severity="warning",
-                title=f"Overdue inspection: {row['equipment']} "
-                      f"{row.get('inspection_type') or ''}".strip(),
-                body=f"{row['equipment']} - {row.get('inspection_type') or 'inspection'} "
-                     f"per {row['standard']} was due {row['next_due']} and is "
-                     f"now overdue.",
-                equipment=row["equipment"],
-                citations=[Citation(doc_id=row["doc_id"],
-                                    page=row.get("page"), snippet="")]
-                if row.get("doc_id") else [],
-                fingerprint=f"compliance:{row['equipment']}:{row['standard']}:"
-                            f"{row['next_due']}",
-                graph_version=graph_version))
-        return alerts

@@ -18,13 +18,70 @@ class AgentReader:
             s.neo4j_uri, auth=(s.neo4j_user, s.neo4j_password)))
 
     def equipment_failures(self, node_id: str) -> list:
-        """Failure modes on one equipment node, with occurrence counts."""
+        """Failure modes on one equipment node, with occurrence counts, and
+        any correction an engineer has made to the documents behind them.
+
+        The correction rides along with the failure on purpose. An agent
+        reasoning about this equipment has to see both the claim and its
+        rebuttal, or it will confidently repeat a mistake somebody already
+        caught. Behind a tool of its own, seeing it would be optional - which
+        is the one thing it must not be.
+
+        The join goes through the documents rather than the failure edge: a
+        correction is filed against the sources an answer leaned on, so
+        CORRECTED_BY hangs off the Document, never off HAS_FAILURE. Looking for
+        it on the edge finds nothing, quietly, forever.
+
+        count(DISTINCT h) because the OPTIONAL MATCH fans out - a failure whose
+        source was corrected twice would otherwise report twice the failures.
+        """
         return self._run(
             "MATCH (e:Equipment {id: $id})-[h:HAS_FAILURE]->(f:FailureMode) "
+            "OPTIONAL MATCH (src:Document {surface_form: h.doc_id})"
+            "-[:CORRECTED_BY]->(c:Document) "
             "RETURN e.surface_form AS tag, f.surface_form AS mode, "
-            "count(h) AS count, "
-            "[c IN collect(DISTINCT h.cause) WHERE c <> ''] AS causes, "
-            "collect(DISTINCT h.doc_id) AS docs",
+            "count(DISTINCT h) AS count, "
+            "[x IN collect(DISTINCT h.cause) WHERE x <> ''] AS causes, "
+            "collect(DISTINCT h.doc_id) AS docs, "
+            "collect(DISTINCT h.source) AS sources, "
+            "[a IN collect(DISTINCT c.author) WHERE a IS NOT NULL] "
+            "AS corrected_by, "
+            "[t IN collect(DISTINCT c.text) WHERE t IS NOT NULL] "
+            "AS corrections, "
+            "[i IN collect(DISTINCT c.id) WHERE i IS NOT NULL] "
+            "AS correction_ids",
+            id=node_id)
+
+    def governing_clauses(self, node_id: str) -> list:
+        """What one piece of equipment is legally held to, and to which
+        revision - the clauses a change to it would have to answer for."""
+        return self._run(
+            "MATCH (e:Entity {id: $id})-[g:GOVERNED_BY]->(r:RegulationClause) "
+            "RETURN r.surface_form AS clause, g.revision AS revision, "
+            "g.inspection_type AS inspection_type, g.next_due AS next_due, "
+            "g.date AS last_inspection, g.doc_id AS doc_id",
+            id=node_id)
+
+    def documents_mentioning(self, node_id: str) -> list:
+        """Documents and procedures that refer to this equipment.
+
+        For a change assessment this is not background reading, it is a
+        deliverable: every one of these is a document somebody has to revise
+        before the change can close out.
+
+        Named, not hashed. A Document's surface_form is its content hash, which
+        is the right identity for the graph and useless to the engineer who has
+        to go and edit the thing - "revise 6d6d71a9e053a1bd" is not a task
+        anyone can act on. WorkOrders carry no filename because their
+        surface_form is already the name a human uses, hence the coalesce.
+        """
+        return self._run(
+            "MATCH (e:Entity {id: $id})-[m:MENTIONED_IN]->(d:Entity) "
+            "WHERE d:Document OR d:Procedure OR d:WorkOrder "
+            "RETURN coalesce(d.filename, d.surface_form) AS document, "
+            "[l IN labels(d) WHERE l <> 'Entity'][0] AS label, "
+            "d.kind AS kind, m.doc_id AS doc_id "
+            "ORDER BY document",
             id=node_id)
 
     def family_history(self, family: str, mode: str, exclude_tag: str) -> list:
