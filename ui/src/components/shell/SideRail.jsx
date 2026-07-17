@@ -1,12 +1,14 @@
 import { NavLink } from "react-router-dom";
 import {
-  Bell, GitBranch, MessageSquare, FileStack, ShieldCheck, Plug, Leaf, UserRound,
+  Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
+  Plug, Leaf, UserRound,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 
 const nav = [
   { to: "/app",            icon: MessageSquare, label: "Ask",        end: true  },
   { to: "/app/alerts",     icon: Bell,          label: "Alerts",     badge: true },
+  { to: "/app/moc",        icon: GitPullRequestArrow, label: "Change Impact" },
   { to: "/app/graph",      icon: GitBranch,     label: "Graph"       },
   { to: "/app/documents",  icon: FileStack,     label: "Documents"   },
   { to: "/app/compliance", icon: ShieldCheck,   label: "Compliance"  },

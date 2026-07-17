@@ -141,6 +141,56 @@ export async function submitCorrection({ question, answer, correction, citedDocs
   return res.json();
 }
 
+// A proposed change, assessed before it is made. The agents service walks the
+// graph the plant already holds - connections, failure history, governing
+// clauses, the documents that mention the asset - and returns what the change
+// would touch. Slower than a question by design (several tool calls), and it
+// never returns a verdict: approving a change is a competent person's
+// signature, not the model's.
+export async function assessChange({ tag, summary }) {
+  const res = await fetch(`${BASE}/moc/assess`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ tag, summary }),
+  });
+  if (!res.ok) throw new Error(`assessment failed: ${res.status}`);
+  return res.json();
+}
+
+// The streamed assessment. onStep(tool) fires as the agent gathers evidence,
+// onToken(text) as the assessment is written; the resolved value is the final
+// ImpactAssessment from the 'done' event. Same SSE-over-fetch shape as
+// askStream, for the same reason: the JWT rides in a header.
+export async function assessChangeStream({ tag, summary }, { onStep, onToken } = {}) {
+  const res = await fetch(`${BASE}/moc/assess/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ tag, summary }),
+  });
+  if (!res.ok) throw new Error(`assessment failed: ${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let done = null;
+
+  while (true) {
+    const { value, done: finished } = await reader.read();
+    if (finished) break;
+    buffer += decoder.decode(value, { stream: true });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || "";
+    for (const frame of frames) {
+      const event = parseSse(frame);
+      if (!event) continue;
+      if (event.name === "step") onStep?.(event.data.tool);
+      else if (event.name === "token") onToken?.(event.data.text);
+      else if (event.name === "done") done = event.data;
+    }
+  }
+  return done;
+}
+
 export async function metrics() {
   const res = await fetch(`${BASE}/metrics`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`metrics failed: ${res.status}`);

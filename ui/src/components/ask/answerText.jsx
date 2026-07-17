@@ -12,11 +12,21 @@ const CITE_RE = /\[(?:doc:)?([a-zA-Z0-9_-]{8,})(?:\s*p(\d+))?\]/g;
 const urlTransform = (url) =>
   url.startsWith("cite:") ? url : defaultUrlTransform(url);
 
-export default function AnswerText({ text, onCite }) {
+// Shorten a filename to something that fits inline without losing which file
+// it is: keep the stem, drop a long middle. "incident_report_IR-2025-032.md"
+// stays readable; a raw content hash never was.
+function label(docId, page, names) {
+  const name = names?.[docId] || names?.[`doc:${docId}`];
+  const base = name
+    ? (name.length > 22 ? name.slice(0, 20) + "…" : name)
+    : docId.slice(0, 6);
+  return base + (page ? `·p${page}` : "");
+}
+
+export default function AnswerText({ text, onCite, names }) {
   const processedText = (text || "").replace(CITE_RE, (match, docId, page) => {
-    const label = docId.slice(0, 6) + (page ? `·p${page}` : "");
     const href = `cite:${docId}${page ? `?p=${page}` : ""}`;
-    return `[${label}](${href})`;
+    return `[${label(docId, page, names)}](${href})`;
   });
 
   return (

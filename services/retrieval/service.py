@@ -83,6 +83,7 @@ class RetrievalService:
         answer = await self._answerer.answer(
             question, prepared.context, prepared.evidence, prepared.mode,
             self._graph_version(), prepared.corrections)
+        self._name_citations(answer)
         self._cache_put(question, embedding, answer, prepared.cited)
         return answer
 
@@ -110,8 +111,18 @@ class RetrievalService:
         answer = self._answerer.build_meta(
             "".join(chunks), prepared.evidence, prepared.mode,
             self._graph_version(), prepared.corrections)
+        self._name_citations(answer)
         self._cache_put(question, embedding, answer, prepared.cited)
         yield "done", answer
+
+    def _name_citations(self, answer: Answer):
+        """Fill each citation's display name from the graph. Runs after the
+        answer is whole and touches only the filename field - the doc_id, the
+        prompt and the grounding are untouched, so this cannot change what the
+        answer says, only how a source reads on screen."""
+        names = self._reader.document_names({c.doc_id for c in answer.citations})
+        for c in answer.citations:
+            c.filename = names.get(c.doc_id) or names.get(f"doc:{c.doc_id}")
 
     async def _prepare(self, question: str, embedding: list) -> "Prepared":
         """The whole retrieval pipeline up to (not including) generation."""

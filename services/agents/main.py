@@ -14,9 +14,11 @@ image, two commands:
     uvicorn agents.main:app --port 8002              # a person asks
 """
 
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 
 from plantmind_core.bus import RedisBus
 from plantmind_core.schemas import ChangeProposal
@@ -49,6 +51,31 @@ async def assess(proposal: ChangeProposal):
     agent = ChangeImpact(_reader)
     result = await agent.assess(proposal, graph_version=_bus.graph_version())
     return result.model_dump(mode="json")
+
+
+def _sse(event: str, data) -> str:
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+@app.post("/assess/stream")
+async def assess_stream(proposal: ChangeProposal):
+    """The same assessment, streamed. An assessment walks the graph over
+    several tool calls before it writes a word - streaming turns that wait into
+    something a reviewer can watch: which evidence is being gathered, then the
+    assessment as it is written, then the structured envelope at the end."""
+    agent = ChangeImpact(_reader)
+    version = _bus.graph_version()
+
+    async def events():
+        async for kind, payload in agent.assess_stream(proposal, version):
+            if kind == "step":
+                yield _sse("step", {"tool": payload})
+            elif kind == "token":
+                yield _sse("token", {"text": payload})
+            elif kind == "done":
+                yield _sse("done", payload.model_dump(mode="json"))
+
+    return StreamingResponse(events(), media_type="text/event-stream")
 
 
 @app.get("/health")

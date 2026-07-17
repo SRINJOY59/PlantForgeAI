@@ -64,6 +64,9 @@ class FakeReader:
     def corrections_of(self, doc_ids):
         return [c for c in self.corrections if c["doc_id"] in set(doc_ids)]
 
+    def document_names(self, doc_ids):
+        return getattr(self, "names", {})
+
     def overdue_inspections(self, today):
         return []
 

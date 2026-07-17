@@ -182,6 +182,26 @@ class GraphReader:
             ids=list(node_ids))
         return {r["id"]: r["degree"] for r in records}
 
+    def document_names(self, doc_ids) -> dict:
+        """{doc_id -> filename}, so a citation reads as a name and not a content
+        hash. Display only - the doc_id stays the identity and the fetch key,
+        so nothing about grounding or the prompt depends on this."""
+        ids = list({d for d in doc_ids if d})
+        if not ids:
+            return {}
+        rows = self._run(
+            "MATCH (d:Document) WHERE d.id IN $ids OR d.surface_form IN $ids "
+            "RETURN d.id AS id, d.surface_form AS sf, d.filename AS filename",
+            ids=ids)
+        names = {}
+        for r in rows:
+            if not r.get("filename"):
+                continue
+            for key in (r["id"], r["sf"]):
+                if key:
+                    names[key] = r["filename"]
+        return names
+
     # -------------------------------------------------------------- plumbing
     def _run(self, query, **params) -> list:
         with self._driver.session() as session:

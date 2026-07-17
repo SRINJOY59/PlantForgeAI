@@ -80,3 +80,13 @@ def test_upstream_failure_is_relayed_not_masked():
         assert resp.status_code == 503
     finally:
         app.dependency_overrides.clear()
+
+
+def test_both_moc_routes_are_registered():
+    # the relay body is byte-identical to qa.ask_stream, which is already
+    # proven; httpx MockTransport can't model a streaming upstream, so the
+    # frame-for-frame proof is the live end-to-end run, not this mock. Here we
+    # only pin that both routes exist to be reached.
+    paths = app.openapi()["paths"]
+    assert "/moc/assess" in paths
+    assert "/moc/assess/stream" in paths

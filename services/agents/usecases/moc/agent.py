@@ -29,8 +29,24 @@ class ChangeImpact(GraphAgent):
     async def assess(self, proposal: ChangeProposal,
                      graph_version: int = 0) -> ImpactAssessment:
         reasoned = await self.reason(prompts.task(proposal), {proposal.tag})
-        result = assessment.build(proposal, reasoned, graph_version)
+        return self._finish(proposal, reasoned, graph_version)
 
+    async def assess_stream(self, proposal: ChangeProposal,
+                            graph_version: int = 0):
+        """assess(), streamed. Yields ('step', tool_name) as the agent gathers
+        evidence, ('token', delta) as the assessment is written, and finally
+        ('done', ImpactAssessment) - the structured envelope, which can only be
+        harvested once the whole answer exists."""
+        async for kind, payload in self.reason_stream(prompts.task(proposal),
+                                                      {proposal.tag}):
+            if kind == "reasoned":
+                yield "done", self._finish(proposal, payload, graph_version)
+            else:
+                yield kind, payload
+
+    def _finish(self, proposal, reasoned, graph_version) -> ImpactAssessment:
+        names = self._reader.document_names(reasoned.docs)
+        result = assessment.build(proposal, reasoned, graph_version, names)
         log.info("change assessed", tag=proposal.tag,
                  tools_used=len(reasoned.trace),
                  affected=len(result.affected_equipment),

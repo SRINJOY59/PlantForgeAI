@@ -21,14 +21,19 @@ def msg(content=None, tool_calls=None):
 
 
 class ScriptedLLM:
-    def __init__(self, *messages):
+    def __init__(self, *messages, stream_text="streamed answer"):
         self.queue = list(messages)
+        self._stream_text = stream_text
 
     async def chat_with_tools(self, messages, tools, tier=None, max_tokens=2048):
         return self.queue.pop(0)
 
     async def complete(self, messages, tier=None, max_tokens=2048):
         return "final"
+
+    async def stream(self, messages, tier=None, max_tokens=2048, temperature=0.0):
+        for word in self._stream_text.split(" "):
+            yield word + " "
 
 
 PROPOSAL = ChangeProposal(tag="P-101A", summary="replace mechanical seal",
@@ -125,3 +130,51 @@ def test_invented_clause_is_caught_and_the_assessment_marked():
     assert "UNVERIFIED" in out.body
     # and it never reached the structured field
     assert "X-777" not in out.affected_equipment
+
+
+def test_citations_carry_a_filename_a_reviewer_can_read():
+    reader = corrected_reader()
+    reader.names = {"corr-9.md": "correction_seal_root_cause.md",
+                    "sop-101.md": "sop_pump_seal_replacement.md"}
+    llm = ScriptedLLM(
+        msg(tool_calls=[tool_call("get_failure_history", '{"tag": "P-101A"}')]),
+        msg(content="misalignment, per the correction."))
+
+    out = asyncio.run(ChangeImpact(reader, llm=llm).assess(PROPOSAL))
+
+    by_id = {c.doc_id: c.filename for c in out.citations}
+    assert by_id["corr-9.md"] == "correction_seal_root_cause.md"
+    # doc_id stays the fetch key even when a name is shown
+    assert all(c.doc_id for c in out.citations)
+
+
+def test_assess_stream_emits_steps_then_tokens_then_the_assessment():
+    llm = ScriptedLLM(
+        msg(tool_calls=[tool_call("get_governing_clauses", '{"tag": "P-101A"}')]),
+        msg(tool_calls=[tool_call("get_documents_mentioning", '{"tag": "P-101A"}')]),
+        msg(content="ignored - the stream regenerates the final synthesis"),
+        stream_text="OISD-STD-119 governs this.")
+
+    async def drive():
+        steps, tokens, done = [], [], None
+        async for kind, payload in ChangeImpact(corrected_reader(), llm=llm) \
+                .assess_stream(PROPOSAL, graph_version=12):
+            if kind == "step":
+                steps.append(payload)
+            elif kind == "token":
+                tokens.append(payload)
+            elif kind == "done":
+                done = payload
+        return steps, tokens, done
+
+    steps, tokens, done = asyncio.run(drive())
+
+    # the tools it actually called, surfaced live
+    assert steps == ["get_governing_clauses", "get_documents_mentioning"]
+    # real streamed tokens, not one final blob
+    assert len(tokens) > 1
+    assert "".join(tokens).strip() == "OISD-STD-119 governs this."
+    # the structured envelope arrives whole at the end
+    assert done is not None
+    assert done.graph_version == 12
+    assert done.body.strip() == "OISD-STD-119 governs this."

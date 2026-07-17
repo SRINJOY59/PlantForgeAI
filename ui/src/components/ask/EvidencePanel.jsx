@@ -1,37 +1,5 @@
-import { useEffect, useState } from "react";
-import { ExternalLink, FileText, PencilLine, X, BookOpen } from "lucide-react";
-import { fetchDocumentUrl } from "../../lib/api";
-
-// The document endpoint needs the JWT, which an <iframe src> can't send, so
-// the bytes are fetched with auth and shown from a blob URL (revoked on
-// close so we don't leak object URLs as the user clicks through citations).
-function useDocumentBlob(docId) {
-  const [url, setUrl] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!docId) return;
-    let revoked = false;
-    let objectUrl = null;
-    setUrl(null);
-    setError(null);
-
-    fetchDocumentUrl(docId)
-      .then((u) => {
-        if (revoked) return URL.revokeObjectURL(u);
-        objectUrl = u;
-        setUrl(u);
-      })
-      .catch((e) => setError(e.message));
-
-    return () => {
-      revoked = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [docId]);
-
-  return { url, error };
-}
+import { FileText, PencilLine, BookOpen } from "lucide-react";
+import { DocumentViewer } from "../DocumentViewer";
 
 export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) {
   if (!answer) {
@@ -62,7 +30,8 @@ export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) 
       style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
     >
       {activeDoc ? (
-        <SourceViewer docId={activeDoc} onClose={onClose} />
+        <DocumentViewer docId={activeDoc} filename={nameFor(citations, activeDoc)}
+          onClose={onClose} />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="mb-4 flex items-center justify-between">
@@ -106,7 +75,9 @@ function SourceCard({ citation: c, correction, onSelect }) {
               ? <PencilLine size={11} style={{ color: "#92400e" }} />
               : <FileText size={11} style={{ color: "var(--blue)" }} />}
           </div>
-          <span className="tag flex-1 truncate text-[11px]">{c.doc_id}</span>
+          <span className="tag flex-1 truncate text-[11px]" title={c.doc_id}>
+            {c.filename || c.doc_id}
+          </span>
           {c.page != null && (
             <span className="rounded px-1.5 py-0.5 text-[10px]"
               style={{ background: "var(--bg-subtle)", color: "var(--muted)" }}>
@@ -140,39 +111,8 @@ function SourceCard({ citation: c, correction, onSelect }) {
   );
 }
 
-function SourceViewer({ docId, onClose }) {
-  const { url, error } = useDocumentBlob(docId);
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2 px-4 py-3"
-        style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-panel)" }}>
-        <span className="tag flex-1 truncate text-xs">{docId}</span>
-        <button onClick={onClose} className="btn-ghost px-1.5 py-1"><X size={14} /></button>
-      </div>
-
-      {error ? (
-        <div className="flex-1 p-4 text-xs" style={{ color: "var(--danger)" }}>
-          Couldn't load this source: {error}
-        </div>
-      ) : url ? (
-        <iframe title="source" src={url}
-          className="min-h-0 flex-1 bg-[var(--bg-panel)]" />
-      ) : (
-        <div className="flex-1 p-4 text-xs" style={{ color: "var(--muted)" }}>
-          Loading source…
-        </div>
-      )}
-
-      {url && (
-        <a href={url} target="_blank" rel="noreferrer"
-          className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors"
-          style={{ borderTop: "1px solid var(--border)", color: "var(--blue)", background: "var(--bg-panel)" }}>
-          Open full document <ExternalLink size={11} />
-        </a>
-      )}
-    </div>
-  );
+function nameFor(citations, docId) {
+  return citations.find(c => c.doc_id === docId)?.filename;
 }
 
 function dedupe(citations) {

@@ -96,9 +96,15 @@ class QueryMode(str, Enum):
 
 
 class Citation(BaseModel):
-    doc_id: str
+    doc_id: str                                  # the fetch key, a content hash
     page: Optional[int] = None
     snippet: str
+    # the name a person can read. A doc_id is a content hash - correct as an
+    # identity, useless on screen ("revise 6d6d71a9..." is not a task). Filled
+    # in from the graph after the answer is built; the doc_id still drives the
+    # click. Optional so an unresolved citation degrades to showing the hash
+    # rather than breaking.
+    filename: Optional[str] = None
 
 
 class CorrectionNote(BaseModel):

@@ -1,94 +1,28 @@
-"""Watching the standards the plant is held to, and noticing when one moves.
+"""Noticing when a standard the plant is held to has moved.
 
 A plant is governed by documents it does not own and cannot see change. OISD
 revises a standard, IBR amends a rule, and the plant finds out at the next
 audit - having inspected fourteen vessels against a revision that was
 superseded eight months ago.
 
-The web part of this is the boring part: anyone can subscribe to a newsletter
-saying OISD-STD-129 changed. What the newsletter cannot say is which of *your*
-vessels that lands on, and when each was last inspected against it. That comes
-out of the graph, and it is why this lives here.
+The web part is the easy part: anyone can subscribe to a newsletter saying
+OISD-STD-129 changed. What the newsletter cannot say is which of *your* vessels
+that lands on, and when each was last inspected against it. That comes out of
+the graph, and it is why the watch lives here rather than in an inbox.
 
 Two rules hold the line on trust:
 
-  - A revision we read on the web never enters the graph. Every fact in there
-    traces to a document we hold and parsed; a web page is somebody else's
-    claim about a document we do not have. It rides on the alert as a
-    WebSource, in its own field, and the watch's memory of it lives in redis.
-
+  - A revision read on the web never enters the graph. It rides on the alert as
+    a WebSource, in its own field, and the watch's memory of it lives in redis.
   - The alert says the standard moved and names who is affected. It never says
     what the new revision requires - that needs the document, and the honest
     next step is a human fetching it.
 """
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-
-from pydantic import BaseModel, Field
-
 from plantmind_core.schemas import Alert, Citation, WebSource
 from plantmind_core.telemetry import get_logger
 
-log = get_logger("agents.standards")
-
-
-class Revision(BaseModel):
-    """What the web says a standard is currently at."""
-    revision: str = Field(default="",
-                          description="Current revision or edition, e.g. "
-                                      "'Rev 5' or '2026 edition'. Empty if "
-                                      "it cannot be established.")
-    effective_date: str = Field(default="",
-                                description="ISO date it took effect, if stated")
-    summary: str = Field(default="",
-                         description="One line on what changed, if stated")
-
-
-@dataclass
-class Published:
-    revision: Revision
-    sources: list          # [{'url', 'title'}]
-
-
-class RevisionSource(ABC):
-    """Where 'what revision is this standard at now' comes from. An interface
-    because the answer is on the public internet, and a plant network often is
-    not - a site can point this at an internal mirror without the watcher
-    knowing."""
-
-    @abstractmethod
-    async def current(self, standard: str) -> Published:
-        ...
-
-
-PROMPT = """\
-What is the current published revision of the engineering standard "{standard}"?
-
-Answer only from what the search results actually state. If they do not \
-establish a current revision, leave revision empty rather than guessing - a \
-wrong revision here sends engineers to re-inspect equipment for nothing.
-
-Reply as a single JSON object, no prose:
-{{"revision": "...", "effective_date": "YYYY-MM-DD or empty", "summary": "..."}}
-"""
-
-
-class WebRevisionSource(RevisionSource):
-    """Asks openrouter's web search what a standard is at now."""
-
-    def __init__(self, llm):
-        self._llm = llm
-
-    async def current(self, standard: str) -> Published:
-        text, sources = await self._llm.web_search(PROMPT.format(standard=standard))
-        try:
-            revision = Revision.model_validate_json(_json_of(text))
-        except Exception as e:
-            log.warning("could not read a revision out of the search reply",
-                        standard=standard, error=str(e)[:120])
-            return Published(revision=Revision(), sources=sources)
-        return Published(revision=revision, sources=sources)
+log = get_logger("agents.standards.watcher")
 
 
 class StandardsWatcher:
@@ -175,17 +109,3 @@ class StandardsWatcher:
             # nothing here was checked against a document we hold
             verified=False,
             unverified_claims=[f"{standard} is now at {found}"])
-
-
-def _json_of(text: str) -> str:
-    """Web-search replies tend to arrive with prose or fences around the json
-    however firmly the prompt asks otherwise."""
-    text = text.strip()
-    if "```" in text:
-        text = text.split("```", 2)[1]
-        if text.startswith("json"):
-            text = text[4:]
-    start, end = text.find("{"), text.rfind("}")
-    return text[start:end + 1] if start != -1 and end > start else text
-
-

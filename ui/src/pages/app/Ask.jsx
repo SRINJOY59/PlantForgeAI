@@ -202,7 +202,7 @@ function Turn({ turn, active, onFocus, onCite }) {
         )}
         <div className="text-sm leading-relaxed" style={{ color: "var(--text-md)" }}>
           {turn.text
-            ? <AnswerText text={turn.text} onCite={onCite} />
+            ? <AnswerText text={turn.text} onCite={onCite} names={citationNames(a)} />
             : <span className="flex items-center gap-2" style={{ color: "var(--muted)" }}>
                 <Sparkles size={13} className="animate-pulse" style={{ color: "var(--blue)" }} />
                 Thinking through the plant graph…
@@ -214,6 +214,16 @@ function Turn({ turn, active, onFocus, onCite }) {
       </div>
     </div>
   );
+}
+
+// doc_id -> filename, for showing citation labels a person can read instead of
+// a content hash. Built from the answer's own citations.
+function citationNames(answer) {
+  const map = {};
+  for (const c of answer?.citations || []) {
+    if (c.filename) map[c.doc_id] = c.filename;
+  }
+  return map;
 }
 
 // Read off the answer's own citations, checked against the evidence it was

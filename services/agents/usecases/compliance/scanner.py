@@ -3,8 +3,11 @@
 The one use-case with no agent in it. 'is next_due < today' is a crisp
 question, and an LLM asked to answer it can only make it less reliable - so
 this stays deterministic and produces its Alert directly, without the reason
-step in base.py. It sits here rather than beside the watchers because what it
-emits is the finished artifact, not a trigger for something else to think about.
+step in base.py.
+
+One module, not three: there is no prompt to keep apart and no harvesting to
+isolate. It is a package for the same reason its siblings are - so every
+use-case is found in the same shape - not because the work here divides.
 """
 
 from plantmind_core.schemas import Alert, Citation

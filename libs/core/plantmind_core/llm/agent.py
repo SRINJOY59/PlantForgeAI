@@ -68,6 +68,44 @@ class ToolAgent:
         answer = await self._llm.complete(messages, tier=self._tier)
         return AgentResult(answer=answer, steps=self._max_steps, trace=trace)
 
+    async def stream_run(self, system: str, task: str):
+        """The same loop as run(), but as a stream. Yields ('step', tool_name)
+        as the agent gathers evidence, then ('token', delta) for the final
+        synthesis, then ('result', AgentResult) once it is whole.
+
+        The tokens are real, not a replay of a finished string: the tool loop
+        runs to the point the model stops asking for tools, and the closing
+        synthesis is then generated with stream(). That final call is the one
+        extra generation streaming costs - honest tokens beat a fake reveal of
+        text we already had.
+        """
+        messages = [{"role": "system", "content": system},
+                    {"role": "user", "content": task}]
+        trace = []
+        used = 0
+
+        for step in range(self._max_steps):
+            msg = await self._llm.chat_with_tools(
+                messages, self._specs, tier=self._tier)
+            calls = getattr(msg, "tool_calls", None)
+            used = step
+            if not calls:
+                break                      # the model is ready to answer
+            messages.append({"role": "assistant", "content": msg.content or "",
+                             "tool_calls": [_call_dict(c) for c in calls]})
+            for call in calls:
+                result = self._dispatch(call, trace)
+                yield "step", call.function.name
+                messages.append({"role": "tool", "tool_call_id": call.id,
+                                 "content": json.dumps(result, default=str)})
+
+        parts = []
+        async for delta in self._llm.stream(messages, tier=self._tier):
+            parts.append(delta)
+            yield "token", delta
+        yield "result", AgentResult(answer="".join(parts), steps=used,
+                                    trace=trace)
+
     def _dispatch(self, call, trace) -> dict:
         name = call.function.name
         try:

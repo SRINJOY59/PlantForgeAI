@@ -9,27 +9,15 @@ from plantmind_core.telemetry import get_logger
 
 from agents import tools
 from agents.usecases.base import GraphAgent
+from agents.usecases.failure_rca import prompts
 
 log = get_logger("agents.usecases.failure_rca")
-
-SYSTEM = """You are a reliability engineer investigating a failure pattern
-in a process plant. Use the tools to gather the equipment's own history,
-its sibling equipment's history, the procedures that fix it, and its
-process connections. Then write a SHORT alert for the maintenance team:
-what is recurring, the likely shared root cause, and the specific first
-checks to make before returning the equipment to service - naming the
-procedure and the prior work order that fixed it if you find them. Be
-concrete. Do not invent tags, procedures or numbers not returned by tools."""
-
-TASK = ("Equipment {tag} has just logged failure mode '{mode}'. Sibling "
-        "equipment sharing the '{family}' family has seen it too. "
-        "Investigate and advise.")
 
 
 class InvestigatorAgent(GraphAgent):
     """Wraps a ToolAgent with graph tools bound to one AgentReader."""
 
-    system = SYSTEM
+    system = prompts.SYSTEM
 
     def tools(self) -> list:
         r = self._reader
@@ -41,9 +29,7 @@ class InvestigatorAgent(GraphAgent):
         # Layer 1: every tag the agent named must trace to its evidence
         given = {trigger.tag, trigger.family,
                  *(s["tag"] for s in trigger.siblings)}
-        reasoned = await self.reason(
-            TASK.format(tag=trigger.tag, mode=trigger.mode,
-                        family=trigger.family), given)
+        reasoned = await self.reason(prompts.task(trigger), given)
 
         grounding = reasoned.grounding
         log.info("investigation done", tag=trigger.tag, mode=trigger.mode,

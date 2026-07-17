@@ -49,6 +49,21 @@ class GraphAgent:
         agent = ToolAgent(self.tools(), tier=Tier.MID, max_steps=MAX_STEPS,
                           llm=self._llm)
         result = await agent.run(self.system, task)
+        return self._reasoned(result, given)
+
+    async def reason_stream(self, task: str, given: set):
+        """reason(), streamed. Yields ('step', tool_name) and ('token', delta)
+        as they happen, then ('reasoned', Reasoned) once grounding can be
+        checked - which needs the whole answer, so it can only come last."""
+        agent = ToolAgent(self.tools(), tier=Tier.MID, max_steps=MAX_STEPS,
+                          llm=self._llm)
+        async for kind, payload in agent.stream_run(self.system, task):
+            if kind == "result":
+                yield "reasoned", self._reasoned(payload, given)
+            else:
+                yield kind, payload
+
+    def _reasoned(self, result, given: set) -> Reasoned:
         grounding = check_grounding(result.answer, result.trace, given)
         return Reasoned(answer=result.answer, trace=result.trace,
                         docs=docs_from_trace(result.trace), grounding=grounding)

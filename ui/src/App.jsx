@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Ask from "./pages/app/Ask";
 import Alerts from "./pages/app/Alerts";
+import Moc from "./pages/app/Moc";
 import Documents from "./pages/app/Documents";
 import GraphExplorer from "./pages/app/GraphExplorer";
 import Compliance from "./pages/app/Compliance";
@@ -28,6 +29,7 @@ export default function App() {
       >
         <Route index element={<Ask />} />
         <Route path="alerts" element={<Alerts />} />
+        <Route path="moc" element={<Moc />} />
         <Route path="graph" element={<GraphExplorer />} />
         <Route path="documents" element={<Documents />} />
         <Route path="compliance" element={<Compliance />} />

@@ -21,8 +21,10 @@ _HARVEST = {
 }
 
 
-def build(proposal, reasoned, graph_version: int = 0) -> ImpactAssessment:
+def build(proposal, reasoned, graph_version: int = 0,
+          names: dict | None = None) -> ImpactAssessment:
     harvested = _harvest(reasoned.trace)
+    names = names or {}
 
     body = reasoned.answer
     if not reasoned.grounding.verified:
@@ -36,7 +38,10 @@ def build(proposal, reasoned, graph_version: int = 0) -> ImpactAssessment:
         affected_equipment=harvested["affected_equipment"],
         documents_to_revise=harvested["documents_to_revise"],
         governing_clauses=harvested["governing_clauses"],
-        citations=[Citation(doc_id=d, snippet="") for d in reasoned.docs],
+        # named so a reviewer can open them; the doc_id still fetches the bytes
+        citations=[Citation(doc_id=d, snippet="",
+                            filename=names.get(d) or names.get(f"doc:{d}"))
+                   for d in reasoned.docs],
         graph_version=graph_version,
         verified=reasoned.grounding.verified,
         unverified_claims=reasoned.grounding.ungrounded_tags)

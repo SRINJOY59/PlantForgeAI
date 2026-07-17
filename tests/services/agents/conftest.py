@@ -26,6 +26,7 @@ class FakeAgentReader:
         self.work_orders = {}   # tag -> [rows]
         self.clauses = {}       # node_id -> [rows]
         self.mentions = {}      # node_id -> [rows]
+        self.names = {}         # doc_id -> filename
 
     def equipment_failures(self, node_id):
         return self.failures.get(node_id, [])
@@ -35,6 +36,9 @@ class FakeAgentReader:
 
     def documents_mentioning(self, node_id):
         return self.mentions.get(node_id, [])
+
+    def document_names(self, doc_ids):
+        return {d: self.names[d] for d in doc_ids if d in self.names}
 
     def family_history(self, family, mode, exclude_tag):
         return [r for r in self.family.get((family, mode), [])

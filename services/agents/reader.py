@@ -147,6 +147,27 @@ class AgentReader:
             "g.doc_id AS doc_id, g.page AS page ORDER BY g.next_due",
             today=today)
 
+    def document_names(self, doc_ids) -> dict:
+        """{doc_id -> filename} for a set of documents, so a citation can show
+        a name instead of a content hash. Missing filenames simply do not
+        appear in the map, and the caller falls back to the id."""
+        ids = list({d for d in doc_ids if d})
+        if not ids:
+            return {}
+        rows = self._run(
+            "MATCH (d:Document) WHERE d.id IN $ids OR d.surface_form IN $ids "
+            "RETURN d.id AS id, d.surface_form AS sf, d.filename AS filename",
+            ids=ids)
+        names = {}
+        for r in rows:
+            if not r.get("filename"):
+                continue
+            # cited either by full id (doc:hash) or bare surface_form (hash)
+            for key in (r["id"], r["sf"]):
+                if key:
+                    names[key] = r["filename"]
+        return names
+
     def _run(self, query, **params) -> list:
         with self._driver.session() as session:
             return [dict(r) for r in session.run(query, **params)]
