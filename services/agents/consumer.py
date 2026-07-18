@@ -34,6 +34,7 @@ class AgentsRuntime:
                  standards=None, standards_interval=STANDARDS_INTERVAL_S,
                  block_ms=15000):
         self._bus = bus
+        self._reader = reader          # kept: _emit names alert citations
         self._failures = FailureWatcher(reader)
         self._investigator = investigator or InvestigatorAgent(reader)
         self._compliance = ComplianceScanner(reader)
@@ -150,6 +151,10 @@ class AgentsRuntime:
 
     def _emit(self, alerts: list):
         for alert in alerts:
+            # name the sources before they hit the stream: every alert kind
+            # flows through here, so this is the one place that makes all of
+            # them readable and openable in the UI
+            self._reader.name_citations(alert.citations)
             if self._bus.claim_alert(alert.fingerprint):
                 self._bus.publish_alert(alert.model_dump_json())
                 log.info("alert raised", kind=alert.kind,

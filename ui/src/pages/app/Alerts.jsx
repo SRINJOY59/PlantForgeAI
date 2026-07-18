@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff, AlertTriangle, Globe, ShieldAlert, Factory } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import AlertCard, { WEB_KINDS } from "../../components/AlertCard";
+import { DocumentModal } from "../../components/DocumentViewer";
 
 const FILTERS = [
   { id: "all",               label: "All",        icon: Bell },
@@ -13,6 +14,7 @@ const FILTERS = [
 export default function Alerts() {
   const { alerts, connected, markAllRead } = useAlerts();
   const [filter, setFilter] = useState("all");
+  const [activeDoc, setActiveDoc] = useState(null);   // { docId, filename }
   useEffect(() => { markAllRead(); }, [markAllRead]);
 
   const shown = alerts.filter(a => filter === "all" || a.kind === filter);
@@ -73,7 +75,8 @@ export default function Alerts() {
             {plant.length > 0 && (
               <Section icon={Factory} title="From your plant"
                 subtitle="Grounded in documents you own" count={plant.length}>
-                {plant.map(a => <AlertCard key={a.id} alert={a} />)}
+                {plant.map(a => <AlertCard key={a.id} alert={a}
+                  onOpenDoc={(docId, filename) => setActiveDoc({ docId, filename })} />)}
               </Section>
             )}
 
@@ -91,12 +94,18 @@ export default function Alerts() {
                     lead to verify, and load the source document to act on it.
                   </span>
                 </div>
-                {web.map(a => <AlertCard key={a.id} alert={a} />)}
+                {web.map(a => <AlertCard key={a.id} alert={a}
+                  onOpenDoc={(docId, filename) => setActiveDoc({ docId, filename })} />)}
               </Section>
             )}
           </div>
         )}
       </div>
+
+      {activeDoc && (
+        <DocumentModal docId={activeDoc.docId} filename={activeDoc.filename}
+          onClose={() => setActiveDoc(null)} />
+      )}
     </div>
   );
 }

@@ -40,6 +40,11 @@ class FakeAgentReader:
     def document_names(self, doc_ids):
         return {d: self.names[d] for d in doc_ids if d in self.names}
 
+    def name_citations(self, citations):
+        names = self.document_names({c.doc_id for c in citations})
+        for c in citations:
+            c.filename = names.get(c.doc_id) or names.get(f"doc:{c.doc_id}")
+
     def family_history(self, family, mode, exclude_tag):
         return [r for r in self.family.get((family, mode), [])
                 if r["tag"] != exclude_tag]

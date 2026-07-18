@@ -1,7 +1,7 @@
 import fakeredis
 
 from plantmind_core.bus import RedisBus
-from plantmind_core.schemas import Alert, GraphDelta
+from plantmind_core.schemas import Alert, Citation, GraphDelta
 
 from agents.consumer import CURSOR, AgentsRuntime
 from conftest import FakeAgentReader
@@ -80,6 +80,26 @@ def test_same_pattern_investigated_once():
 
     assert len(inv.calls) == 1          # claim_alert dedupe stops re-investigation
     assert len(alerts_on(bus)) == 1
+
+
+def test_emit_names_citations_so_the_ui_can_open_them():
+    reader = seal_leak_reader()
+    reader.names = {"inspection_records.csv": "inspection_records.csv",
+                    "6d6d71a9e053a1bd": "sop_pump_seal_replacement.md"}
+    bus, _, rt = runtime(reader)
+
+    alert = Alert(
+        kind="compliance", severity="warning", title="Overdue: V-203",
+        body="overdue", fingerprint="compliance:V-203",
+        citations=[Citation(doc_id="6d6d71a9e053a1bd", snippet=""),
+                   Citation(doc_id="unknown-hash", snippet="")])
+    rt._emit([alert])
+
+    published = alerts_on(bus)[0]
+    by_id = {c.doc_id: c.filename for c in published.citations}
+    # the hash resolves to a name; an unknown doc degrades to no name, not a crash
+    assert by_id["6d6d71a9e053a1bd"] == "sop_pump_seal_replacement.md"
+    assert by_id["unknown-hash"] is None
 
 
 def test_cursor_advances():

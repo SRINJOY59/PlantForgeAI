@@ -168,6 +168,17 @@ class AgentReader:
                     names[key] = r["filename"]
         return names
 
+    def name_citations(self, citations) -> None:
+        """Fill each citation's display name in place. An alert's sources are
+        content hashes as built; this makes them readable and, once the doc_id
+        is paired with a name, something the UI can open. Mutates, because an
+        alert is passed around by reference on its way to the stream."""
+        if not citations:
+            return
+        names = self.document_names({c.doc_id for c in citations})
+        for c in citations:
+            c.filename = names.get(c.doc_id) or names.get(f"doc:{c.doc_id}")
+
     def _run(self, query, **params) -> list:
         with self._driver.session() as session:
             return [dict(r) for r in session.run(query, **params)]

@@ -18,7 +18,7 @@ const ICONS = {
   failure_pattern: Wrench,
 };
 
-export default function AlertCard({ alert }) {
+export default function AlertCard({ alert, onOpenDoc }) {
   const s = SEVERITY[alert.severity] ?? SEVERITY.info;
   const Icon = ICONS[alert.kind] ?? Wrench;
   const fromWeb = WEB_KINDS.has(alert.kind);
@@ -72,10 +72,15 @@ export default function AlertCard({ alert }) {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {alert.citations.map((c, i) => (
-              <span key={i} className="rounded-full px-2 py-0.5 font-mono text-[10px]"
-                style={{ background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" }}>
-                {c.doc_id}
-              </span>
+              <button key={i} type="button" onClick={() => onOpenDoc?.(c.doc_id, c.filename)}
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors"
+                style={{ background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#bfdbfe"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#dbeafe"; }}
+                title={c.doc_id}>
+                <ExternalLink size={9} />
+                {c.filename || c.doc_id}
+              </button>
             ))}
           </div>
         </div>

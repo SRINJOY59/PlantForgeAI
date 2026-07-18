@@ -3,7 +3,7 @@ x-service-base: &svc
   # .env carries localhost URLs so the same file works for local dev
   # (tools.serve); inside the compose network the infra is reachable by
   # service name, and these overrides win over env_file.
-  environment:
+  environment: &svc-env
     NEO4J_URI: bolt://neo4j:7687
     REDIS_URL: redis://redis:6379/0
     MINIO_ENDPOINT: http://minio:9000
@@ -161,6 +161,14 @@ services:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: agents }
+    # watch the standards this plant is held to. Off by default because each
+    # sweep is a billed web search; on here so the feature runs in this
+    # deployment. Use `python -m tools.standards_demo` to see an alert on
+    # demand without waiting for a real revision to move. Merge the shared env
+    # rather than replace it, or the consumer loses NEO4J_URI/REDIS_URL/...
+    environment:
+      <<: *svc-env
+      STANDARDS_WATCH_ENABLED: "true"
     command: python -m agents.consumer
 
   # the same image and the same reasoning as `agents`, reached the other way
