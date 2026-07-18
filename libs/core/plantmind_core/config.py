@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     retrieval_url: str = "http://localhost:8001"     # gateway proxies Q&A here
     agents_url: str = "http://localhost:8002"        # ... and assessments here
+    # browser origins allowed to call the gateway, comma-separated. Locked to
+    # the dev SPA by default; set the real origin(s) in prod. "*" is accepted
+    # but should never be used with a browser client you actually ship.
+    cors_origins: str = "http://localhost:5173"
 
     # Supabase JWT secret (dashboard > Settings > API > JWT Secret). Empty
     # disables auth so local dev / demos still run open.

@@ -109,6 +109,24 @@ class RedisBus:
         a delta or re-ingesting a file doesn't re-raise the same alert."""
         return bool(self._r.sadd(keys.ALERTED_SET, fingerprint))
 
+    # rate limiting -----------------------------------------------------------
+    def rate_check(self, bucket: str, limit: int, window_s: int):
+        """Fixed-window counter -> (allowed, retry_after_s). First hit in a
+        window sets the TTL, so the window is the first request's window and the
+        key expires on its own - no sweep, no unbounded growth.
+
+        Fixed window, not a token bucket: a caller can burst up to 2x the limit
+        across a boundary, which for cost control on an LLM endpoint is a fine
+        trade for a counter this cheap and this hard to get wrong."""
+        key = keys.RATE_PREFIX + bucket
+        count = self._r.incr(key)
+        if count == 1:
+            self._r.expire(key, window_s)
+        if count <= limit:
+            return True, 0
+        ttl = self._r.ttl(key)
+        return False, ttl if ttl and ttl > 0 else window_s
+
     # standards watch ---------------------------------------------------------
     def known_revision(self, standard: str):
         """The revision of a standard the watcher last saw published, or None

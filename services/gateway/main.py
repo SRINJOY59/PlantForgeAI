@@ -16,6 +16,7 @@ from plantmind_core.config import get_settings
 from gateway import deps
 from gateway.auth import current_user
 from gateway.routes import documents, events, graph, moc, qa, system
+from gateway.security import SecurityHeadersMiddleware, cors_origins
 from gateway.service import GatewayService
 
 
@@ -33,8 +34,18 @@ async def lifespan(app):
 
 
 app = FastAPI(title="plantmind-gateway", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+# security headers first so CORS (added after) stays the outermost middleware and
+# answers preflight before anything else runs
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins(get_settings().cors_origins),
+    # bearer tokens ride in the Authorization header, not cookies, so we never
+    # need credentialed CORS - and not needing it lets us keep a real allowlist
+    # instead of the "*"-with-credentials combination browsers forbid anyway
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"])
 
 # auth is applied per-router rather than per-endpoint: a new endpoint is
 # protected by default instead of by remembering to protect it

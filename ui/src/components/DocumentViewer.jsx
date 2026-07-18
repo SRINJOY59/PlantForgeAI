@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { fetchDocumentUrl } from "../lib/api";
 
 // The document endpoint needs the JWT, which an <iframe src> can't send, so the
@@ -34,10 +36,32 @@ export function useDocumentBlob(docId) {
   return { url, error };
 }
 
-// The panel body: header (name), the framed document, an open-in-tab link.
+// Markdown and the other text formats are served as text/plain, which an
+// iframe shows as raw source - "## Heading" instead of a heading. For those we
+// read the text out of the blob and render it: markdown properly, other text in
+// a monospace pre. Binary sources (pdf, svg, images) stay in the iframe, which
+// is what a browser renders well.
+const MARKDOWN = /\.(md|markdown)$/i;
+const PLAINTEXT = /\.(txt|csv|tsv|log|eml)$/i;
+
+function useBlobText(url, enabled) {
+  const [text, setText] = useState(null);
+  useEffect(() => {
+    if (!url || !enabled) { setText(null); return; }
+    let live = true;
+    fetch(url).then((r) => r.text()).then((t) => { if (live) setText(t); });
+    return () => { live = false; };
+  }, [url, enabled]);
+  return text;
+}
+
+// The panel body: header (name), the rendered document, an open-in-tab link.
 export function DocumentViewer({ docId, filename, onClose }) {
   const { url, error } = useDocumentBlob(docId);
   const label = filename || docId;
+  const isMarkdown = MARKDOWN.test(label);
+  const isText = isMarkdown || PLAINTEXT.test(label);
+  const text = useBlobText(url, isText);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -54,12 +78,28 @@ export function DocumentViewer({ docId, filename, onClose }) {
         <div className="flex-1 p-4 text-xs" style={{ color: "var(--danger)" }}>
           Couldn't load this source: {error}
         </div>
-      ) : url ? (
-        <iframe title="source" src={url} className="min-h-0 flex-1 bg-[var(--bg-panel)]" />
-      ) : (
+      ) : !url || (isText && text === null) ? (
         <div className="flex-1 p-4 text-xs" style={{ color: "var(--muted)" }}>
           Loading source…
         </div>
+      ) : isMarkdown ? (
+        <div className="prose prose-sm min-h-0 max-w-none flex-1 overflow-y-auto p-5 prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-td:border prose-th:border"
+          style={{ color: "var(--text-md)" }}>
+          {/* default renderer escapes raw HTML, so an uploaded doc can't inject
+              script into the app - the safe way to show an untrusted source */}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        </div>
+      ) : isText ? (
+        <pre className="min-h-0 flex-1 overflow-auto p-4 text-[11px] leading-relaxed"
+          style={{ color: "var(--text-md)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+          {text}
+        </pre>
+      ) : (
+        // sandbox with nothing allowed: a binary source is still shown, but an
+        // uploaded HTML or scripted SVG cannot run script, submit a form or
+        // open a popup. This is the teeth behind viewing untrusted documents.
+        <iframe title="source" src={url} sandbox=""
+          className="min-h-0 flex-1 bg-[var(--bg-panel)]" />
       )}
 
       {url && (

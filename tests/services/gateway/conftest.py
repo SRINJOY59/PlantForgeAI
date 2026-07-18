@@ -36,6 +36,7 @@ class FakeBus:
     def __init__(self):
         self.version = 7
         self.alerts = []
+        self.hits = {}          # bucket -> count, for the rate-limit tests
 
     def graph_version(self):
         return self.version
@@ -45,6 +46,12 @@ class FakeBus:
 
     def read_alerts(self, after, block_ms=15000):
         return self.alerts
+
+    def rate_check(self, bucket, limit, window_s):
+        self.hits[bucket] = self.hits.get(bucket, 0) + 1
+        if self.hits[bucket] <= limit:
+            return True, 0
+        return False, window_s
 
 
 class FakeSender:

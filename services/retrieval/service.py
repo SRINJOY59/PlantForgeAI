@@ -77,6 +77,9 @@ class RetrievalService:
         embedding = await self._embed(question)
         cached = self._cache_get(embedding)
         if cached:
+            # name here too: entries cached before filenames existed, and every
+            # future cache-format change, would otherwise surface as raw hashes
+            self._name_citations(cached)
             return cached
 
         prepared = await self._prepare(question, embedding)
@@ -97,6 +100,7 @@ class RetrievalService:
         embedding = await self._embed(question)
         cached = self._cache_get(embedding)
         if cached:
+            self._name_citations(cached)
             yield "token", cached.text
             yield "done", cached
             return

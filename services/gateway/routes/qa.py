@@ -9,8 +9,10 @@ from pydantic import BaseModel, Field
 from plantmind_core.schemas import Turn
 
 from gateway.deps import get_http
+from gateway.ratelimit import rate_limit
 
 router = APIRouter()
+metered = [Depends(rate_limit("ask"))]
 
 # a thread only has to reach back far enough to resolve a reference, and the
 # body is user-supplied - cap it here rather than trust the client
@@ -22,14 +24,14 @@ class AskRequest(BaseModel):
     history: list[Turn] = Field(default_factory=list, max_length=MAX_HISTORY)
 
 
-@router.post("/ask")
+@router.post("/ask", dependencies=metered)
 async def ask(request: AskRequest, http: httpx.AsyncClient = Depends(get_http)):
     resp = await http.post("/ask", json=request.model_dump())
     return Response(content=resp.content, status_code=resp.status_code,
                     media_type="application/json")
 
 
-@router.post("/ask/stream")
+@router.post("/ask/stream", dependencies=metered)
 async def ask_stream(request: AskRequest,
                      http: httpx.AsyncClient = Depends(get_http)):
     async def relay():

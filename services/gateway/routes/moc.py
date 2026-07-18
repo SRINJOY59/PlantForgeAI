@@ -11,11 +11,13 @@ from fastapi.responses import Response, StreamingResponse
 from plantmind_core.schemas import ChangeProposal
 
 from gateway.deps import get_agents_http
+from gateway.ratelimit import rate_limit
 
 router = APIRouter()
+metered = [Depends(rate_limit("moc"))]
 
 
-@router.post("/moc/assess")
+@router.post("/moc/assess", dependencies=metered)
 async def assess(proposal: ChangeProposal,
                  http: httpx.AsyncClient = Depends(get_agents_http)):
     resp = await http.post("/assess", json=proposal.model_dump())
@@ -23,7 +25,7 @@ async def assess(proposal: ChangeProposal,
                     media_type="application/json")
 
 
-@router.post("/moc/assess/stream")
+@router.post("/moc/assess/stream", dependencies=metered)
 async def assess_stream(proposal: ChangeProposal,
                         http: httpx.AsyncClient = Depends(get_agents_http)):
     async def relay():

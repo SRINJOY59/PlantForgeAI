@@ -16,3 +16,4 @@ ANSWER_CACHE_LRU = "answercache:lru"     # id -> ts, for eviction
 # Watch state, not plant knowledge: it came off the open web, so it stays out
 # of the graph, where every fact is supposed to trace to a document we hold.
 STANDARD_REVISION_PREFIX = "standards:revision:"
+RATE_PREFIX = "ratelimit:"               # ratelimit:<bucket>:<who> fixed window

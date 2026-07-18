@@ -10,6 +10,24 @@ from gateway.deps import get_service
 
 router = APIRouter()
 
+# The upload trust boundary. Anything past here gets parsed by pypdfium2, PIL,
+# openpyxl and friends, so the gate belongs out here, before a byte reaches a
+# parser. The allowlist mirrors what the classifier can actually route - keep
+# it a superset of ingestion/classify.py so a valid file is never rejected here
+# only to be understood downstream.
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024      # 25 MB
+ALLOWED_EXTENSIONS = {
+    "pdf", "md", "txt", "docx", "doc", "html",
+    "csv", "tsv", "xlsx", "xls", "xlsm",
+    "eml", "msg",
+    "svg", "png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff",
+}
+
+
+def _ext(filename: str) -> str:
+    return filename.rsplit(".", 1)[-1].lower() if "." in (filename or "") else ""
+
+
 # octet-stream makes a browser download rather than render, which leaves the
 # citation viewer blank. Text-ish sources are served as text/plain so they
 # display inline; only genuinely unknown types fall back to a download.
@@ -45,7 +63,21 @@ class CorrectionRequest(BaseModel):
 
 @router.post("/ingest")
 async def ingest(file: UploadFile, svc=Depends(get_service)):
-    data = await file.read()
+    ext = _ext(file.filename)
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            415, f"'{file.filename or 'file'}' is not an accepted type. "
+                 f"Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}.")
+
+    # read one byte past the limit and no further: an oversized upload is
+    # rejected without ever holding more than the cap in memory
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            413, f"File exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.")
+    if not data:
+        raise HTTPException(400, "Empty file.")
+
     return svc.ingest(file.filename, data)
 
 
@@ -71,6 +103,11 @@ def document(doc_id: str, svc=Depends(get_service)):
     if not found:
         raise HTTPException(404, f"no document for {doc_id}")
     filename, data = found
+    # nosniff on the sensitive endpoint explicitly, not just via middleware: a
+    # document is the one response whose bytes we did not write, so the browser
+    # must be told to honour the declared type and never sniff an upload served
+    # as text/plain back into executable HTML
     return Response(content=data, media_type=media_type_for(filename),
                     headers={"Content-Disposition":
-                             f'inline; filename="{filename}"'})
+                             f'inline; filename="{filename}"',
+                             "X-Content-Type-Options": "nosniff"})

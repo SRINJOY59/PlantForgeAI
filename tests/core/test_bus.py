@@ -51,6 +51,27 @@ def test_parked_subgraphs_kept_separate_from_buffer(bus):
     assert bus._r.lrange(keys.WRITE_DLQ, 0, -1) == ["bad"]
 
 
+def test_rate_check_allows_up_to_the_limit_then_blocks(bus):
+    allowed = [bus.rate_check("ask:u1", limit=3, window_s=60)[0] for _ in range(5)]
+    assert allowed == [True, True, True, False, False]
+
+
+def test_rate_check_reports_a_retry_after_once_blocked(bus):
+    for _ in range(2):
+        bus.rate_check("ask:u1", limit=2, window_s=60)
+    allowed, retry = bus.rate_check("ask:u1", limit=2, window_s=60)
+    assert allowed is False
+    assert 0 < retry <= 60
+
+
+def test_rate_check_is_per_bucket(bus):
+    for _ in range(3):
+        bus.rate_check("ask:u1", limit=3, window_s=60)
+    # a different user, and a different endpoint, each get their own budget
+    assert bus.rate_check("ask:u2", limit=3, window_s=60)[0] is True
+    assert bus.rate_check("moc:u1", limit=3, window_s=60)[0] is True
+
+
 def test_socket_outlasts_the_longest_block():
     # the ordering that matters: a socket timeout inside the block hangs up on
     # redis mid-wait and raises while redis is behaving perfectly

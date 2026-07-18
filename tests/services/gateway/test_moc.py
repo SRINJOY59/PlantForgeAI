@@ -8,8 +8,10 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from gateway.deps import get_agents_http
+from gateway.deps import get_agents_http, get_service
 from gateway.main import app
+from gateway.service import GatewayService
+from conftest import FakeBus, FakeSender, FakeStore
 
 PROPOSAL = {"tag": "P-101A", "summary": "replace mechanical seal",
             "proposed_by": "eng@plant.com"}
@@ -37,6 +39,9 @@ def client():
         return httpx.Response(200, json=ASSESSMENT)
 
     app.dependency_overrides[get_agents_http] = lambda: fake_agents(handler)
+    # the rate-limit dependency on /moc/assess reads the bus through get_service
+    app.dependency_overrides[get_service] = lambda: GatewayService(
+        FakeStore(), FakeBus(), FakeSender())
     yield TestClient(app), seen
     app.dependency_overrides.clear()
 
@@ -74,6 +79,8 @@ def test_upstream_failure_is_relayed_not_masked():
         return httpx.Response(503, json={"detail": "graph unreachable"})
 
     app.dependency_overrides[get_agents_http] = lambda: fake_agents(handler)
+    app.dependency_overrides[get_service] = lambda: GatewayService(
+        FakeStore(), FakeBus(), FakeSender())
     try:
         resp = TestClient(app).post("/moc/assess", json=PROPOSAL)
         # an assessment that failed must not look like one that found nothing
