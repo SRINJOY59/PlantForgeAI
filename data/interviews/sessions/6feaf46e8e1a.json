@@ -1,0 +1,242 @@
+{
+  "session_id": "6feaf46e8e1a",
+  "profile": {
+    "id": "3f2d9d89-5f69-49c0-a7d4-e6138b9c56ec",
+    "full_name": "srinjoydas566",
+    "employee_id": null,
+    "job_title": null,
+    "department": null,
+    "plant": null,
+    "home_unit": null,
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-17T03:19:49.633999+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "3f2d9d89-5f69-49c0-a7d4-e6138b9c56ec",
+      "full_name": "srinjoydas566",
+      "employee_id": null,
+      "job_title": null,
+      "department": null,
+      "plant": null,
+      "home_unit": null,
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-17T03:19:49.633999+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: srinjoydas566 (no id)\n- Role: unknown, unknown department\n- Plant / unit: unknown / unknown\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role evolution and unwritten responsibilities",
+      "category": "role",
+      "rationale": "No role or department is recorded; understanding what they actually did day-to-day reveals gaps in the formal org chart.",
+      "seed_questions": [
+        "What was your job title on paper, and what did you actually spend most of your time doing?",
+        "Which tasks fell to you that were never in any job description?",
+        "Who depended on your decisions or approvals that wouldn't show up in an org chart?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Key equipment and systems they owned",
+      "category": "equipment",
+      "rationale": "No equipment is linked to this profile; we need them to name the assets they knew intimately.",
+      "seed_questions": [
+        "Which pumps, compressors, vessels, or control loops did you consider 'yours'?",
+        "If you got a call at 2 a.m., which equipment tag was most likely the reason?",
+        "Are there any pieces of equipment you nursed along that nobody else really understands?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Chronic equipment issues and workarounds",
+      "category": "equipment",
+      "rationale": "Undocumented failure patterns and field fixes are the highest-value knowledge at risk of walking out the door.",
+      "seed_questions": [
+        "Which piece of equipment failed repeatedly in ways the work orders never fully captured?",
+        "What temporary fixes became permanent and why was a proper repair never done?",
+        "Are there any vibration, temperature, or sound signatures you learned to recognize as early warnings?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Unfinished projects and half-done modifications",
+      "category": "projects",
+      "rationale": "Projects they touched may be in limbo with tribal knowledge about why they stalled or what remains.",
+      "seed_questions": [
+        "Which projects did you start or contribute to that never got formally closed out?",
+        "Are there any modifications or bypasses installed that were meant to be temporary but are still in place?",
+        "What project documentation exists but is misleading because the actual installed configuration is different?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Vendor and contractor relationship intelligence",
+      "category": "tribal",
+      "rationale": "Knowing which vendor reps to trust, who to avoid, and unwritten service history saves months of trial and error.",
+      "seed_questions": [
+        "Which equipment vendors or local reps actually understood our plant and which ones gave us bad advice?",
+        "Are there any third-party contractors or specialists you always called for certain jobs because internal crews couldn't handle it?",
+        "What verbal agreements or understandings exist with suppliers that aren't in any contract?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Critical operating procedures that differ from the written SOP",
+      "category": "procedures",
+      "rationale": "Operators often develop safer or more effective methods that never make it back into the controlled documents.",
+      "seed_questions": [
+        "Which standard operating procedure did you never follow exactly as written, and why?",
+        "Are there any startup or shutdown sequences where the real-world order of steps is different from the manual?",
+        "What alarms or trips do people routinely suppress or work around, and what is the safe way to do it?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Process safety and near-miss memory",
+      "category": "tribal",
+      "rationale": "Near-misses and weak points in safety barriers are rarely documented with the richness of someone who was there.",
+      "seed_questions": [
+        "What was the closest you ever came to a serious process safety event that never made it into an incident report?",
+        "Which safety interlocks or relief systems have you seen challenged or bypassed?",
+        "Are there any operating envelopes (pressure, temperature, level) where you know the stated limits are wrong or optimistic?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Tuning parameters and control loop folklore",
+      "category": "tribal",
+      "rationale": "PID tuning values, DCS logic quirks, and controller settings often live only in the minds of the people who tweaked them.",
+      "seed_questions": [
+        "Which control loops have tuning parameters you set by feel and never documented?",
+        "Are there any DCS or PLC logic sequences that have 'features' only you know how to work around?",
+        "What setpoints or ramp rates do you use that differ from the official recipe or control narrative?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Maintenance history gaps and repeat failure patterns",
+      "category": "equipment",
+      "rationale": "CMMS data often misses the 'why' behind repeat failures; the retiree knows which fixes never stuck.",
+      "seed_questions": [
+        "Which equipment had the same failure mode repaired multiple times without ever addressing the root cause?",
+        "Are there any spare parts that are supposed to fit but actually require field modification?",
+        "What preventive maintenance tasks on the schedule are a waste of time, and what should replace them?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Shift handover and abnormal situation management",
+      "category": "handover",
+      "rationale": "How they managed transitions and abnormal ops contains patterns a successor needs to replicate.",
+      "seed_questions": [
+        "What information did you always make sure to pass on during shift handover that never fit in the logbook?",
+        "When the plant was in an upset condition, what was your personal mental checklist that isn't written anywhere?",
+        "What is the one situation you hope your successor never faces, and what should they do if it happens?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Successor readiness and open risks",
+      "category": "handover",
+      "rationale": "Direct advice to the successor and a frank assessment of lurking risks is the core purpose of the exit interview.",
+      "seed_questions": [
+        "What are the top three things your replacement needs to learn in the first month that they won't find in any file?",
+        "What is the biggest operational risk you see on the horizon that management isn't paying enough attention to?",
+        "If you could leave one handwritten note taped inside a control panel for the next person, what would it say?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Plant-wide gotchas and unwritten rules",
+      "category": "tribal",
+      "rationale": "Every plant has quirks—certain valves that stick, instruments that lie in specific weather, combinations to avoid.",
+      "seed_questions": [
+        "What are the 'never do this' rules that everyone who has been here a while knows but a new person wouldn't?",
+        "Are there any instrument readings that you know to distrust under certain conditions?",
+        "What seasonal or weather-related behaviors of the plant should someone watch for?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Training and knowledge transfer gaps they experienced",
+      "category": "handover",
+      "rationale": "Their own experience of being trained reveals systemic weaknesses in how the plant passes on knowledge.",
+      "seed_questions": [
+        "When you started in this role, what did nobody teach you that you had to learn the hard way?",
+        "What training materials or programs exist but are outdated or misleading?",
+        "Who else in the plant holds pieces of knowledge that really belong to your role?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [
+    {
+      "role": "user",
+      "text": "Currently, the DOS second, let's say,",
+      "ts": "2026-07-18T16:58:35.028943+00:00"
+    },
+    {
+      "role": "assistant",
+      "text": "Srinjoy, I think you were about to say something — \"the DOS second.. .\" — go ahead and finish that thought if you'd like. But let me take a step back first. I'm here because you're retiring, and there's knowledge in your head that nobody else has — the kind of thing that isn't in any manual or handover document. That's what I want to capture today.\n\nSo let me start with this: what's your actual role here at the plant, and if you had to pick one thing you'd most want your successor to know, what would it be?",
+      "ts": "2026-07-18T16:58:57.074003+00:00"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you, this has been genuinely valuable. I am writing up your handover document now.",
+      "ts": "2026-07-18T16:58:59.953072+00:00"
+    }
+  ],
+  "status": "done",
+  "followup_hints": [
+    "Employee started to mention 'DOS second' but was cut off."
+  ],
+  "skills_path": "data/interviews/exports/6feaf46e8e1a/skills_unknown.md",
+  "staging_key": "staging/b97f28865fc24b97819fe680ad82b151/skills_unknown.md",
+  "error": null,
+  "created_at": "2026-07-18T16:58:29.411125+00:00",
+  "notes_cursor": 3
+}

@@ -29,7 +29,204 @@
     "person_docs": [],
     "brief": "## Employee\n- Name: srinjoydas566 (no id)\n- Role: unknown, unknown department\n- Plant / unit: unknown / unknown\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
   },
-  "topics": [],
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Your Role and Daily Responsibilities",
+      "category": "role",
+      "rationale": "Establishing what you actually did day-to-day, beyond any job description, is the foundation for all other topics.",
+      "seed_questions": [
+        "What was your official job title and how did your actual duties differ?",
+        "Walk us through a typical shift – what did you check first?",
+        "What part of your role consumed the most time but was never written down?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Key Equipment You Owned or Operated",
+      "category": "equipment",
+      "rationale": "We have no equipment records for you, so we need you to name the specific assets you know best.",
+      "seed_questions": [
+        "List the three most critical pieces of equipment you were responsible for.",
+        "Which machine had the most recurring problems that never got officially fixed?",
+        "Are there any legacy machines with no documentation that you kept running?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Major Projects and Their Real Status",
+      "category": "projects",
+      "rationale": "Half-finished projects, abandoned improvements, and scope changes live only in your memory.",
+      "seed_questions": [
+        "Which projects did you lead or contribute to that are still not fully closed?",
+        "Were there any modifications that were started but never commissioned?",
+        "What project outcome surprised everyone, and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Undocumented Workarounds and Tribal Fixes",
+      "category": "tribal",
+      "rationale": "Every plant runs on informal tricks that never make it into SOPs.",
+      "seed_questions": [
+        "What temporary fix became permanent on your equipment?",
+        "When something jammed or tripped, what was the 'magic tap' or sequence you used?",
+        "Are there any bypasses or jumpers you relied on during emergencies?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Procedures You Actually Followed vs. Written Ones",
+      "category": "procedures",
+      "rationale": "The difference between the manual and real life often holds critical safety and efficiency insights.",
+      "seed_questions": [
+        "Which official startup/shutdown procedure did everyone shortcut?",
+        "What step in a procedure was always skipped because it was impractical?",
+        "Did you keep a personal notebook with the real steps? If so, what was in it?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Early Warning Signs Only You Could Spot",
+      "category": "tribal",
+      "rationale": "Slight changes in sound, vibration, or smell predict failures but never get recorded.",
+      "seed_questions": [
+        "How could you tell a pump was about to fail before the instruments caught it?",
+        "Were there any unique odors or noises that meant 'shut it down now'?",
+        "What did you listen for during rounds that no sensor measures?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Vendors and External Contacts Who Got Things Done",
+      "category": "tribal",
+      "rationale": "The right phone number often beats the official support channel.",
+      "seed_questions": [
+        "Which vendor rep or tech did you trust to solve problems no one else could?",
+        "Are there any parts that must come from a specific supplier, even if not listed?",
+        "Who should your successor call first when OEM support fails?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Tuning Values and Setpoints Carried in Your Head",
+      "category": "procedures",
+      "rationale": "Optimal control parameters often exist only as mental notes.",
+      "seed_questions": [
+        "Are there any PID loop values or cutoffs you adjusted based on experience?",
+        "What production rate or temperature did you run despite what the spec said?",
+        "Where did you keep your personal cheat sheet for setpoint changes?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Recurring Failure Modes on Specific Equipment",
+      "category": "equipment",
+      "rationale": "Chronic issues that never stayed fixed contain deep patterns.",
+      "seed_questions": [
+        "Tell us about a seal, bearing, or gasket that failed repeatedly despite multiple repairs.",
+        "What was the root cause you suspected but never proved for a chronic breakdown?",
+        "Which equipment did you inherit that was already 'cursed'?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Fixes That Backfired or Didn't Last",
+      "category": "tribal",
+      "rationale": "Learning what failed prevents repetition.",
+      "seed_questions": [
+        "Can you recall a repair that made the problem worse?",
+        "Was there a 'improvement' project that introduced new failures?",
+        "What fix had to be redone within weeks, and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Training Gaps and Unwritten Knowledge Transfer",
+      "category": "tribal",
+      "rationale": "How you really trained people explains what the official programs miss.",
+      "seed_questions": [
+        "What did you teach new operators that was never in any manual?",
+        "What was the biggest misconception rookies had that you had to correct?",
+        "If you only had one hour to train your replacement, what would you show them?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Open Risks and Known But Unresolved Issues",
+      "category": "handover",
+      "rationale": "Your successor must know the ticking time bombs.",
+      "seed_questions": [
+        "What safety or reliability risk do you worry about most after you leave?",
+        "Which equipment has a deferred repair that can't wait much longer?",
+        "Are there any compliance gaps or pending audit findings you were managing informally?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Direct Advice for Your Successor",
+      "category": "handover",
+      "rationale": "Condensed wisdom from decades of experience.",
+      "seed_questions": [
+        "What is the one thing you would tell the person taking over your role to never do?",
+        "If they get into trouble at 3 AM, what should their first three actions be?",
+        "Who in the plant can they trust to give straight answers?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Incidents and Near Misses That Weren't Written Up",
+      "category": "tribal",
+      "rationale": "Near misses often hold more lessons than formal reports.",
+      "seed_questions": [
+        "Was there an event that almost caused a major accident but was kept quiet?",
+        "What is the scariest moment you experienced on-site that never appeared in a log?",
+        "How did you prevent a disaster using only your instinct?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
   "transcript": [
     {
       "role": "assistant",
@@ -37,11 +234,11 @@
       "ts": "2026-07-18T16:29:25.876323+00:00"
     }
   ],
-  "status": "generating",
+  "status": "done",
   "followup_hints": [],
-  "skills_path": null,
-  "staging_key": null,
+  "skills_path": "data/interviews/exports/a6dd44fce146/skills_unknown.md",
+  "staging_key": "staging/84919bd525984eed8cca60e745b17c80/skills_unknown.md",
   "error": null,
   "created_at": "2026-07-18T16:29:05.612326+00:00",
-  "notes_cursor": 0
+  "notes_cursor": 1
 }

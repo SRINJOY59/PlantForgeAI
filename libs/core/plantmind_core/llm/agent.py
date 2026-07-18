@@ -3,6 +3,7 @@ a params schema, and a function); it lets the model call them iteratively
 until the model answers or the step budget runs out. Provider-agnostic via
 the OpenAI tool-calling format."""
 
+import asyncio
 import json
 from dataclasses import dataclass
 from typing import Callable
@@ -58,7 +59,7 @@ class ToolAgent:
             messages.append({"role": "assistant", "content": msg.content or "",
                              "tool_calls": [_call_dict(c) for c in calls]})
             for call in calls:
-                result = self._dispatch(call, trace)
+                result = await self._dispatch(call, trace)
                 messages.append({"role": "tool", "tool_call_id": call.id,
                                  "content": json.dumps(result, default=str)})
 
@@ -94,7 +95,7 @@ class ToolAgent:
             messages.append({"role": "assistant", "content": msg.content or "",
                              "tool_calls": [_call_dict(c) for c in calls]})
             for call in calls:
-                result = self._dispatch(call, trace)
+                result = await self._dispatch(call, trace)
                 yield "step", call.function.name
                 messages.append({"role": "tool", "tool_call_id": call.id,
                                  "content": json.dumps(result, default=str)})
@@ -106,7 +107,7 @@ class ToolAgent:
         yield "result", AgentResult(answer="".join(parts), steps=used,
                                     trace=trace)
 
-    def _dispatch(self, call, trace) -> dict:
+    async def _dispatch(self, call, trace) -> dict:
         name = call.function.name
         try:
             args = json.loads(call.function.arguments or "{}")
@@ -117,7 +118,10 @@ class ToolAgent:
             result = {"error": f"unknown tool {name}"}
         else:
             try:
-                result = tool.fn(**args)
+                # tool fns are synchronous graph reads on the sync Neo4j driver;
+                # run them off the event loop so one agent's tool calls don't
+                # block every other request the process is serving
+                result = await asyncio.to_thread(tool.fn, **args)
             except Exception as e:
                 log.warning("tool call failed", tool=name, error=str(e)[:200])
                 result = {"error": str(e)[:200]}

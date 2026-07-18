@@ -79,13 +79,19 @@ services:
 
   # ---------- application services ----------
   # all built from infra/docker/service.Dockerfile; SERVICE arg picks the code
+  # The stateless HTTP services (gateway, retrieval, agents-api) run multiple
+  # uvicorn worker processes for CPU-parallel request handling; each worker is
+  # its own event loop and thread pool, and they share all state through Redis
+  # (answer cache, rate limits, alert stream) and Neo4j. Tune with *_WORKERS.
+  # interview is deliberately NOT multi-worker: it holds session and live
+  # WebRTC state in-process, so a second worker would not see a user's session.
   gateway:
     <<: *svc
     build:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: gateway }
-    command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000 --workers ${GATEWAY_WORKERS:-2}
     ports: ["8000:8000"]
 
   ingestion:
@@ -152,7 +158,7 @@ services:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: retrieval }
-    command: uvicorn retrieval.main:app --host 0.0.0.0 --port 8001
+    command: uvicorn retrieval.main:app --host 0.0.0.0 --port 8001 --workers ${RETRIEVAL_WORKERS:-2}
     ports: ["8001:8001"]
 
   agents:
@@ -182,7 +188,7 @@ services:
       context: .
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: agents }
-    command: uvicorn agents.main:app --host 0.0.0.0 --port 8002
+    command: uvicorn agents.main:app --host 0.0.0.0 --port 8002 --workers ${AGENTS_API_WORKERS:-2}
     ports: ["8002:8002"]
 
   # knowledge-capture voice interview (services/interview). Voice needs

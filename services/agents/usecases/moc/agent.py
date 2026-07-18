@@ -7,6 +7,8 @@ Everything the plant already knows about an asset is exactly what you need to
 know before you change it.
 """
 
+import asyncio
+
 from plantmind_core.schemas import ChangeProposal, ImpactAssessment
 from plantmind_core.telemetry import get_logger
 
@@ -29,7 +31,9 @@ class ChangeImpact(GraphAgent):
     async def assess(self, proposal: ChangeProposal,
                      graph_version: int = 0) -> ImpactAssessment:
         reasoned = await self.reason(prompts.task(proposal), {proposal.tag})
-        return self._finish(proposal, reasoned, graph_version)
+        # _finish does a blocking Neo4j read (document_names); off the loop
+        return await asyncio.to_thread(self._finish, proposal, reasoned,
+                                       graph_version)
 
     async def assess_stream(self, proposal: ChangeProposal,
                             graph_version: int = 0):
@@ -40,7 +44,9 @@ class ChangeImpact(GraphAgent):
         async for kind, payload in self.reason_stream(prompts.task(proposal),
                                                       {proposal.tag}):
             if kind == "reasoned":
-                yield "done", self._finish(proposal, payload, graph_version)
+                result = await asyncio.to_thread(self._finish, proposal,
+                                                 payload, graph_version)
+                yield "done", result
             else:
                 yield kind, payload
 

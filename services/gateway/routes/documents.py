@@ -1,6 +1,8 @@
 """Upload into the pipeline, take corrections from engineers, and serve
 original documents back for citation clicks."""
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -78,7 +80,9 @@ async def ingest(file: UploadFile, svc=Depends(get_service)):
     if not data:
         raise HTTPException(400, "Empty file.")
 
-    return svc.ingest(file.filename, data)
+    # svc.ingest does a synchronous MinIO put (up to the 25 MB cap) plus a
+    # Celery send; off the loop so a large upload doesn't stall other requests
+    return await asyncio.to_thread(svc.ingest, file.filename, data)
 
 
 @router.post("/corrections")

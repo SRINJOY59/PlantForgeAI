@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass, field
 
 from plantmind_core.schemas import Answer, CorrectionNote, QueryMode
@@ -75,19 +76,25 @@ class RetrievalService:
     async def ask(self, question: str, history: list | None = None) -> Answer:
         question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
-        cached = self._cache_get(embedding)
+        # the cache lookup is a brute-force cosine scan (CPU) plus a Redis read,
+        # and it runs on every request - off the loop so it can't stall others
+        cached = await asyncio.to_thread(self._cache_get, embedding)
         if cached:
             # name here too: entries cached before filenames existed, and every
             # future cache-format change, would otherwise surface as raw hashes
-            self._name_citations(cached)
+            await asyncio.to_thread(self._name_citations, cached)
             return cached
 
-        prepared = await self._prepare(question, embedding)
+        # the graph-read pipeline is synchronous (the Neo4j driver is sync), so
+        # run it off the event loop - otherwise every user's reads block every
+        # other user's request, LLM streams included
+        prepared = await asyncio.to_thread(self._prepare, question, embedding)
         answer = await self._answerer.answer(
             question, prepared.context, prepared.evidence, prepared.mode,
             self._graph_version(), prepared.corrections)
-        self._name_citations(answer)
-        self._cache_put(question, embedding, answer, prepared.cited)
+        await asyncio.to_thread(self._name_citations, answer)
+        await asyncio.to_thread(
+            self._cache_put, question, embedding, answer, prepared.cited)
         return answer
 
     async def ask_stream(self, question: str, history: list | None = None):
@@ -98,14 +105,17 @@ class RetrievalService:
         # question, never the words the user typed into a thread
         question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
-        cached = self._cache_get(embedding)
+        # the cache lookup is a brute-force cosine scan (CPU) plus a Redis read,
+        # and it runs on every request - off the loop so it can't stall others
+        cached = await asyncio.to_thread(self._cache_get, embedding)
         if cached:
-            self._name_citations(cached)
+            await asyncio.to_thread(self._name_citations, cached)
             yield "token", cached.text
             yield "done", cached
             return
 
-        prepared = await self._prepare(question, embedding)
+        # off the event loop: the sync Neo4j reads must not stall other users
+        prepared = await asyncio.to_thread(self._prepare, question, embedding)
         chunks = []
         async for delta in self._answerer.stream(question, prepared.context):
             chunks.append(delta)
@@ -115,8 +125,9 @@ class RetrievalService:
         answer = self._answerer.build_meta(
             "".join(chunks), prepared.evidence, prepared.mode,
             self._graph_version(), prepared.corrections)
-        self._name_citations(answer)
-        self._cache_put(question, embedding, answer, prepared.cited)
+        await asyncio.to_thread(self._name_citations, answer)
+        await asyncio.to_thread(
+            self._cache_put, question, embedding, answer, prepared.cited)
         yield "done", answer
 
     def _name_citations(self, answer: Answer):
@@ -128,8 +139,12 @@ class RetrievalService:
         for c in answer.citations:
             c.filename = names.get(c.doc_id) or names.get(f"doc:{c.doc_id}")
 
-    async def _prepare(self, question: str, embedding: list) -> "Prepared":
-        """The whole retrieval pipeline up to (not including) generation."""
+    def _prepare(self, question: str, embedding: list) -> "Prepared":
+        """The whole retrieval pipeline up to (not including) generation.
+
+        Synchronous on purpose: every step here is a blocking Neo4j read on the
+        sync driver, so callers run it via asyncio.to_thread to keep the event
+        loop free for other in-flight requests."""
         seeds = self._linker.link(question)
         mode = self._router.route(question, seeds)
         log.info("routing", mode=mode.value, seeds=len(seeds))
