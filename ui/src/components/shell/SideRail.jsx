@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
-  Plug, Leaf, UserRound,
+  Plug, Leaf, UserRound, AudioLines,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 
@@ -14,6 +14,7 @@ const nav = [
   { to: "/app/compliance", icon: ShieldCheck,   label: "Compliance"  },
   { to: "/app/connectors", icon: Plug,          label: "Connectors"  },
   { to: "/app/profile",    icon: UserRound,     label: "Profile"     },
+  { to: "/app/interview",  icon: AudioLines,    label: "Interview"   },
 ];
 
 export default function SideRail() {

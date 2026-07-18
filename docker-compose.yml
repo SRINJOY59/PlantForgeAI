@@ -185,6 +185,22 @@ services:
     command: uvicorn agents.main:app --host 0.0.0.0 --port 8002
     ports: ["8002:8002"]
 
+  # knowledge-capture voice interview (services/interview). Voice needs
+  # DEEPGRAM_API_KEY in .env; without it the service still runs and serves
+  # the text-mode interview. Host port is 8003, not 8002: agents-api already
+  # owns 8002, and the interview UI reaches this directly (VITE_INTERVIEW_URL,
+  # default localhost:8003), so the two backends can't share a host port.
+  interview:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: interview }
+    command: uvicorn interview.main:app --host 0.0.0.0 --port 8002
+    ports: ["8003:8002"]
+    volumes:
+      - ./data/interviews:/srv/data/interviews
+
   # watches queue depth and scales the worker services to match. It is the one
   # service that talks to the docker daemon rather than to redis alone, which
   # is why it gets the socket and its own image.

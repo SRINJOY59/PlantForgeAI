@@ -12,6 +12,7 @@ import GraphExplorer from "./pages/app/GraphExplorer";
 import Compliance from "./pages/app/Compliance";
 import Connectors from "./pages/app/Connectors";
 import Profile from "./pages/app/Profile";
+import Interview from "./pages/app/Interview";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="compliance" element={<Compliance />} />
         <Route path="connectors" element={<Connectors />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="interview" element={<Interview />} />
       </Route>
     </Routes>
   );
