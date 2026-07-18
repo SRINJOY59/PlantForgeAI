@@ -1,9 +1,12 @@
-"""The interview's long memory. The LLM context window holds the recent
-conversation; this holds the durable state - the topic agenda, what has been
-covered, and every fact captured so far. A cheap 'notetaker' model digests
-the transcript incrementally (cursor-based, so a two-hour session costs the
-same per turn as a five-minute one) and the distilled state is re-injected
-into the live prompt, which is what guarantees no repeated questions."""
+"""The interview's durable state - the topic agenda, what has been covered,
+every fact captured, and the running transcript.
+
+SessionMemory is the aggregate root and it is deliberately active-record: it
+saves itself after every mutation, so a crash at any turn loses nothing. The
+LLM notetaker that turns raw transcript into facts lives next door in
+notetaker.py, and the tool-and-prompt 'brain' in brain.py; this file is the
+state those act on, plus how it renders itself into the live prompt.
+"""
 
 import json
 import os
@@ -13,14 +16,12 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from plantmind_core.llm import Tier
 from plantmind_core.telemetry import get_logger
 
 from interview.config import get_config
-from interview.context import WorkContext
-from interview.prompts import NOTETAKER_PROMPT
+from interview.context.models import WorkContext
 
-log = get_logger("interview.memory")
+log = get_logger("interview.domain.memory")
 
 CATEGORIES = ("role", "projects", "equipment", "tribal", "procedures",
               "handover")
@@ -79,22 +80,34 @@ class SessionMemory(BaseModel):
     status: Literal["created", "live", "ending", "generating",
                     "done", "failed"] = "created"
     followup_hints: list[str] = []
-    readme_path: Optional[str] = None
+    skills_path: Optional[str] = None
     staging_key: Optional[str] = None
     error: Optional[str] = None
     created_at: str = ""
     notes_cursor: int = 0             # transcript index already digested
 
     @classmethod
-    def create(cls, profile: dict, context: WorkContext,
-               agenda: Agenda) -> "SessionMemory":
-        topics = [Topic.from_draft(d, i)
-                  for i, d in enumerate(agenda.topics[:MAX_TOPICS], start=1)]
+    def create(cls, profile: dict, context: WorkContext) -> "SessionMemory":
+        """A session starts with no agenda - it is generated in the background
+        so voice can connect immediately - and set_agenda fills it in when the
+        LLM returns. Until then the interviewer runs a warm-up (see
+        state_prompt)."""
         memory = cls(session_id=uuid.uuid4().hex[:12], profile=profile,
-                     context=context, topics=topics,
+                     context=context,
                      created_at=datetime.now(timezone.utc).isoformat())
         memory.save()
         return memory
+
+    def set_agenda(self, agenda: Agenda):
+        """Populate the topic agenda once the (background) LLM call returns.
+        Only fills an empty agenda - a live session's topics are never
+        clobbered by a late arrival."""
+        if self.topics:
+            return
+        self.topics = [Topic.from_draft(d, i)
+                       for i, d in enumerate(agenda.topics[:MAX_TOPICS],
+                                             start=1)]
+        self.save()
 
     # ---- transcript ----
 
@@ -110,72 +123,7 @@ class SessionMemory(BaseModel):
     def undigested_turns(self) -> int:
         return len(self.transcript) - self.notes_cursor
 
-    # ---- notetaker ----
-
-    async def digest(self, llm) -> bool:
-        """Distil the un-digested transcript window into topic facts and
-        coverage. Returns True when anything changed."""
-        window = self.transcript[self.notes_cursor:]
-        if not window:
-            return False
-        cursor_target = len(self.transcript)
-
-        convo = "\n".join(
-            f"{'INTERVIEWER' if t['role'] == 'assistant' else 'EMPLOYEE'}:"
-            f" {t['text']}" for t in window)
-        agenda = "\n".join(
-            f"- {t.id} [{t.status}] {t.title}" for t in self.topics)
-        try:
-            update = await llm.structured(
-                [{"role": "system", "content": NOTETAKER_PROMPT},
-                 {"role": "user", "content":
-                  f"## Topic agenda\n{agenda}\n\n## New transcript\n{convo}"}],
-                NoteUpdate, tier=Tier.CHEAP)
-        except Exception as e:
-            log.warning("notetaker failed", error=str(e)[:200])
-            return False
-
-        changed = self._apply(update)
-        self.notes_cursor = cursor_target
-        self.save()
-        return changed
-
-    def _apply(self, update: NoteUpdate) -> bool:
-        changed = False
-        by_id = {t.id: t for t in self.topics}
-        for tu in update.topic_updates:
-            topic = by_id.get(tu.topic_id)
-            if topic is None:
-                continue
-            for fact in tu.new_facts:
-                fact = fact.strip()
-                if fact and fact not in topic.facts:
-                    topic.facts.append(fact)
-                    changed = True
-            coverage = max(topic.coverage, min(tu.coverage, 1.0))
-            if coverage != topic.coverage:
-                topic.coverage = coverage
-                changed = True
-            status = ("covered" if coverage >= COVERED_AT
-                      else "partial" if coverage > 0 or topic.facts
-                      else topic.status)
-            if status != topic.status:
-                topic.status = status
-                changed = True
-        for draft in update.new_topics:
-            if len(self.topics) >= MAX_TOPICS:
-                break
-            if any(t.title.lower() == draft.title.lower() for t in self.topics):
-                continue
-            self.topics.append(Topic.from_draft(draft, len(self.topics) + 1))
-            changed = True
-        for hint in update.followup_hints:
-            if hint and hint not in self.followup_hints:
-                self.followup_hints.append(hint)
-        self.followup_hints = self.followup_hints[-6:]
-        return changed
-
-    # ---- tool-side mutations ----
+    # ---- tool-side mutations (called by the brain's tool handlers) ----
 
     def mark_covered(self, topic_id: str, summary: str = "") -> list:
         for topic in self.topics:
@@ -214,6 +162,17 @@ class SessionMemory(BaseModel):
         """The compact INTERVIEW STATE block re-injected into the live
         system context after every digest. Replaced in place, never
         appended, so the prompt stays ~300 tokens for the whole session."""
+        if not self.topics:
+            # agenda still generating in the background: open warmly and keep
+            # them talking - never try to finish, focused topics are coming
+            return ("## INTERVIEW STATE (live - obey strictly)\n"
+                    "Your topic agenda is still being prepared. Greet them by "
+                    "name, explain briefly that you are here to capture what "
+                    "only they know before they leave, and ask ONE broad "
+                    "opening question about their role and what they would "
+                    "most want a successor to know. Do NOT call "
+                    "finish_interview - more focused topics arrive shortly.")
+
         covered = [t for t in self.topics if t.status == "covered"]
         open_topics = [t for t in self.topics if t.status != "covered"]
 
@@ -242,7 +201,7 @@ class SessionMemory(BaseModel):
             lines += [f"- {h}" for h in self.followup_hints[-4:]]
         return "\n".join(lines)
 
-    # ---- persistence ----
+    # ---- persistence (active record) ----
 
     def _path(self):
         return get_config().sessions_dir / f"{self.session_id}.json"

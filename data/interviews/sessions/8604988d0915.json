@@ -1,0 +1,505 @@
+{
+  "session_id": "8604988d0915",
+  "profile": {
+    "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+    "full_name": "Gandu",
+    "employee_id": null,
+    "job_title": "Instrumentation Engineer",
+    "department": "Instrumentation",
+    "plant": "Haldia ",
+    "home_unit": "Unit 300",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T15:56:07.725904+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+      "full_name": "Gandu",
+      "employee_id": null,
+      "job_title": "Instrumentation Engineer",
+      "department": "Instrumentation",
+      "plant": "Haldia ",
+      "home_unit": "Unit 300",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T15:56:07.725904+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Gandu (no id)\n- Role: Instrumentation Engineer, Instrumentation\n- Plant / unit: Haldia  / Unit 300\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role evolution and unwritten responsibilities",
+      "category": "role",
+      "rationale": "No equipment history in the graph; must map what Gandu actually owned vs. what the org chart says.",
+      "seed_questions": [
+        "What parts of Unit 300 did you consider 'yours' that weren't on any formal RACI?",
+        "Which systems did other engineers always come to you for, even if it wasn't your assigned area?",
+        "What routine checks or calibrations did you do that nobody ever wrote into a procedure?"
+      ],
+      "status": "partial",
+      "coverage": 0.2,
+      "facts": [
+        "The replacement needs to know AI properly.",
+        "The replacement should use AI for managing databases for other equipment.",
+        "Managing equipment details is a necessary operation.",
+        "Instrument engineers need to know which instruments are currently working or not.",
+        "Employee assumes responsibility to correct instrument memory discrepancies."
+      ]
+    },
+    {
+      "id": "t02",
+      "title": "Unit 300 instrumentation criticality map",
+      "category": "equipment",
+      "rationale": "No equipment records exist; need Gandu to name the top 5–10 instrument loops whose failure would stop the unit.",
+      "seed_questions": [
+        "If you had to list the five most critical instrument loops in Unit 300, what would they be?",
+        "Which transmitters or valves have no spare and a long lead time?",
+        "Are there any instruments that are technically redundant but you know won't actually work if the primary fails?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Chronic instrument failures and field fixes",
+      "category": "equipment",
+      "rationale": "Graph is empty; must surface repeat offenders and the unofficial fixes that kept them running.",
+      "seed_questions": [
+        "Which instrument tag numbers did you have to revisit month after month?",
+        "What field modifications or bypasses are in place right now that a new engineer would never find on a P&ID?",
+        "Are there any instruments you deliberately ranged or configured differently from the datasheet, and why?"
+      ],
+      "status": "partial",
+      "coverage": 0.1,
+      "facts": [
+        "PSV-204 has issues in pressure handling that are not handled.",
+        "Field fixes involve manually correcting instrument memory when manuals are incorrect."
+      ]
+    },
+    {
+      "id": "t04",
+      "title": "Vendor and service provider quirks",
+      "category": "tribal",
+      "rationale": "Undocumented knowledge about which vendors deliver, which need chasing, and who to call for emergency support.",
+      "seed_questions": [
+        "Which instrument vendors or local service reps actually answer the phone at 2 a.m.?",
+        "Are there any OEMs whose 'authorized' service centers you learned to avoid?",
+        "Who is the one technician or engineer at a supplier that you always insisted on, and what's their direct number?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Unfinished projects and abandoned modifications",
+      "category": "projects",
+      "rationale": "No project data in graph; must uncover half-done upgrades, bypasses, or shelved improvement ideas.",
+      "seed_questions": [
+        "What instrumentation upgrade or migration did you start but never finish, and where are the materials?",
+        "Are there any temporary installations that became permanent without proper documentation?",
+        "Which project was approved, partially executed, and then quietly abandoned—and what state is it in right now?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Safety instrumented system (SIS) testing gotchas",
+      "category": "procedures",
+      "rationale": "SIS proof-test procedures often have unwritten steps or known failure modes that only the incumbent knows.",
+      "seed_questions": [
+        "During SIS proof tests, which steps does the written procedure get wrong or skip?",
+        "Are there any safety instrumented functions that you know will trip the plant if tested the way the procedure says?",
+        "What bypass or override sequence do you use that isn't in the permit or procedure?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Loop tuning parameters held in your head",
+      "category": "tribal",
+      "rationale": "Tuning constants are rarely in the DCS historian or documentation; loss of this knowledge causes instability on restart.",
+      "seed_questions": [
+        "Which control loops have tuning parameters that you memorized because the DCS backup is unreliable?",
+        "Are there any loops that you intentionally detune during certain seasons or operating modes?",
+        "What is the one loop that nobody else should touch because it took you years to get right?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Interlock and alarm rationalization gaps",
+      "category": "procedures",
+      "rationale": "Alarm floods and nuisance trips are often managed by informal suppression that only the incumbent understands.",
+      "seed_questions": [
+        "Which alarms are permanently suppressed or have their setpoints shifted from the design value, and why?",
+        "Are there any interlocks that you've had to defeat to start up or run, and what is the safe workaround?",
+        "What is the one alarm that always comes in first before a big trip, that the alarm rationalization document doesn't flag?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Spare parts and obsolescence risks",
+      "category": "equipment",
+      "rationale": "Instrument spares strategy is often tribal; need to know what's obsolete, what's cannibalized, and what's mislabeled in stores.",
+      "seed_questions": [
+        "Which instrument spares in the warehouse are actually dead or incompatible with the current revision?",
+        "What equipment is now obsolete with no drop-in replacement, and what workaround have you been using?",
+        "Are there any instruments you've been cannibalizing from a mothballed unit or skid?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Startup and shutdown instrument sequence nuances",
+      "category": "procedures",
+      "rationale": "Written procedures rarely capture the exact instrument lineup, manual overrides, and timing that a veteran uses.",
+      "seed_questions": [
+        "Walk me through a cold startup from an instrumentation perspective—what do you do that the SOP doesn't say?",
+        "During a trip or emergency shutdown, what is the first thing you check on the DCS that isn't in any checklist?",
+        "Are there any instruments that must be isolated or drained before a shutdown to avoid damage, but the procedure misses it?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Successor advice and open risks",
+      "category": "handover",
+      "rationale": "Must capture what Gandu would tell their replacement on day one, including the biggest risks they see ahead.",
+      "seed_questions": [
+        "If you had 30 minutes with your replacement, what are the three things you'd tell them to never do?",
+        "What is the single biggest instrumentation risk you see for Unit 300 in the next turnaround or the next five years?",
+        "What one thing are you most worried will fail or be forgotten within six months of your departure?"
+      ],
+      "status": "partial",
+      "coverage": 0.1,
+      "facts": [
+        "The employee wants the successor to know AI properly.",
+        "The employee wants the successor to use AI for managing databases for other equipment."
+      ]
+    },
+    {
+      "id": "t12",
+      "title": "Calibration and range-setting shortcuts",
+      "category": "tribal",
+      "rationale": "Field calibration often deviates from the written standard due to process realities; these deviations are rarely recorded.",
+      "seed_questions": [
+        "Which instruments do you calibrate at a different span or zero than the datasheet calls for, and why?",
+        "Are there any instruments you calibrate in-place using a process value instead of a test bench, and what's the trick?",
+        "What calibration checks do you do by 'feel' or sound that a new engineer wouldn't know to do?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "DCS and PLC configuration quirks",
+      "category": "equipment",
+      "rationale": "Control system logic often contains force-enables, debug code, or commented-out blocks that only the incumbent understands.",
+      "seed_questions": [
+        "Are there any force-enables or logic overrides in the DCS or PLC that are currently active and need to stay that way?",
+        "What custom logic or calculation blocks did you add that aren't in the functional design specification?",
+        "Is there any 'dead' code or unused logic that must not be deleted because it's tied to something obscure?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Unit 300 instrument documentation gaps",
+      "category": "handover",
+      "rationale": "Need to identify which loop drawings, datasheets, or manuals are known to be wrong or missing.",
+      "seed_questions": [
+        "Which P&IDs or loop drawings for Unit 300 do you know are wrong, and what exactly is wrong on them?",
+        "What instrument datasheets or manuals are missing from the plant library that you kept your own copy of?",
+        "If you had to rebuild the instrument index from scratch, which 10% of it would you correct first?"
+      ],
+      "status": "partial",
+      "coverage": 0.3,
+      "facts": [
+        "Equipment details must be managed properly.",
+        "Need efficient machinery to keep track of equipment details.",
+        "The actual operation of some instruments differs from what is written in their manuals.",
+        "Engineers must manually update manuals and submit them to authorities for global plan changes.",
+        "The process of manually updating manuals and submitting them is time-consuming.",
+        "Manuals contain misinformation regarding instrument behavior.",
+        "Employee had to manually correct instrument memory to match actual plant operation."
+      ]
+    },
+    {
+      "id": "t15",
+      "title": "AI usage for database management",
+      "category": "procedures",
+      "rationale": "Employee mentioned AI for database management as a key skill for the replacement.",
+      "seed_questions": [],
+      "status": "partial",
+      "coverage": 0.1,
+      "facts": [
+        "Employee suggests having a 'memory for our plan' to store specific instrument details."
+      ]
+    },
+    {
+      "id": "t16",
+      "title": "Need for efficient machinery to track equipment details",
+      "category": "projects",
+      "rationale": "Employee expressed a desire for better tracking tools.",
+      "seed_questions": [],
+      "status": "partial",
+      "coverage": 0.1,
+      "facts": [
+        "Employee suggests a system to store specific details for easy retrieval."
+      ]
+    }
+  ],
+  "transcript": [
+    {
+      "role": "assistant",
+      "text": "Gandu, thank you for sitting down with me today. You've spent years as the Instrumentation Engineer here in Unit 300 at Haldia, and now you're heading into retirement. The thing is, there's knowledge in your head that no manual or drawing can capture — what things actually sound like before they fail, which valve sticks, who to call when things go sideways at 2 a.m. That's what I'm here to capture. So tell me — when you think about everything you've learned here, what's the one thing you'd most want the person replacing you to know on Day One?",
+      "ts": "2026-07-18T16:23:14.368236+00:00"
+    },
+    {
+      "role": "user",
+      "text": "Want the person who actually knows AI properly.",
+      "ts": "2026-07-18T16:23:21.559854+00:00"
+    },
+    {
+      "role": "user",
+      "text": "Who can use AI",
+      "ts": "2026-07-18T16:23:24.451313+00:00"
+    },
+    {
+      "role": "user",
+      "text": "for",
+      "ts": "2026-07-18T16:23:26.028584+00:00"
+    },
+    {
+      "role": "user",
+      "text": "managing the databases",
+      "ts": "2026-07-18T16:23:28.345100+00:00"
+    },
+    {
+      "role": "user",
+      "text": "other equipments like",
+      "ts": "2026-07-18T16:23:30.189628+00:00"
+    },
+    {
+      "role": "user",
+      "text": "for writing",
+      "ts": "2026-07-18T16:23:32.119980+00:00"
+    },
+    {
+      "role": "user",
+      "text": "there are multiple operations we need, like,",
+      "ts": "2026-07-18T16:23:35.057139+00:00"
+    },
+    {
+      "role": "user",
+      "text": "the equipment details must be managed properly.",
+      "ts": "2026-07-18T16:23:39.087840+00:00"
+    },
+    {
+      "role": "user",
+      "text": "Also, in PSV two zero four, some",
+      "ts": "2026-07-18T16:23:44.154960+00:00"
+    },
+    {
+      "role": "user",
+      "text": "are not handled. Some",
+      "ts": "2026-07-18T16:23:44.206934+00:00"
+    },
+    {
+      "role": "user",
+      "text": "issues are there in pressure handling. So",
+      "ts": "2026-07-18T16:23:48.256217+00:00"
+    },
+    {
+      "role": "user",
+      "text": "those things I want that us",
+      "ts": "2026-07-18T16:23:50.859171+00:00"
+    },
+    {
+      "role": "user",
+      "text": "an efficient",
+      "ts": "2026-07-18T16:23:52.755651+00:00"
+    },
+    {
+      "role": "user",
+      "text": "efficient machinery that can actually keep track of this and",
+      "ts": "2026-07-18T16:23:57.755579+00:00"
+    },
+    {
+      "role": "user",
+      "text": "that can keep remind that can give reminder to a new person related to",
+      "ts": "2026-07-18T16:24:00.426763+00:00"
+    },
+    {
+      "role": "assistant",
+      "text": "That's really insightful — you're saying the real gap isn't just another engineer, it's someone who can leverage AI to manage the equipment database and set up proper reminders. That's a forward-thinking perspective. You mentioned AI for database management — can you give me a concrete example of what you'd want that system to do? Like, what specific equipment data needs tracking that currently isn't being tracked?",
+      "ts": "2026-07-18T16:24:29.785846+00:00"
+    },
+    {
+      "role": "user",
+      "text": "It is better that the equipment specific",
+      "ts": "2026-07-18T16:24:34.125091+00:00"
+    },
+    {
+      "role": "user",
+      "text": "like,",
+      "ts": "2026-07-18T16:24:34.500539+00:00"
+    },
+    {
+      "role": "user",
+      "text": "equipment or instrument specific data because as an instrument engineer,",
+      "ts": "2026-07-18T16:24:39.341500+00:00"
+    },
+    {
+      "role": "user",
+      "text": "need to know which instruments are currently currently working or not. And",
+      "ts": "2026-07-18T16:24:43.749687+00:00"
+    },
+    {
+      "role": "user",
+      "text": "it is for sometimes happen it sometimes happens that some instruments",
+      "ts": "2026-07-18T16:24:47.757748+00:00"
+    },
+    {
+      "role": "user",
+      "text": "the working procedure of some instruments",
+      "ts": "2026-07-18T16:24:51.746757+00:00"
+    },
+    {
+      "role": "user",
+      "text": "are different.",
+      "ts": "2026-07-18T16:24:53.124605+00:00"
+    },
+    {
+      "role": "user",
+      "text": "It is read then something it is some different thing it is written in its manual.",
+      "ts": "2026-07-18T16:24:58.599852+00:00"
+    },
+    {
+      "role": "user",
+      "text": "So I",
+      "ts": "2026-07-18T16:25:00.205840+00:00"
+    },
+    {
+      "role": "user",
+      "text": "that, I had to",
+      "ts": "2026-07-18T16:25:01.486204+00:00"
+    },
+    {
+      "role": "user",
+      "text": "go through the manual ones and change in the manual directly, and then I",
+      "ts": "2026-07-18T16:25:05.888541+00:00"
+    },
+    {
+      "role": "user",
+      "text": "submit the manual to the our authorities.",
+      "ts": "2026-07-18T16:25:08.674903+00:00"
+    },
+    {
+      "role": "user",
+      "text": "They can change it globally for our all the plans.",
+      "ts": "2026-07-18T16:25:12.156971+00:00"
+    },
+    {
+      "role": "user",
+      "text": "But, yeah, that is a very time taking process to go through all of this. But",
+      "ts": "2026-07-18T16:25:16.863078+00:00"
+    },
+    {
+      "role": "user",
+      "text": "what we can do better is",
+      "ts": "2026-07-18T16:25:18.836449+00:00"
+    },
+    {
+      "role": "user",
+      "text": "we can have a",
+      "ts": "2026-07-18T16:25:20.234872+00:00"
+    },
+    {
+      "role": "user",
+      "text": "memory for our plan that can",
+      "ts": "2026-07-18T16:25:22.997724+00:00"
+    },
+    {
+      "role": "user",
+      "text": "all of the specific details and",
+      "ts": "2026-07-18T16:25:25.058952+00:00"
+    },
+    {
+      "role": "user",
+      "text": "I find any of",
+      "ts": "2026-07-18T16:25:26.761968+00:00"
+    },
+    {
+      "role": "user",
+      "text": "this kind of",
+      "ts": "2026-07-18T16:25:28.246661+00:00"
+    },
+    {
+      "role": "user",
+      "text": "miss",
+      "ts": "2026-07-18T16:25:28.860898+00:00"
+    },
+    {
+      "role": "user",
+      "text": "miss this kind of misinformation,",
+      "ts": "2026-07-18T16:25:31.981077+00:00"
+    },
+    {
+      "role": "user",
+      "text": "manual or, like, something different that is",
+      "ts": "2026-07-18T16:25:35.405208+00:00"
+    },
+    {
+      "role": "user",
+      "text": "running that instrument in our plan, then I just had to correct",
+      "ts": "2026-07-18T16:25:40.288258+00:00"
+    },
+    {
+      "role": "user",
+      "text": "that memory only.",
+      "ts": "2026-07-18T16:25:43.114857+00:00"
+    },
+    {
+      "role": "assistant",
+      "text": "This is really important — you're describing instruments where the actual behavior in the plant is different from what the manual says, and the process to fix that globally is painfully slow. Let me dig into that. Can you give me a specific example? One instrument where you discovered the manual was wrong, and what was actually happening in the field versus what the manual claimed?",
+      "ts": "2026-07-18T16:26:00.530280+00:00"
+    }
+  ],
+  "status": "done",
+  "followup_hints": [
+    "Ask for specific examples of instruments where operation differs from the manual.",
+    "Ask for details on the 'memory for our plan' suggestion (technology, scope).",
+    "Ask who the 'authorities' are that approve manual changes.",
+    "Ask for the specific example of the instrument where the manual was wrong.",
+    "Ask about the process to fix the misinformation globally.",
+    "Ask about the frequency of such misinformation."
+  ],
+  "skills_path": "data/interviews/exports/8604988d0915/skills_unknown.md",
+  "staging_key": "staging/dba5630d9b8849718dc29f61046dee5b/skills_unknown.md",
+  "error": null,
+  "created_at": "2026-07-18T16:22:35.750861+00:00",
+  "notes_cursor": 43
+}

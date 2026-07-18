@@ -1,6 +1,7 @@
 # Knowledge-capture interview service (services/interview).
 # pipecat-ai is pinned exactly: its module paths move between 0.0.x releases
 # and bot.py is written against this one.
+opencv-python-headless>=4.8,<5
 pipecat-ai[webrtc,deepgram,openai,silero]==0.0.108
 fastapi>=0.115
 uvicorn[standard]>=0.30

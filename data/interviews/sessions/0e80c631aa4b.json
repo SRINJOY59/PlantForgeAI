@@ -1,0 +1,258 @@
+{
+  "session_id": "0e80c631aa4b",
+  "profile": {
+    "id": "97020767-748d-4972-aaed-858763beaf51",
+    "full_name": "Shamik Bhattacharjee",
+    "employee_id": null,
+    "job_title": "Process Engineer",
+    "department": "Process",
+    "plant": "Bengaluru",
+    "home_unit": "Unit 100",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T16:28:13.394274+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "97020767-748d-4972-aaed-858763beaf51",
+      "full_name": "Shamik Bhattacharjee",
+      "employee_id": null,
+      "job_title": "Process Engineer",
+      "department": "Process",
+      "plant": "Bengaluru",
+      "home_unit": "Unit 100",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T16:28:13.394274+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Shamik Bhattacharjee (no id)\n- Role: Process Engineer, Process\n- Plant / unit: Bengaluru / Unit 100\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Core responsibilities and evolution of the Process Engineer role in Unit 100",
+      "category": "role",
+      "rationale": "Understand undocumented duties, informal expectations, and how the role has changed beyond the official job description.",
+      "seed_questions": [
+        "What were the top three responsibilities that never appeared in your job description?",
+        "How did your day-to-day work and priorities shift over the years due to plant changes or management decisions?",
+        "Which tasks did you handle that nobody else in the unit could do?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Unfinished improvement projects and their current hidden state",
+      "category": "projects",
+      "rationale": "Capture status of incomplete projects, including obstacles, partial implementations, and undocumented decisions.",
+      "seed_questions": [
+        "Which continuous improvement or debottlenecking projects did you leave incomplete, and what is the real blocker?",
+        "Are there partially installed equipment or control loops that are not yet commissioned?",
+        "What assumptions or test results from these projects exist only in your head or personal notes?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Identifying the most critical equipment you own and its undocumented failure modes",
+      "category": "equipment",
+      "rationale": "Since the knowledge graph lacks equipment links, prompt the engineer to name key assets and reveal non-documented breakdown patterns.",
+      "seed_questions": [
+        "Which three pieces of equipment in Unit 100 would cause a shutdown tomorrow if they failed—and why is that not in the manuals?",
+        "What is the most frequent unplanned failure you dealt with, and what was the real root cause that never got officially recorded?",
+        "Are there any recurring seal leaks, vibration issues, or heat exchanger fouling patterns that have no formal troubleshooting guide?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Hidden tradeoffs behind past successful process optimizations",
+      "category": "projects",
+      "rationale": "Document side-effects or compromises that came with efficiency gains, which are often omitted from project closeout reports.",
+      "seed_questions": [
+        "Think of a successful yield or energy improvement you made—what side effect did you have to live with that nobody wrote down?",
+        "Which operating envelope was tightened so much that operators later found workarounds?",
+        "Is there a catalyst or chemical additive change whose long-term effect on downstream equipment is still uncertain?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Vendor quirks, unofficial contacts, and support secrets",
+      "category": "equipment",
+      "rationale": "Reveal informal relationships and vendor-specific knowledge that speeds up troubleshooting or procurement.",
+      "seed_questions": [
+        "Which equipment vendor do you always call on their personal mobile instead of the support line, and what do they fix that the manual can't?",
+        "What unusual spare part substitutions or third-party repairs have you used successfully?",
+        "Are there vendor-specific DCS or PLC parameters that are not documented in the system description?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Gaps between standard operating procedures and actual practice",
+      "category": "procedures",
+      "rationale": "Identify where written SOPs diverge from how things really run, including shortcuts or necessary steps missing from documents.",
+      "seed_questions": [
+        "Which procedure step does every experienced operator skip or modify—and why is it safe (or unsafe) to do so?",
+        "Is there a startup or shutdown sequence where the official order is impossible to follow and what is the real sequence?",
+        "Where do field operators use 'tribal' valve lineups or bypasses that are not reflected in the P&IDs?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Early-warning signs and operator intuition for equipment anomalies",
+      "category": "tribal",
+      "rationale": "Capture subtle physical indicators (sounds, vibrations, smells, trends) that predict failures before alarms.",
+      "seed_questions": [
+        "What sound or vibration from a pump or compressor makes you walk over and touch it, even when all readings are normal?",
+        "Is there a specific DCS trend or combination of values that always precedes a trip but hasn't been formalized as an alarm?",
+        "Which piece of equipment do you mentally 'listen to' at the start of every shift, and what are you checking?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Informal cross-department coordination pathways",
+      "category": "role",
+      "rationale": "Document back-channel communications with maintenance, instrumentation, and utilities that keep the unit running smoothly.",
+      "seed_questions": [
+        "Who is the go-to person in maintenance or I&C that you always call first for a quick fix—and why them?",
+        "What is the unwritten process for getting a priority work order through when the CMMS queue is too slow?",
+        "Are there recurring conflicts with utilities (steam, cooling water, nitrogen) that you managed through personal relationships?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Half-finished trials and unrecorded experimental conclusions",
+      "category": "projects",
+      "rationale": "Capture knowledge from pilot tests or plant trials that were stopped or whose results were never fully documented.",
+      "seed_questions": [
+        "Tell us about a trial run or capacity test that was abandoned—what were the provisional findings?",
+        "Which operating condition did you test that gave promising results but was never implemented, and why?",
+        "Are there samples or data sets from past experiments stored in your locker or personal drive that nobody else knows about?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Non-standard operations during emergencies or unusual events",
+      "category": "procedures",
+      "rationale": "Document the real actions taken during past trips, leaks, or utility failures that deviate from written emergency response plans.",
+      "seed_questions": [
+        "Describe the most recent unplanned trip—what was the actual sequence of operator actions that brought it under control, and what did they skip from the written procedure?",
+        "Is there a hidden safe operating limit that you know from experience but that is not in the PHA or cause-and-effect matrix?",
+        "During a past power failure or steam loss, what critical manual valves had to be moved that are not documented in the blackout procedure?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Successor advice and open risk inventory",
+      "category": "handover",
+      "rationale": "Transfer a clear list of immediate risks, pending decisions, and personal advice for the new engineer.",
+      "seed_questions": [
+        "If you had 30 minutes with your replacement, what are the top three things you would tell them to watch out for from day one?",
+        "Which equipment or safety system is currently in a degraded state that nobody officially tracks?",
+        "What pending management-of-change or HAZOP action items have no clear owner now?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Undocumented root causes and fixes from past incidents",
+      "category": "tribal",
+      "rationale": "Uncover incident learnings that never made it into official reports or whose corrective actions have latent weaknesses.",
+      "seed_questions": [
+        "Think of a past leak or fire—what was the real chain of events that the investigation report softened, and what should we have fixed but didn't?",
+        "Which incident led to a 'temporary' fix that is now permanent, and what is the risk associated with it?",
+        "Is there a near-miss that you consider a ticking time bomb, and who knows about it?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Equipment adjustments and tuning parameters carried in your head",
+      "category": "equipment",
+      "rationale": "Document specific controller tuning constants, relief valve settings, or mechanical adjustments that are not in the asset management system.",
+      "seed_questions": [
+        "Which PID loop tuning values do you keep in a notebook or memory because the last tuning record is wrong?",
+        "What spring range or set pressure of a relief valve did you modify in the field without updating the datasheet?",
+        "Are there heat exchanger bypass settings or cooling water valve positions that you adjust seasonally and are not written down?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Personal lessons learned and career advice for process engineers",
+      "category": "role",
+      "rationale": "Capture wisdom about professional growth, mistakes to avoid, and how to navigate plant politics.",
+      "seed_questions": [
+        "What is the one technical mistake you made early on that you would tell a junior engineer to never repeat?",
+        "How did you build credibility with operators and maintenance techs, and what advice do you have on that?",
+        "What skill or knowledge area do you wish you had developed more, and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t15",
+      "title": "Collaboration details with external technology partners or licensors",
+      "category": "projects",
+      "rationale": "Record nuances of working with catalysts, chemicals, or technology suppliers that affect performance but are not in the contract.",
+      "seed_questions": [
+        "Which technology licensor or catalyst supplier gave you technical advice that contradicted the manual—and did it work?",
+        "Are there warranty claim or performance guarantee details that are still pending and only you know the history?",
+        "What informal arrangement or understanding exists with a chemical supplier about product quality tweaks or delivery flexibility?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [
+    {
+      "role": "assistant",
+      "text": "Shamik, thank you for sitting down with me today. You've spent years keeping Unit 100 running, and a lot of what you know — the instincts, the lessons, the little things that don't make it into a manual — are only in your head. I want to make sure those don't walk out the door with you. So, let's start broad: looking back at your time here, what is the one thing you'd most want the person stepping into your shoes to understand about Unit 100?",
+      "ts": "2026-07-18T16:28:39.193509+00:00"
+    }
+  ],
+  "status": "done",
+  "followup_hints": [],
+  "skills_path": "data/interviews/exports/0e80c631aa4b/skills_unknown.md",
+  "staging_key": "staging/25980c09013549d69e7ee11a3fa438e0/skills_unknown.md",
+  "error": null,
+  "created_at": "2026-07-18T16:28:18.491037+00:00",
+  "notes_cursor": 1
+}

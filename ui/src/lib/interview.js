@@ -61,15 +61,15 @@ export async function endSession(sessionId) {
   return res.json();
 }
 
-export async function fetchReadme(sessionId) {
-  const res = await request(`/sessions/${sessionId}/readme`);
+export async function fetchSkills(sessionId) {
+  const res = await request(`/sessions/${sessionId}/skills`);
   return res.text();
 }
 
-// /readme needs the JWT, and an <a href> can't carry a header - same blob
+// /skills needs the JWT, and an <a href> can't carry a header - same blob
 // trick as fetchDocumentUrl in api.js. Caller must revoke the URL.
-export async function readmeDownloadUrl(sessionId) {
-  const res = await request(`/sessions/${sessionId}/readme?download=1`);
+export async function skillsDownloadUrl(sessionId) {
+  const res = await request(`/sessions/${sessionId}/skills?download=1`);
   return URL.createObjectURL(await res.blob());
 }
 

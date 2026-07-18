@@ -1,0 +1,216 @@
+{
+  "session_id": "d2954789e606",
+  "profile": {
+    "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+    "full_name": "Gandu",
+    "employee_id": null,
+    "job_title": "Instrumentation Engineer",
+    "department": "Instrumentation",
+    "plant": "Haldia ",
+    "home_unit": "Unit 300",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T15:56:07.725904+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+      "full_name": "Gandu",
+      "employee_id": null,
+      "job_title": "Instrumentation Engineer",
+      "department": "Instrumentation",
+      "plant": "Haldia ",
+      "home_unit": "Unit 300",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T15:56:07.725904+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Gandu (no id)\n- Role: Instrumentation Engineer, Instrumentation\n- Plant / unit: Haldia  / Unit 300\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role Evolution & Unwritten Responsibilities",
+      "category": "role",
+      "rationale": "No equipment history in the graph; must map what the engineer actually owned vs. the official JD.",
+      "seed_questions": [
+        "What systems or areas did you end up supporting that were never in your job description?",
+        "Which unit operations relied on you the most, and why?",
+        "If something broke at 2 AM, what were the top three calls you'd expect?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Key Instrumentation Assets in Unit 300",
+      "category": "equipment",
+      "rationale": "Graph has zero equipment linked to this profile; need the engineer to name the critical devices they lived with.",
+      "seed_questions": [
+        "Which specific transmitters, valves, or analyzers in Unit 300 have a 'personality' that isn't in the datasheets?",
+        "Are there any instruments you've had to recalibrate far more often than the PM schedule says?",
+        "What is the one device you'd tell your successor to physically go look at on day one?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Chronic Loop Instabilities & Tuning Secrets",
+      "category": "tribal",
+      "rationale": "Loop tuning values and workarounds for oscillation are rarely documented; this is pure tacit knowledge.",
+      "seed_questions": [
+        "Which control loops in Unit 300 have never settled properly, and what manual tweaks have you been using?",
+        "Are there any PID parameters you carry in your head because the 'official' settings cause trips?",
+        "What early signs on a trend tell you a loop is about to go unstable?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Undocumented Interlock Bypasses & Defeats",
+      "category": "tribal",
+      "rationale": "Safety-critical knowledge that often exists only in the instrumentation engineer's memory.",
+      "seed_questions": [
+        "Are there any temporary bypasses or force-enables that have become semi-permanent?",
+        "Which interlocks have you had to defeat during startup, and what is the safe sequence to restore them?",
+        "What is the one interlock you believe is set too conservatively and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Vendor & Spare-Parts Quirks",
+      "category": "tribal",
+      "rationale": "Vendor-specific undocumented behaviors and procurement traps are classic tribal knowledge.",
+      "seed_questions": [
+        "Which instrument vendor's 'equivalent' spare part is absolutely not equivalent?",
+        "Who are your go-to contacts at the key vendors, and what is the magic phrase to get priority support?",
+        "Are there any instruments where the OEM manual procedure is wrong or damaging for our process?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Half-Finished Instrumentation Projects",
+      "category": "projects",
+      "rationale": "The graph shows no projects; the engineer likely has in-flight or abandoned upgrade work in their head.",
+      "seed_questions": [
+        "What instrumentation upgrade or migration did you start but couldn't finish?",
+        "Where are the physical materials, drawings, or code for that project stored?",
+        "What was the original justification, and what roadblocks stopped it?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Critical Alarm Rationalization Gaps",
+      "category": "procedures",
+      "rationale": "Alarm floods and nuisance alarms are a known pain point; the rationale for suppression is often unwritten.",
+      "seed_questions": [
+        "Which alarms in Unit 300 do operators routinely ignore, and is that safe?",
+        "What alarm thresholds have you adjusted from the original design, and why?",
+        "Is there a 'dark' period during startup or shutdown where the alarm system is effectively useless?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Startup & Shutdown Instrumentation Sequence",
+      "category": "procedures",
+      "rationale": "The written SOP often misses the real-time instrument checks and manual overrides the engineer performs.",
+      "seed_questions": [
+        "Walk me through the actual instrumentation steps you personally take during a Unit 300 startup that aren't in the SOP.",
+        "Which instruments must be isolated or purged before a shutdown to avoid damage?",
+        "What is the most common instrumentation failure that delays a restart?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Calibration & Maintenance Gotchas",
+      "category": "equipment",
+      "rationale": "Standard calibration procedures often fail to capture device-specific tricks or environmental factors.",
+      "seed_questions": [
+        "Which instrument in Unit 300 drifts the fastest, and what is your field-check trick?",
+        "Are there any devices where the standard calibration gas or procedure gives a false pass?",
+        "What tool or jig did you make yourself that the maintenance team still needs?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Process-Equipment Interaction Anomalies",
+      "category": "tribal",
+      "rationale": "The engineer likely knows how process upsets manifest as false instrument readings.",
+      "seed_questions": [
+        "What process condition routinely fools an instrument into giving a plausible but wrong reading?",
+        "Which flow meter is most affected by a change in fluid properties, and how do you compensate?",
+        "Have you ever seen a level measurement 'freeze' due to a process issue, and what is the recovery?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "DCS / PLC Configuration Traps",
+      "category": "equipment",
+      "rationale": "Control system logic often contains 'temporary' code or undocumented blocks the engineer alone understands.",
+      "seed_questions": [
+        "Are there any custom function blocks or logic in the DCS/PLC that only you know how to modify?",
+        "What is the most dangerous 'feature' in the control system that a new engineer might accidentally trigger?",
+        "Where are the master copies of the latest control logic—are they on the server or your laptop?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Successor Handover & Open Risks",
+      "category": "handover",
+      "rationale": "Mandatory handover topic to capture the engineer's own assessment of what the successor must know first.",
+      "seed_questions": [
+        "What are the top three risks in Unit 300 instrumentation that keep you up at night?",
+        "If you had only one week with your replacement, what would you make sure they saw with their own eyes?",
+        "What documentation or logbook do you maintain personally that nobody else knows exists?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [
+    {
+      "role": "assistant",
+      "text": "Gandu-ji, thank you for sitting down with me today. You've spent years keeping Unit 300's instruments running, and no manual can replace what you carry in your head. Before anything else gets forgotten, I want to capture the things only you know. So let me start simply: what's the one thing about Unit 300 that you'd most want the person replacing you to understand on day one?",
+      "ts": "2026-07-18T16:21:36.576349+00:00"
+    }
+  ],
+  "status": "done",
+  "followup_hints": [],
+  "skills_path": "data/interviews/exports/d2954789e606/skills_unknown.md",
+  "staging_key": "staging/3b85f78d3c4b440798d989aff4dd2f58/skills_unknown.md",
+  "error": null,
+  "created_at": "2026-07-18T16:21:02.940995+00:00",
+  "notes_cursor": 1
+}

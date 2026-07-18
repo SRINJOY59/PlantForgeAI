@@ -7,8 +7,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useProfile } from "../../state/ProfileContext";
 import {
-  checkHealth, createSession, endSession, fetchReadme, getSession,
-  readmeDownloadUrl, sendDebugText, startVoice,
+  checkHealth, createSession, endSession, fetchSkills, getSession,
+  skillsDownloadUrl, sendDebugText, startVoice,
 } from "../../lib/interview";
 
 // idle -> preparing -> connecting -> live -> generating -> done
@@ -32,7 +32,7 @@ export default function Interview() {
   const [turns, setTurns] = useState([]);            // {role, text, final}
   const [muted, setMuted] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [readme, setReadme] = useState(null);
+  const [skills, setSkills] = useState(null);
   const [error, setError] = useState(null);
   const [textInput, setTextInput] = useState("");
   const [textBusy, setTextBusy] = useState(false);
@@ -61,8 +61,8 @@ export default function Interview() {
       try {
         const s = await getSession(sessionId);
         setSession(s);
-        if (s.readme_ready) {
-          setReadme(await fetchReadme(sessionId));
+        if (s.skills_ready) {
+          setSkills(await fetchSkills(sessionId));
           setPhase("done");
         } else if (["generating", "ending"].includes(s.status) && phase === "live") {
           setPhase("generating");
@@ -180,10 +180,10 @@ export default function Interview() {
   }
 
   async function download() {
-    const url = await readmeDownloadUrl(sessionId);
+    const url = await skillsDownloadUrl(sessionId);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `knowledge_handover_${profile?.employee_id || sessionId}.md`;
+    a.download = `skills_${profile?.employee_id || sessionId}.md`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -227,12 +227,12 @@ export default function Interview() {
             Writing your knowledge handover document…
           </p>
           <p className="mt-1 text-xs" style={{ color: "var(--muted-lt)" }}>
-            Distilling {turns.length} exchanges into a README. This takes a minute.
+            Distilling {turns.length} exchanges into a skills document. This takes a minute.
           </p>
         </Centered>
       )}
       {phase === "done" && (
-        <Done readme={readme} session={session} onDownload={download} />
+        <Done skills={skills} session={session} onDownload={download} />
       )}
       {phase === "error" && (
         <Centered>
@@ -459,13 +459,13 @@ function TopicPanel({ session }) {
   );
 }
 
-function Done({ readme, session, onDownload }) {
+function Done({ skills, session, onDownload }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="page-title">Knowledge Handover</h1>
+            <h1 className="page-title">Skills & Knowledge Handover</h1>
             <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
               {session?.staging_key
                 ? "Saved and sent to the PlantMind pipeline — it will be answerable in Ask shortly."
@@ -473,11 +473,11 @@ function Done({ readme, session, onDownload }) {
             </p>
           </div>
           <button className="btn-primary flex items-center gap-2" onClick={onDownload}>
-            <Download size={14} /> Download README.md
+            <Download size={14} /> Download skills.md
           </button>
         </div>
         <div className="card prose prose-sm mt-5 max-w-none p-6 dark:prose-invert">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{readme || ""}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{skills || ""}</ReactMarkdown>
         </div>
       </div>
     </div>

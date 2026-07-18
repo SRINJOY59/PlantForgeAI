@@ -1,0 +1,210 @@
+{
+  "session_id": "4b50efed4733",
+  "profile": {
+    "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+    "full_name": "Gandu",
+    "employee_id": null,
+    "job_title": "Instrumentation Engineer",
+    "department": "Instrumentation",
+    "plant": "Haldia ",
+    "home_unit": "Unit 300",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T15:56:07.725904+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+      "full_name": "Gandu",
+      "employee_id": null,
+      "job_title": "Instrumentation Engineer",
+      "department": "Instrumentation",
+      "plant": "Haldia ",
+      "home_unit": "Unit 300",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T15:56:07.725904+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Gandu (no id)\n- Role: Instrumentation Engineer, Instrumentation\n- Plant / unit: Haldia  / Unit 300\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Unit 300 Instrumentation Landscape – Key Equipment & Unwritten Quirks",
+      "category": "equipment",
+      "rationale": "No equipment is recorded in the knowledge graph for this profile. The interview must start by having Gandu name the critical instruments he owns.",
+      "seed_questions": [
+        "Which 5-10 instruments or control loops in Unit 300 would you say are most critical to safety or uptime?",
+        "For each one, what is the one undocumented quirk or workaround that keeps it running?",
+        "Are there any instruments that everyone is afraid to touch because only you know the calibration trick?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Undocumented Instrument Failure Patterns & Early-Warning Signs",
+      "category": "tribal",
+      "rationale": "Capturing the subtle, unwritten signs of impending failure that Gandu has learned over decades before they appear in any logbook.",
+      "seed_questions": [
+        "What are the early-warning signs you listen for, smell, or feel during rounds that tell you a transmitter or valve is about to fail?",
+        "Which instruments fail in ways that the DCS trend never captures?",
+        "What is the biggest 'gotcha' in Unit 300 that nobody has ever written down in a procedure?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Role Evolution & Unwritten Responsibilities",
+      "category": "role",
+      "rationale": "Understanding the gap between Gandu's official Instrumentation Engineer title and the actual scope of work he performed, including tasks he absorbed unofficially.",
+      "seed_questions": [
+        "How has your role changed since you started in Unit 300, and what responsibilities did you take on that were never in your job description?",
+        "What tasks do you handle today that you think management doesn't realize are part of your workload?",
+        "If you had to write a 'shadow manual' for your job, what would the first chapter be?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Vendor & Contractor Tribal Knowledge",
+      "category": "tribal",
+      "rationale": "Identifying the specific vendor representatives, local suppliers, or contractors who are essential to solving problems but whose names aren't in any system.",
+      "seed_questions": [
+        "Who are the specific vendor reps or local technicians you call when you have a tricky problem—the ones who actually know the equipment?",
+        "Are there any vendors or spare parts that have become obsolete, and what is your secret workaround to keep those instruments running?",
+        "Which contractor or third-party shop does the best calibration work that the official procurement process might overlook?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Half-Finished Projects & Abandoned Modifications",
+      "category": "projects",
+      "rationale": "Uncovering instrumentation projects that were started but never fully commissioned, which may pose a risk or represent sunk cost.",
+      "seed_questions": [
+        "Are there any instrumentation upgrade projects in Unit 300 that were started but never finished?",
+        "What is the current state of those half-finished installations—are they bypassed, partially wired, or sitting in a box?",
+        "What would be the first step to either complete or safely decommission those abandoned modifications?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Critical Control Loop Tuning & Mental Notes",
+      "category": "procedures",
+      "rationale": "Capturing the specific PID tuning parameters, valve positions, or manual overrides that Gandu keeps in his head and are not saved in the DCS or documentation.",
+      "seed_questions": [
+        "Which control loops in Unit 300 are currently running on manual or with tuning parameters that only exist in your head?",
+        "Are there any loops where the 'official' tuning parameters in the DCS are wrong, and you use a different set of values?",
+        "What is the one loop you worry will become unstable within a week of your departure?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Safety Instrumented System (SIS) & Interlock Bypass History",
+      "category": "procedures",
+      "rationale": "Documenting the informal history of safety system bypasses, testing anomalies, and the 'real' reason certain trips occurred.",
+      "seed_questions": [
+        "Can you walk me through the history of any SIS or critical alarm bypasses that were managed informally or had recurring nuisance trips?",
+        "What is the most unreliable safety sensor in the unit, and how have you managed that risk?",
+        "Are there any interlocks that you know have a delayed response time that isn't reflected in the functional test records?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Spare Parts Scarcity & Improvised Solutions",
+      "category": "equipment",
+      "rationale": "Identifying critical instrumentation that is no longer supported by the manufacturer and the improvised solutions Gandu uses to bridge the gap.",
+      "seed_questions": [
+        "Which instruments in Unit 300 are obsolete, and what is your 'jugaad' or improvised fix to keep them running?",
+        "Where are the hidden stashes of critical spare parts that only you know about?",
+        "If a specific obsolete transmitter fails on a Sunday night, what is the step-by-step workaround you would use that isn't in the manual?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Startup & Shutdown Instrumentation Anomalies",
+      "category": "procedures",
+      "rationale": "Capturing the transient instrument behaviors during plant startup and shutdown that are not captured in standard operating procedures.",
+      "seed_questions": [
+        "During a Unit 300 startup, which instruments typically give false readings until the process stabilizes?",
+        "What is the manual sequence of valve overrides you perform during a trip that isn't written in the emergency procedure?",
+        "Are there any specific ambient weather conditions (monsoon, extreme heat) that cause specific instruments to drift, and how do you compensate?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Successor Advice & Open Risks",
+      "category": "handover",
+      "rationale": "Providing direct advice to the incoming engineer about the biggest risks and the first things they should check.",
+      "seed_questions": [
+        "If you had 30 minutes to brief your replacement, what are the top 3 risks you would tell them to monitor immediately?",
+        "What is the one piece of equipment you recommend they physically inspect on their very first day?",
+        "What is the 'skeleton in the closet' of Unit 300 instrumentation that they need to know about but won't find in any report?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Unwritten Calibration & Maintenance Shortcuts",
+      "category": "tribal",
+      "rationale": "Documenting the efficient, field-proven methods Gandu uses that deviate from the official manual but are essential for keeping the plant online.",
+      "seed_questions": [
+        "What calibration steps in the official manual do you always skip or modify because they don't work in the field?",
+        "Are there any specific tools or homemade jigs you use for instrument maintenance that a new person wouldn't find in the workshop?",
+        "What is the 'trick' to getting an accurate zero on the difficult pressure transmitters in this unit?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Interpersonal & Cross-Functional Dependencies",
+      "category": "role",
+      "rationale": "Mapping the informal network of operators, process engineers, and managers that Gandu relies on to get instrumentation work approved or executed.",
+      "seed_questions": [
+        "Which operators in Unit 300 have the best 'feel' for the process and give you the most reliable feedback on instrument performance?",
+        "Who in the process or mechanical team do you rely on to get things done quickly, outside of the formal work order system?",
+        "Are there any historical conflicts or communication breakdowns between instrumentation and other departments that your successor should be aware of?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "failed",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": "no conversation captured",
+  "created_at": "2026-07-18T16:13:12.093707+00:00",
+  "notes_cursor": 0
+}

@@ -1,0 +1,252 @@
+{
+  "session_id": "77e3aad081e6",
+  "profile": {
+    "id": "17538fd2-6702-4222-9c19-a4c092323100",
+    "full_name": "Sagnibha Roy",
+    "employee_id": null,
+    "job_title": "Maintenance Planner",
+    "department": "Maintenance",
+    "plant": "Raiganj ",
+    "home_unit": "Unit 100",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T09:03:03.466+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "17538fd2-6702-4222-9c19-a4c092323100",
+      "full_name": "Sagnibha Roy",
+      "employee_id": null,
+      "job_title": "Maintenance Planner",
+      "department": "Maintenance",
+      "plant": "Raiganj ",
+      "home_unit": "Unit 100",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T09:03:03.466+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Sagnibha Roy (no id)\n- Role: Maintenance Planner, Maintenance\n- Plant / unit: Raiganj  / Unit 100\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role Transition Challenges and Unwritten Workflows",
+      "category": "role",
+      "rationale": "Understanding the undocumented aspects of the planner role to ensure smooth transition.",
+      "seed_questions": [
+        "What daily tasks consume the most time but are not captured in the official procedures?",
+        "How do you prioritize emergency work orders when they conflict with planned maintenance?",
+        "Which stakeholders outside the formal chain do you rely on to get things done?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Unfinished Maintenance Improvement Projects",
+      "category": "projects",
+      "rationale": "Capturing the state and lessons from any improvement initiatives to avoid rework or loss of momentum.",
+      "seed_questions": [
+        "Can you list the maintenance improvement projects you started or were part of?",
+        "Which ones are only half-finished and what are the key blockers?",
+        "What would be the first steps to revive them?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Critical Equipment Inventory and Undocumented Histories",
+      "category": "equipment",
+      "rationale": "Populate the knowledge graph with key assets not yet documented, along with their known failure patterns.",
+      "seed_questions": [
+        "What are the top 5 most critical pieces of rotating equipment in Unit 100 that you worry about?",
+        "For each, what are the recurring failure modes that are not recorded in the CMMS?",
+        "Are there any workarounds or temporary fixes currently in place?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Non-Stocked Spare Parts and Vendor Lead Times",
+      "category": "equipment",
+      "rationale": "To capture unofficial knowledge about spares that are required but not on the shelf, and which vendors can expedite.",
+      "seed_questions": [
+        "Which spare parts for Unit 100 equipment do you keep hidden away or know have to be ordered far in advance?",
+        "Are there alternative vendors you use when official lead times are too long?",
+        "What’s the one spare part that would cause a prolonged outage if it failed?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Undocumented Equipment Idiosyncrasies and Workarounds",
+      "category": "tribal",
+      "rationale": "Ensure that unwritten operational adjustments and bypasses known only to the planner are not lost.",
+      "seed_questions": [
+        "Are there any equipment interlocks that you regularly bypass or adjust unofficially to keep running?",
+        "What are the telltale signs that a machine is about to fail that operators ignore?",
+        "What is the most common ‘field fix’ that you’ve never written down because it’s too complex?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Gap Between Planned Maintenance Procedures and Reality",
+      "category": "procedures",
+      "rationale": "Learn where formal procedures are unsafe, inefficient, or outdated and what the actual practice is.",
+      "seed_questions": [
+        "Which standard operating procedures in the maintenance plan do you think are dangerously wrong?",
+        "How do you actually perform lockout/tagout in Unit 100 versus what the procedure says?",
+        "Are there any tasks where you routinely skip or shorten the procedure to meet production targets?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Shutdown and Turnaround Planning Tricks",
+      "category": "procedures",
+      "rationale": "Acquire the heuristic knowledge used for scheduling plant turnarounds that is not in the manuals.",
+      "seed_questions": [
+        "When planning a major shutdown, how do you estimate the true duration versus the official schedule?",
+        "What activities always get squeezed for time but are critical?",
+        "Who do you call first when a shutdown overruns?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Vendor and Contractor Relational Knowledge",
+      "category": "tribal",
+      "rationale": "Personal relationships and unofficial service expectations are crucial for expediting repairs.",
+      "seed_questions": [
+        "Which vendor technicians do you trust implicitly and have a direct line to?",
+        "Which contractor companies always overpromise and underdeliver?",
+        "What’s the understanding you have with the local machine shop that isn’t in any contract?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Operations-Maintenance Interface Friction",
+      "category": "role",
+      "rationale": "Understanding the informal negotiation and communication patterns used to get equipment released for maintenance.",
+      "seed_questions": [
+        "How do you convince operations to hand over a piece of equipment when they are behind on production targets?",
+        "What are the unwritten rules about which operators are easiest to work with?",
+        "Are there any conflicts you routinely manage between maintenance staff and operations that are never escalated?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "CMMS and Digital System Transition State",
+      "category": "projects",
+      "rationale": "If any computer system changes are in progress or planned, we need to know the current state, workarounds, and data gaps.",
+      "seed_questions": [
+        "What is the status of the Computerized Maintenance Management System upgrade or migration?",
+        "Are there any data entry shortcuts or workarounds you use that your successor will need?",
+        "Which reports do you generate manually because the system can’t do it?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Maintenance Budget and Resource Allocation Tricks",
+      "category": "procedures",
+      "rationale": "Unofficial methods for stretching the maintenance budget or prioritizing work with limited resources.",
+      "seed_questions": [
+        "How do you actually manage your maintenance budget given that official figures never match reality?",
+        "Which cost centers do you hide expenses in?",
+        "What is the one resource (e.g., speciality crew, tool) that is always oversubscribed and how do you schedule around that?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Open Risks and Successor Advice",
+      "category": "handover",
+      "rationale": "Handover of ongoing issues and top risks, plus any advice for the incoming planner.",
+      "seed_questions": [
+        "What are the top three risks that could cause a plant slowdown or safety incident in the next 3 months?",
+        "If you could only give your successor one piece of advice to be successful in this role, what would it be?",
+        "What is the biggest mistake a new planner could make in Unit 100?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Past Equipment Failures and Lessons Learned Not in the System",
+      "category": "tribal",
+      "rationale": "Capturing significant failures and the root causes that were not formally documented.",
+      "seed_questions": [
+        "Tell me about a major equipment failure that you dealt with where the official report didn’t capture the full truth.",
+        "What really happened and what was the real root cause?",
+        "How did you prevent it from happening again, unofficially?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Preventive Maintenance Optimization: Hidden Insights",
+      "category": "procedures",
+      "rationale": "Capture what he has learned about which PM tasks are waste, which are too infrequent, and how to adjust them.",
+      "seed_questions": [
+        "Which PM tasks do you think are a complete waste of time?",
+        "Which equipment should have MORE frequent checks but don’t because of resource limits?",
+        "How do you decide when to move from time-based to condition-based maintenance?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t15",
+      "title": "Personal Knowledge Management and Reference Tricks",
+      "category": "role",
+      "rationale": "How does the planner keep track of details, such as notes, contacts, drawings, that aren’t in the official system.",
+      "seed_questions": [
+        "Do you have a personal notebook, spreadsheet, or mental model you use?",
+        "Where do you keep critical dimensions, setpoints, or interlock details that aren’t in the CMMS?",
+        "Who should your successor call when they can’t find a drawing?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "created",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": null,
+  "created_at": "2026-07-18T14:48:11.851781+00:00",
+  "notes_cursor": 0
+}

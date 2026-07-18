@@ -81,14 +81,14 @@ Extract what the EMPLOYEE said (the interviewer's words carry no facts):
 Be conservative with coverage scores; 1.0 means nothing more worth asking.
 """
 
-README_PROMPT = """\
-You are writing the definitive knowledge-handover document from a completed
-exit interview at a process plant. You get the employee's profile, the topic
-agenda with every captured fact, and the interview transcript.
+SKILLS_PROMPT = """\
+You are writing the definitive skills-and-knowledge handover document from a
+completed exit interview at a process plant. You get the employee's profile,
+the topic agenda with every captured fact, and the interview transcript.
 
 Write a markdown document with EXACTLY these sections:
 
-# Knowledge Handover - {name}
+# Skills & Knowledge Handover - {name}
 
 > First-person account by {name} ({employee_id}), {job_title},
 > captured via PlantMind knowledge-capture interview on {date}.

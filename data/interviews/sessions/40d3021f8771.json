@@ -1,0 +1,237 @@
+{
+  "session_id": "40d3021f8771",
+  "profile": {
+    "id": "17538fd2-6702-4222-9c19-a4c092323100",
+    "full_name": "Sagnibha Roy",
+    "employee_id": null,
+    "job_title": "Maintenance Planner",
+    "department": "Maintenance",
+    "plant": "Raiganj ",
+    "home_unit": "Unit 100",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T09:03:03.466+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "17538fd2-6702-4222-9c19-a4c092323100",
+      "full_name": "Sagnibha Roy",
+      "employee_id": null,
+      "job_title": "Maintenance Planner",
+      "department": "Maintenance",
+      "plant": "Raiganj ",
+      "home_unit": "Unit 100",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T09:03:03.466+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Sagnibha Roy (no id)\n- Role: Maintenance Planner, Maintenance\n- Plant / unit: Raiganj  / Unit 100\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Unofficial scheduling rules when resources are tight",
+      "category": "role",
+      "rationale": "Planner likely uses unwritten heuristics to prioritize work orders over others, which are not captured in any SOP.",
+      "seed_questions": [
+        "When you have 10 high-priority work orders and only two technicians, what unwritten rules do you use to decide who goes where?",
+        "Are there certain departments or assets that always get bumped? Why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Critical equipment lacking a documented spare-parts strategy",
+      "category": "equipment",
+      "rationale": "No equipment list is in the knowledge graph; must surface which machines have no formal spares plan and what Roy does instead.",
+      "seed_questions": [
+        "Which three pieces of equipment in Unit 100 would cause the longest downtime if they failed?",
+        "For those, what spare parts do you keep unofficially 'under the shelf' that aren't in the CMMS?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Half-finished maintenance projects and their current state",
+      "category": "projects",
+      "rationale": "Projects often stall without documented status; Roy knows what is partially done and what the remaining risks are.",
+      "seed_questions": [
+        "Can you list any maintenance improvement projects that were started but never fully completed?",
+        "What would be the first step someone would need to take to finish them?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Unwritten steps for emergency shutdown maintenance",
+      "category": "procedures",
+      "rationale": "Written emergency procedures often omit tacit steps like who to call first or bypasses that are commonly used.",
+      "seed_questions": [
+        "Walk me through the last emergency repair you planned; what did you do that isn't in the official procedure?",
+        "Which operator or technician should be the first call when an emergency happens at 2 AM?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Tribal knowledge: subtle signs of impending equipment failure",
+      "category": "tribal",
+      "rationale": "Maintenance planners accumulate early-warning indicators (sound, vibration, smell) that are never written down.",
+      "seed_questions": [
+        "Are there any pieces of equipment that 'talk' to you before they fail? What do you listen/look for?",
+        "Has there ever been a failure you predicted but nobody believed? What were the signs?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Vendor quirks and go-to contacts",
+      "category": "equipment",
+      "rationale": "Certain vendors have undocumented lead-time tricks, unreliable parts, or specific engineers who solve problems quickly.",
+      "seed_questions": [
+        "Which vendors do you always call a specific person, and what's their magic?",
+        "Are there any suppliers whose part numbers don't match the catalog? How do you handle that?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Unfunded or stalled improvement ideas worth revisiting",
+      "category": "projects",
+      "rationale": "Roy likely has a mental list of modifications or upgrades that were rejected but would yield quick wins.",
+      "seed_questions": [
+        "What is one improvement idea you've pitched multiple times but never got funded?",
+        "If you had a small budget tomorrow, what would you fix first and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Recurring resource bottlenecks that no planner mentions",
+      "category": "role",
+      "rationale": "Certain shifts, trades, or tools are chronically short, and Roy works around them silently.",
+      "seed_questions": [
+        "Which shift or craft skill is always the bottleneck? How do you compensate?",
+        "Are there any tools or permits that routinely delay work but nobody complains officially?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Informal work-order closure practices",
+      "category": "procedures",
+      "rationale": "Many plants close work orders with verbal sign-offs or incomplete data; this hides true reliability gaps.",
+      "seed_questions": [
+        "When is it acceptable to close a work order without a full post-maintenance test?",
+        "Are there equipment that you routinely close work orders on with just an operator's 'sounds okay'?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Chronic repeat failures with missing root causes",
+      "category": "equipment",
+      "rationale": "Some assets break again and again; the documented cause is often a symptom, not the real issue.",
+      "seed_questions": [
+        "Which equipment has had the same failure three or more times? What do you suspect is the real cause?",
+        "What fix was tried multiple times that never worked, and what finally did (if ever)?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Unofficial tuning parameters and setpoints for key systems",
+      "category": "tribal",
+      "rationale": "Planners often know PID loop parameters, alarm thresholds, or control settings that differ from the official spec and are kept in someone's head.",
+      "seed_questions": [
+        "Are there any controllers or drives where the actual setpoints deviate from the printed numbers? Why?",
+        "If we lost all PLC parameters tomorrow, what would you tell the technician to enter that isn't in the backup?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Successor advice: open risks and unwritten responsibilities",
+      "category": "handover",
+      "rationale": "A maintenance planner leaves behind a web of incomplete tasks, pending vendor returns, and undocumented promises.",
+      "seed_questions": [
+        "What are the top three things that could blow up in your successor's face in the first month?",
+        "Is there anything you've been promising to get done but haven't yet? What's the real deadline?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "KPI reporting tricks and hidden backlog",
+      "category": "role",
+      "rationale": "Many planners 'manage the numbers' by reclassifying work orders or aging definitions; the successor needs to know the real backlog.",
+      "seed_questions": [
+        "When you report maintenance KPIs, what do you tweak to make them look better?",
+        "How many work orders are really overdue right now, versus what the system shows?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Lubrication and routine maintenance secrets",
+      "category": "equipment",
+      "rationale": "Standard procedures for greasing, oil changes, or filter replacements often omit optimal frequencies or special techniques learned from failures.",
+      "seed_questions": [
+        "Is there any equipment where you deviate from the OEM lubrication schedule? Why?",
+        "What routine task does everyone think is done but actually gets skipped? How do you know?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t15",
+      "title": "Incomplete documentation for a capital project",
+      "category": "projects",
+      "rationale": "Large projects often have as-built gaps, missing manuals, or unrecorded commissioning changes that Roy knows about.",
+      "seed_questions": [
+        "Which recent capital project has the worst documentation? What critical details are wrong or missing?",
+        "If we had to rebuild that project's scope tomorrow, what would you make sure we capture?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "created",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": null,
+  "created_at": "2026-07-18T15:44:26.223514+00:00",
+  "notes_cursor": 0
+}

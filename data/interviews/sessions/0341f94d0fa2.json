@@ -1,0 +1,210 @@
+{
+  "session_id": "0341f94d0fa2",
+  "profile": {
+    "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+    "full_name": "Gandu",
+    "employee_id": null,
+    "job_title": "Instrumentation Engineer",
+    "department": "Instrumentation",
+    "plant": "Haldia ",
+    "home_unit": "Unit 300",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T15:56:07.725904+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+      "full_name": "Gandu",
+      "employee_id": null,
+      "job_title": "Instrumentation Engineer",
+      "department": "Instrumentation",
+      "plant": "Haldia ",
+      "home_unit": "Unit 300",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T15:56:07.725904+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Gandu (no id)\n- Role: Instrumentation Engineer, Instrumentation\n- Plant / unit: Haldia  / Unit 300\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role evolution and unwritten responsibilities",
+      "category": "role",
+      "rationale": "No equipment records exist for this profile; understanding what the engineer actually did day-to-day is the foundation.",
+      "seed_questions": [
+        "What were the top three things you were responsible for that never appeared in any official job description?",
+        "Which tasks did you inherit informally from previous engineers that were never formally handed over?",
+        "What part of your role will be hardest to explain to your successor?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Key instrumentation assets in Unit 300",
+      "category": "equipment",
+      "rationale": "No equipment is linked to this profile; the engineer must name the critical instruments they owned.",
+      "seed_questions": [
+        "Which specific transmitters, valves, or analysers in Unit 300 have demanded the most of your attention over the years?",
+        "If you had to pick the three most troublesome instrument tags in the unit, what would they be?",
+        "Are there any instruments that are critical to safety or production but are poorly documented?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Chronic instrument failure patterns",
+      "category": "equipment",
+      "rationale": "Undocumented failure modes and the real reasons behind repeat failures are high-value knowledge at risk of loss.",
+      "seed_questions": [
+        "Which instruments have failed repeatedly despite being 'fixed' each time, and what do you believe the real root cause is?",
+        "Are there any instruments where the installed material or specification is wrong for the process conditions, but it was never formally changed?",
+        "What early-warning signs do you look for that indicate an instrument is about to fail, that aren't in any manual?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Undocumented calibration and tuning values",
+      "category": "tribal",
+      "rationale": "Engineers often carry controller tuning parameters, calibration offsets, and range settings in their heads or personal notebooks.",
+      "seed_questions": [
+        "Are there any controller tuning parameters or calibration offsets you've settled on over time that differ from the official datasheets?",
+        "Which loops have you deliberately detuned or run in manual to work around a problem that was never fully resolved?",
+        "Do you have personal notes or a 'black book' of settings that your successor will need?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Vendor and service provider quirks",
+      "category": "tribal",
+      "rationale": "Knowing which vendor contacts are helpful, which parts have long lead times, and which service providers to avoid is critical tribal knowledge.",
+      "seed_questions": [
+        "Which vendor technical contacts have been invaluable to you, and what's the best way to reach them?",
+        "Are there any instruments where the OEM no longer supports the model, and you've had to find creative workarounds?",
+        "Which local service providers or contractors do you trust for instrumentation work, and which ones should your successor be cautious about?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Unit 300 shutdown and turnaround instrumentation scope",
+      "category": "procedures",
+      "rationale": "Shutdowns and turnarounds have critical instrument tasks that are often in the engineer's head, not in the work order system.",
+      "seed_questions": [
+        "What instrumentation tasks do you always include in a shutdown that never seem to make it onto the official planning list?",
+        "Are there any instruments that can only be accessed or maintained during a shutdown, and what is the exact sequence of work?",
+        "What went wrong during the last turnaround that your successor should watch out for?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Interlock bypasses and safety system workarounds",
+      "category": "tribal",
+      "rationale": "Temporary bypasses that became permanent, or known weaknesses in the safety instrumented system, are high-risk undocumented items.",
+      "seed_questions": [
+        "Are there any interlock bypasses or force-enables currently in place that have been there longer than anyone would like to admit?",
+        "Which safety instrumented functions have you had the least confidence in, and why?",
+        "What is the one thing in the safety system that keeps you up at night?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Half-finished instrumentation projects and modifications",
+      "category": "projects",
+      "rationale": "Projects that were started but not completed, or modifications that were partially implemented, represent significant risk.",
+      "seed_questions": [
+        "Which instrumentation upgrade or migration projects did you start but never get to finish?",
+        "Are there any partially installed instruments or wiring that are sitting disconnected, and what was the original plan?",
+        "What modification requests or improvement ideas did you submit that were approved but never executed?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Process and operations interface pain points",
+      "category": "tribal",
+      "rationale": "The relationship between instrumentation and operations often involves unwritten agreements, workarounds, and communication norms.",
+      "seed_questions": [
+        "Which operators have the best instinct for when an instrument reading is wrong, and how do they communicate that to you?",
+        "Are there any recurring disagreements between operations and instrumentation about whether a reading is real or a fault?",
+        "What is the unwritten protocol for escalating an instrument problem in the middle of the night?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Spare parts and obsolescence risks",
+      "category": "equipment",
+      "rationale": "Knowledge of which spares are critical, which are obsolete, and where substitutes can be found is often entirely in the engineer's head.",
+      "seed_questions": [
+        "Which critical spares are you down to your last unit of, and what is the plan when it's gone?",
+        "Are there any instruments where you've found a compatible substitute part that isn't in the official BOM?",
+        "What obsolete instrument models in Unit 300 are you most worried about, and have you identified any migration paths?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Documentation gaps and tribal knowledge sources",
+      "category": "tribal",
+      "rationale": "Knowing which drawings are wrong, which manuals are missing, and who else holds critical knowledge is essential for the successor.",
+      "seed_questions": [
+        "Which P&IDs, loop drawings, or wiring diagrams for Unit 300 do you know contain errors, and what are the corrections?",
+        "Who else in the plant (operators, other engineers, technicians) holds critical instrumentation knowledge that isn't written down anywhere?",
+        "If your successor could only read three documents to understand the instrumentation in Unit 300, what would they be—and what would still be missing?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Successor advice and open risks",
+      "category": "handover",
+      "rationale": "A direct handover topic ensures the retiring engineer can give unfiltered advice to their successor and flag the biggest open risks.",
+      "seed_questions": [
+        "What is the single most important piece of advice you would give your successor on their first day?",
+        "What is the one problem you believe is most likely to cause a serious incident after you leave if it isn't addressed?",
+        "If you had 30 more days before retirement, what would you spend them doing?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "failed",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": "no conversation captured",
+  "created_at": "2026-07-18T16:17:26.299333+00:00",
+  "notes_cursor": 0
+}

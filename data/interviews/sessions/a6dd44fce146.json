@@ -1,0 +1,47 @@
+{
+  "session_id": "a6dd44fce146",
+  "profile": {
+    "id": "3f2d9d89-5f69-49c0-a7d4-e6138b9c56ec",
+    "full_name": "srinjoydas566",
+    "employee_id": null,
+    "job_title": null,
+    "department": null,
+    "plant": null,
+    "home_unit": null,
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-17T03:19:49.633999+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "3f2d9d89-5f69-49c0-a7d4-e6138b9c56ec",
+      "full_name": "srinjoydas566",
+      "employee_id": null,
+      "job_title": null,
+      "department": null,
+      "plant": null,
+      "home_unit": null,
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-17T03:19:49.633999+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: srinjoydas566 (no id)\n- Role: unknown, unknown department\n- Plant / unit: unknown / unknown\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [],
+  "transcript": [
+    {
+      "role": "assistant",
+      "text": "Hello, Srinjoy. Thank you for making time for this. You're retiring soon, and I want to make sure the things you know — the things that aren't in any manual or procedure — don't walk out the door with you. So let's start simply: tell me about your role here. What do you actually do day to day, and what equipment or systems do you know better than anyone else?",
+      "ts": "2026-07-18T16:29:25.876323+00:00"
+    }
+  ],
+  "status": "generating",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": null,
+  "created_at": "2026-07-18T16:29:05.612326+00:00",
+  "notes_cursor": 0
+}

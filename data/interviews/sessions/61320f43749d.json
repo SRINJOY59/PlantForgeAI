@@ -1,0 +1,196 @@
+{
+  "session_id": "61320f43749d",
+  "profile": {
+    "id": "17538fd2-6702-4222-9c19-a4c092323100",
+    "full_name": "Sagnibha Roy",
+    "employee_id": null,
+    "job_title": "Maintenance Planner",
+    "department": "Maintenance",
+    "plant": "Raiganj ",
+    "home_unit": "Unit 100",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T09:03:03.466+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "17538fd2-6702-4222-9c19-a4c092323100",
+      "full_name": "Sagnibha Roy",
+      "employee_id": null,
+      "job_title": "Maintenance Planner",
+      "department": "Maintenance",
+      "plant": "Raiganj ",
+      "home_unit": "Unit 100",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T09:03:03.466+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Sagnibha Roy (no id)\n- Role: Maintenance Planner, Maintenance\n- Plant / unit: Raiganj  / Unit 100\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role Overview: Daily Planning Rituals and Unwritten Workflows",
+      "category": "role",
+      "rationale": "Captures the planner's undocumented daily routines, prioritization shortcuts, and informal coordination loops that are nowhere documented.",
+      "seed_questions": [
+        "Walk me through a typical day from the moment you log in—what's the first thing you check that nobody else knows about?",
+        "What informal signals or gut feelings do you rely on when deciding which work orders to push first, beyond what the CMMS priority field says?",
+        "Are there any daily or weekly rituals you perform that a replacement would never find in a procedure?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Key Equipment Landscape: Naming the Critical Assets and Their Undocumented Quirks",
+      "category": "equipment",
+      "rationale": "No equipment is recorded in the system for this planner; they must identify the most troublesome or critical assets they plan maintenance for, revealing what the knowledge graph missed.",
+      "seed_questions": [
+        "If you had to name the top five pieces of equipment that keep you up at night, what are they and why?",
+        "For each one, what is a failure mode or early-warning sign that only you seem to notice?",
+        "Are there any assets where the documented maintenance plan is completely wrong because of a 'personality' the equipment has developed?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Maintenance Scheduling Secrets: Prioritization Beyond the CMMS",
+      "category": "procedures",
+      "rationale": "CMMS schedules often fail to capture real-world constraints and political pressures that shape the planner's decisions.",
+      "seed_questions": [
+        "When the schedule gets jammed, what is your mental algorithm for deciding which PM gets delayed without causing a breakdown?",
+        "Which operations or maintenance supervisors do you always talk to before finalizing the week's plan because they have information the system doesn't?",
+        "What is an example of a recurring job where the planned hours in the system are dangerously underestimated?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Recurring Failure Patterns the CMMS Never Caught",
+      "category": "tribal",
+      "rationale": "Many repeat failures are never formally trended; the planner likely knows clusters of failures that point to hidden root causes.",
+      "seed_questions": [
+        "Which equipment failures keep coming back no matter what is written in the work order history?",
+        "Is there a 'bad batch' of spares or a particular installation error that keeps reoccurring but is never recorded?",
+        "What failure mode do you see creeping up that a simple condition-monitoring walkdown would catch, but nobody writes it down?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Vendor and Contractor Intelligence: Who You Actually Call and Why",
+      "category": "tribal",
+      "rationale": "Maintenance planners accumulate crucial vendor contacts and negotiation leverage that never makes it into the procurement system.",
+      "seed_questions": [
+        "Which vendors or contractors have you built a relationship with that a successor absolutely must maintain, and why?",
+        "For critical equipment, who is the one person at the vendor who actually knows the fix, not just the sales pitch?",
+        "What is an unwritten rule about dealing with a specific vendor—like never ordering part X from them, or always expediting via a certain channel?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Critical Spares Hoarding Logic: What Lives Under Your Desk",
+      "category": "equipment",
+      "rationale": "Planners often squirrel away spares that are chronically short or lead time is misrepresented; these are crucial for continuity.",
+      "seed_questions": [
+        "Which spare parts do you personally keep a hidden stash of because the official inventory count is never right or the lead time is a lie?",
+        "For those parts, what is the real-world lead time versus what the system says, and what is your workaround?",
+        "Is there a critical spare that isn't even listed in the BOM but you know will cause a week-long outage if it fails?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Half-Finished Projects and Their True State",
+      "category": "projects",
+      "rationale": "Planners often inherit or oversee improvement projects that stall; the true status and blockers are rarely in official reports.",
+      "seed_questions": [
+        "Which improvement or upgrade project is technically 'active' but actually dead, and what killed it?",
+        "What project were you most passionate about that never got funded, and what would it have saved?",
+        "Are there any completed projects whose documentation says they're done but the reality on the ground is a messy compromise?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Work Instruction Gaps: What the Procedures Don't Say",
+      "category": "procedures",
+      "rationale": "Standard procedures often diverge from what is actually done safely and effectively; capturing this prevents future incidents.",
+      "seed_questions": [
+        "Can you think of a PM or corrective task where the written procedure would lead a new person to do something dangerous or completely ineffective?",
+        "Which job step do technicians regularly skip or modify because the documented way takes too long or requires a tool that never shows up?",
+        "Is there a lockout/tagout nuance on a specific piece of equipment that only you and a few others know?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Communication Loops: Who Holds the Unwritten Authority",
+      "category": "role",
+      "rationale": "Planners facilitate silent negotiations between ops, maintenance, and stores; losing these names leaves a power vacuum.",
+      "seed_questions": [
+        "Who in operations always knows the real equipment condition before anyone else, and how do you get them to share it?",
+        "Which storeroom person or buyer has the magic ability to find parts that are supposedly not there, and what's their trick?",
+        "Is there a manager or engineer whose approval you always seek informally before committing to a big shutdown, even though the RACI says otherwise?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Emergency Repair Playbook: Tribal Responses to Past Crises",
+      "category": "tribal",
+      "rationale": "Crisis responses reveal deep system knowledge and unofficial coordination that no plan captures.",
+      "seed_questions": [
+        "Describe the last big emergency breakdown—what did you do in the first 30 minutes that isn't written anywhere and saved the day?",
+        "Who are the external resources you call at 2 a.m. that the official call-out list doesn't include?",
+        "What is the one piece of equipment where if it fails on a weekend, you know you'll be doing a half-plant shutdown no matter what the procedure says?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Handover: Open Risks and Successor Advice",
+      "category": "handover",
+      "rationale": "High-level transfer of risk register and critical advice to ensure continuity after departure.",
+      "seed_questions": [
+        "What are the top three risks you see on the horizon that could blow up the schedule in the next six months?",
+        "If you could whisper one sentence into your replacement's ear on day one, what would it be?",
+        "Which relationship or agreement is most fragile and needs active nurture right after you leave?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "created",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": null,
+  "created_at": "2026-07-18T15:54:20.732933+00:00",
+  "notes_cursor": 0
+}

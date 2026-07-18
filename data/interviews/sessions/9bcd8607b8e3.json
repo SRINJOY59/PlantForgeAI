@@ -1,0 +1,252 @@
+{
+  "session_id": "9bcd8607b8e3",
+  "profile": {
+    "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+    "full_name": "Gandu",
+    "employee_id": null,
+    "job_title": "Instrumentation Engineer",
+    "department": "Instrumentation",
+    "plant": "Haldia ",
+    "home_unit": "Unit 300",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T15:56:07.725904+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "6d17ee09-1a1d-48a1-9f1b-ea64ccd69382",
+      "full_name": "Gandu",
+      "employee_id": null,
+      "job_title": "Instrumentation Engineer",
+      "department": "Instrumentation",
+      "plant": "Haldia ",
+      "home_unit": "Unit 300",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T15:56:07.725904+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Gandu (no id)\n- Role: Instrumentation Engineer, Instrumentation\n- Plant / unit: Haldia  / Unit 300\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Undocumented daily routines and responsibilities",
+      "category": "role",
+      "rationale": "Capture tasks performed outside the formal job description that may be critical for continuity.",
+      "seed_questions": [
+        "What tasks did you perform regularly that aren't in your official job description?",
+        "Which systems or checks did you monitor informally that no one else knows about?",
+        "Are there any daily or weekly routines you developed that your replacement should adopt?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Sole-expert instrumentation systems",
+      "category": "role",
+      "rationale": "Identify single points of failure where only Gandu holds deep knowledge.",
+      "seed_questions": [
+        "Which instruments, loops, or control systems would fail first if you left without a handover?",
+        "Are there any custom configurations or settings that only you understand?",
+        "What is the most complex system you managed that no one else can troubleshoot?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Unfinished or abandoned instrumentation projects",
+      "category": "projects",
+      "rationale": "Surface half-completed work that may pose risks or require immediate attention.",
+      "seed_questions": [
+        "What projects did you start but never complete, and what is their current status?",
+        "Are there any modifications you planned or partially implemented that your successor should finish?",
+        "Which project, if left unfinished, would cause the most operational risk?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Lessons from past project failures",
+      "category": "projects",
+      "rationale": "Avoid repeating mistakes by capturing root causes and vendor/contractor pitfalls.",
+      "seed_questions": [
+        "Can you recall a project that failed or had major issues? What would you do differently?",
+        "Which vendors or contractors caused the most problems, and why?",
+        "What were the root causes of any instrumentation project delays or cost overruns?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Key equipment inventory and criticality",
+      "category": "equipment",
+      "rationale": "Since no equipment is recorded, elicit the most important instruments and their undocumented quirks.",
+      "seed_questions": [
+        "What are the top 5 most critical instruments or systems you maintained in Unit 300?",
+        "Which equipment gave you the most trouble over the years, and why?",
+        "Are there any instruments with known design flaws or installation issues that aren't documented?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Undocumented maintenance workarounds",
+      "category": "equipment",
+      "rationale": "Capture temporary fixes that became permanent and bypasses not in procedures.",
+      "seed_questions": [
+        "For the equipment you named, are there any 'temporary' fixes that are still in place?",
+        "What are the tricks or shortcuts you use to keep critical instruments running?",
+        "Are there any manual overrides or bypasses you rely on that aren't in the SOPs?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Early warning signs of instrument failure",
+      "category": "equipment",
+      "rationale": "Document predictive knowledge like drift patterns, noise, or vibration that precede failures.",
+      "seed_questions": [
+        "What subtle signs indicate an instrument is about to fail, before any alarm triggers?",
+        "Are there specific drift trends, noises, or visual cues you've learned to recognize?",
+        "How do you distinguish between a false reading and a real process upset on critical loops?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Calibration drift and undocumented history",
+      "category": "equipment",
+      "rationale": "Capture personal calibration records and deviations from scheduled intervals.",
+      "seed_questions": [
+        "Which instruments tend to drift the most, and how often do you actually calibrate them?",
+        "Are there any instruments you calibrate less frequently than scheduled because they're stable?",
+        "Do you have personal logs or notes on calibration history that aren't in the CMMS?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Unwritten rules and gotchas of Unit 300 instrumentation",
+      "category": "tribal",
+      "rationale": "Mandatory tribal topic: surface knowledge that everyone assumes but nobody wrote down.",
+      "seed_questions": [
+        "What are the things nobody wrote down but every instrumentation engineer here should know?",
+        "Are there any instruments that are mislabeled, have confusing documentation, or behave unexpectedly?",
+        "What is the most dangerous assumption a new engineer might make about this unit's instruments?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Vendor and contractor relationship intelligence",
+      "category": "tribal",
+      "rationale": "Capture who to call, who to avoid, and informal support channels.",
+      "seed_questions": [
+        "Which vendors have been most reliable for spare parts or emergency support?",
+        "Are there any vendor-specific contacts or procedures that aren't in the procurement system?",
+        "Who are the go-to people outside the plant when you need urgent instrumentation help?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Informal coordination with operations and maintenance",
+      "category": "tribal",
+      "rationale": "Document unwritten protocols for cross-department troubleshooting and escalation.",
+      "seed_questions": [
+        "How do you really coordinate with operators when an instrument acts up?",
+        "Are there specific operators or mechanics you rely on for informal troubleshooting?",
+        "What's the unwritten escalation path when an instrumentation issue becomes critical?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Gaps in standard operating procedures",
+      "category": "procedures",
+      "rationale": "Identify procedures that are outdated, impractical, or routinely bypassed.",
+      "seed_questions": [
+        "Which procedures do you never follow because they're wrong or impractical?",
+        "Are there any calibration or testing steps that are always skipped in practice?",
+        "If you could rewrite one procedure, which would it be and what would you change?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Tuning parameters and setpoints carried in your head",
+      "category": "procedures",
+      "rationale": "Capture critical PID values, alarm limits, and configuration settings not formally recorded.",
+      "seed_questions": [
+        "Are there any PID tuning parameters or alarm setpoints that only you know?",
+        "What settings have you tweaked over the years that aren't documented in the DCS or files?",
+        "If the control system lost its configuration, what values would you restore from memory first?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Future instrumentation needs and obsolescence risks",
+      "category": "projects",
+      "rationale": "Forward-looking advice on upgrades, replacements, and budget priorities.",
+      "seed_questions": [
+        "What upgrades or replacements do you think are urgently needed in the next 5 years?",
+        "Are there any obsolete instruments that will be hard to replace or find spares for?",
+        "What would you have proposed if you had more budget or management support?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t15",
+      "title": "Successor advice and open risks",
+      "category": "handover",
+      "rationale": "Mandatory handover topic: critical first-day knowledge and long-term risks.",
+      "seed_questions": [
+        "What are the top three things your replacement needs to know on day one?",
+        "What are the biggest risks you see going forward with the instrumentation in Unit 300?",
+        "If you could only pass on one piece of wisdom, what would it be?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "created",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": null,
+  "created_at": "2026-07-18T16:01:49.262104+00:00",
+  "notes_cursor": 0
+}

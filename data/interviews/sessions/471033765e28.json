@@ -1,0 +1,237 @@
+{
+  "session_id": "471033765e28",
+  "profile": {
+    "id": "17538fd2-6702-4222-9c19-a4c092323100",
+    "full_name": "Sagnibha Roy",
+    "employee_id": null,
+    "job_title": "Maintenance Planner",
+    "department": "Maintenance",
+    "plant": "Raiganj ",
+    "home_unit": "Unit 100",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-18T09:03:03.466+00:00"
+  },
+  "context": {
+    "profile": {
+      "id": "17538fd2-6702-4222-9c19-a4c092323100",
+      "full_name": "Sagnibha Roy",
+      "employee_id": null,
+      "job_title": "Maintenance Planner",
+      "department": "Maintenance",
+      "plant": "Raiganj ",
+      "home_unit": "Unit 100",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-18T09:03:03.466+00:00"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Sagnibha Roy (no id)\n- Role: Maintenance Planner, Maintenance\n- Plant / unit: Raiganj  / Unit 100\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Unit 100 maintenance prioritization – unwritten rules and backstage trade-offs",
+      "category": "role",
+      "rationale": "CMMS work orders show schedules, but not how you decide what gets done first when resources are tight, or which tasks you quietly defer without raising flags.",
+      "seed_questions": [
+        "When the schedule is overloaded, how do you really decide which jobs slip and which get expedited?",
+        "Can you walk me through a recent example where the formal priority didn't match what you actually did?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Half-finished maintenance improvement projects in Unit 100",
+      "category": "projects",
+      "rationale": "Projects like RCM implementation or PdM expansion may have stalled for reasons nobody wrote down – scope creep, vendor dropout, internal resistance.",
+      "seed_questions": [
+        "Which maintenance improvement project in Unit 100 did you start but never finish, and what stopped it?",
+        "If someone tried to resurrect that project tomorrow, what landmines should they watch for?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Unit 100 critical rotating equipment – undocumented failure patterns and workarounds",
+      "category": "equipment",
+      "rationale": "Pumps and compressors often have repeat failures that are patched rather than root-solved; the true failure history lives in your memory, not in the logbooks.",
+      "seed_questions": [
+        "Which piece of rotating equipment in Unit 100 gives you the most sleepless nights, and what failure signs do you look for that aren't in the PM checklist?",
+        "Can you describe a recurring failure where the documented fix never lasted, and what actual workaround you use?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Unit 100 shutdown planning – unwritten coordination tricks",
+      "category": "procedures",
+      "rationale": "Official shutdown procedures rarely capture how you negotiate overlapping permits, manage hungry contractors, or handle last-minute production pushbacks.",
+      "seed_questions": [
+        "What's your secret to getting production to release equipment on time during a turnaround?",
+        "Can you give an example of a shutdown where you deviated from the plan because of an on-the-spot call, and what was the outcome?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "The informal expert network for Unit 100 equipment",
+      "category": "tribal",
+      "rationale": "You know which millwright understands the vibration on that finicky blower, and which operator can sweet-talk the DCS into submission – none of this is in the contact list.",
+      "seed_questions": [
+        "If a critical pump acts up at 2 a.m. and the on-call tech is stuck, who would you personally call and why?",
+        "Are there any retired or transferred people whose memory you still tap into for Unit 100 issues?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Successor advice – open risks and hidden maintenance debt in Unit 100",
+      "category": "handover",
+      "rationale": "A formal handover document exists, but you know what will keep you up at night after you leave: overdue overhauls, bypassed safety switches, or stretched PM intervals.",
+      "seed_questions": [
+        "What is the single biggest risk you wish the incoming planner knew about on Day 1?",
+        "If you had one week to prepare your replacement, which three things would you walk them through that are nowhere in the files?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Unit 100 spare parts inventory – unwritten stocking logic",
+      "category": "equipment",
+      "rationale": "The ERP shows min/max levels, but not why you override them for certain seals or why you hoard obsolete couplings from a defunct supplier.",
+      "seed_questions": [
+        "Which spare parts for Unit 100 do you keep extra stock of, against the system's recommendations, and why?",
+        "Are there items where the official lead time is dangerously wrong, and how do you compensate?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Vendor and supplier quirks specific to Unit 100 equipment",
+      "category": "tribal",
+      "rationale": "Vendor documentation is polished; your knowledge of which local supplier actually meets specs, or that a certain OEM tech is the only one who can calibrate that instrument, is not.",
+      "seed_questions": [
+        "Are there any equipment vendors or service providers for Unit 100 where you bypass the official channel and call a specific person directly?",
+        "Which supplier has repeatedly let you down in subtle ways that never appear in the formal vendor scorecards?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Unit 100 predictive maintenance – early-warning signs only you recognise",
+      "category": "equipment",
+      "rationale": "Condition monitoring data is captured, but you combine it with sounds, smells, and operator chatter to call a failure weeks before the trend alarm triggers.",
+      "seed_questions": [
+        "What's the most unusual early warning sign you've learned to trust that isn't in any PdM manual?",
+        "Can you describe a time you overrode a vibration alarm because you 'knew' the machine was still healthy – and were right?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Root cause ghosts – Unit 100 failures that were never truly solved",
+      "category": "equipment",
+      "rationale": "Some incidents are closed with 'procedure not followed' when you know deeper design or fatigue issues are at play; the real story is in your head.",
+      "seed_questions": [
+        "Which repetitive failure in Unit 100 do you believe has a different root cause than what the final report stated?",
+        "Have you ever found a workaround that fixed a problem for years, even though the root cause was never officially addressed?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Maintenance plan templates – Unit 100 customizations that are not in the SOP",
+      "category": "procedures",
+      "rationale": "The official PM plan is generic; you have likely tweaked frequencies, task lists, or added informal inspections based on observed wear rates or seasonal patterns.",
+      "seed_questions": [
+        "Which PM tasks in Unit 100 do you think are done too often or not often enough, and how did you adjust them unofficially?",
+        "Are there any seasonal maintenance preparations you always schedule even though the written plan doesn't mention them?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "CMMS data reality – gaps and workarounds in the Unit 100 job history",
+      "category": "role",
+      "rationale": "What you enter in the CMMS is often a summary; the actual failure description, parts used, and time spent may differ significantly but remain unwritten.",
+      "seed_questions": [
+        "What never gets recorded accurately in the CMMS for Unit 100 jobs, and how do you retain that info?",
+        "If you needed to find the real repair history for a specific asset, what informal notes or people would you rely on instead of the system?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Maintenance safety near-misses and unwritten red flags in Unit 100",
+      "category": "tribal",
+      "rationale": "Official safety reports capture incidents, but you know which equipment combinations or transient conditions worry you, even if no near-miss was officially logged.",
+      "seed_questions": [
+        "Which task in Unit 100 makes you hold your breath every time, even though it's considered routine on paper?",
+        "Can you think of a time you stopped a job because of a gut feeling, and what tipped you off?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Budget and cost-control shortcuts that keep Unit 100 maintenance afloat",
+      "category": "role",
+      "rationale": "Capital vs. expense decisions, or creative ways you reclassify work orders to stretch the budget, are rarely written down but are essential for the next planner.",
+      "seed_questions": [
+        "How do you actually manage the maintenance budget when costs start running over – what lines do you move or delay?",
+        "Are there any informal 'understandings' with contractors about billing or scope that help keep costs in control?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t15",
+      "title": "Legacy equipment and obsolete technology – Unit 100's hidden Achilles' heels",
+      "category": "equipment",
+      "rationale": "As the plant ages, you know which controllers, valves, or motors are one failure away from a long outage because spares are unavailable or expertise has vanished.",
+      "seed_questions": [
+        "Which piece of Unit 100 equipment are you most worried about because it can't be replaced easily anymore?",
+        "What's the ugliest improvisation you've had to maintain to keep something running, and what would the next person need to know if it fails?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [],
+  "status": "created",
+  "followup_hints": [],
+  "skills_path": null,
+  "staging_key": null,
+  "error": null,
+  "created_at": "2026-07-18T14:24:20.435030+00:00",
+  "notes_cursor": 0
+}
