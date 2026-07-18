@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pipecat-ai/client-js": "^1.13.0",
+    "@pipecat-ai/small-webrtc-transport": "^1.10.6",
     "@supabase/supabase-js": "^2.45.0",
     "d3": "^7.9.0",
     "lucide-react": "^0.445.0",

@@ -1,0 +1,17 @@
+# Knowledge-capture interview service (services/interview).
+# pipecat-ai is pinned exactly: its module paths move between 0.0.x releases
+# and bot.py is written against this one.
+pipecat-ai[webrtc,deepgram,openai,silero]==0.0.108
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.2
+neo4j>=5.20
+redis>=5.0
+celery[redis]>=5.4
+minio>=7.2
+openai>=1.40
+pyjwt>=2.9
+# optional alternate TTS providers (guarded imports in bot.py):
+#   pipecat-ai[cartesia]==0.0.108
+#   pipecat-ai[elevenlabs]==0.0.108

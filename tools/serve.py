@@ -27,6 +27,8 @@ SERVERS = [
                    "--host", "0.0.0.0", "--port", "8001"]),
     ("gateway", [sys.executable, "-m", "uvicorn", "gateway.main:app",
                  "--host", "0.0.0.0", "--port", "8000"]),
+    ("interview", [sys.executable, "-m", "uvicorn", "interview.main:app",
+                   "--host", "0.0.0.0", "--port", "8002"]),
 ]
 
 
@@ -55,6 +57,7 @@ def main():
     print("\nbackend running:")
     print("  gateway   http://localhost:8000   (point the UI here)")
     print("  retrieval http://localhost:8001")
+    print("  interview http://localhost:8002   (knowledge-capture voice interview)")
     print("  neo4j     http://localhost:7474   minio http://localhost:9001")
     print("autoscaler on: extraction/ingestion/resolution follow queue depth")
     print("logs in logs/ — ctrl+c to stop.\n")

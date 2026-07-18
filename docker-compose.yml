@@ -162,6 +162,20 @@ services:
       args: { SERVICE: agents }
     command: python -m agents.consumer
 
+  # knowledge-capture voice interview (services/interview). Voice needs
+  # DEEPGRAM_API_KEY in .env; without it the service still runs and serves
+  # the text-mode interview.
+  interview:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: interview }
+    command: uvicorn interview.main:app --host 0.0.0.0 --port 8002
+    ports: ["8002:8002"]
+    volumes:
+      - ./data/interviews:/srv/data/interviews
+
   # watches queue depth and scales the worker services to match. It is the one
   # service that talks to the docker daemon rather than to redis alone, which
   # is why it gets the socket and its own image.
