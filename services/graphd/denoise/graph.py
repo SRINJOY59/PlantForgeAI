@@ -20,7 +20,12 @@ class DenoiseGraph:
     def from_settings(cls) -> "DenoiseGraph":
         s = get_settings()
         return cls(GraphDatabase.driver(
-            s.neo4j_uri, auth=(s.neo4j_user, s.neo4j_password)))
+            s.neo4j_uri,
+            auth=(s.neo4j_user, s.neo4j_password),
+            max_connection_pool_size=50,
+            connection_acquisition_timeout=30.0,
+            max_transaction_retry_time=15.0,
+        ))
 
     # --------------------------------------------------------------- reads
     def equipment_with_failures(self) -> list:
