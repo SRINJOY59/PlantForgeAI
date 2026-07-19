@@ -1,24 +1,29 @@
-import { FolderSync, Database, Plus, RefreshCw, CheckCircle2, Clock, AlertCircle, ExternalLink } from "lucide-react";
+import { FolderSync, Database, Cloud, Plus, RefreshCw, CheckCircle2, Clock, AlertCircle, ExternalLink } from "lucide-react";
 
 const CONNECTORS = [
   {
-    id: "inbox", type: "Folder Watch", icon: FolderSync,
-    detail: "data/inbox", status: "active", every: "5 min",
+    id: "inbox", name: "Local Inbox", type: "Folder Watch", icon: FolderSync,
+    status: "active", every: "5 min",
     color: "#00ff9d", lastSync: "2 min ago", docsIngested: 142,
   },
   {
-    id: "sap-pm", type: "SAP Plant Maintenance", icon: Database,
-    detail: "Not configured", status: "available", every: "—",
+    id: "gdrive-docs", name: "Engineering Docs", type: "Google Drive", icon: Cloud,
+    status: "active", every: "10 min",
+    color: "#4285f4", lastSync: "Just now", docsIngested: 0,
+  },
+  {
+    id: "sap-pm", name: "SAP Maintenance", type: "SAP Plant Maintenance", icon: Database,
+    status: "available", every: "—",
     color: "#00ccf5", lastSync: null, docsIngested: 0,
   },
   {
-    id: "pi-historian", type: "OSIsoft PI Historian", icon: Database,
-    detail: "Not configured", status: "available", every: "—",
+    id: "pi-historian", name: "PI Historian", type: "OSIsoft PI Historian", icon: Database,
+    status: "available", every: "—",
     color: "#b44dff", lastSync: null, docsIngested: 0,
   },
   {
-    id: "sharepoint", type: "SharePoint / OneDrive", icon: Database,
-    detail: "Not configured", status: "available", every: "—",
+    id: "sharepoint", name: "SharePoint", type: "SharePoint / OneDrive", icon: Database,
+    status: "available", every: "—",
     color: "#ffb800", lastSync: null, docsIngested: 0,
   },
 ];
@@ -91,8 +96,8 @@ export default function Connectors() {
                 {/* Info */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm" style={{ color: "#e2e8f0" }}>
-                      {c.id}
+                    <span className="font-semibold text-sm">
+                      {c.name || c.id}
                     </span>
                     <span
                       className="rounded px-1.5 py-0.5 text-[10px] font-medium"
@@ -103,9 +108,6 @@ export default function Connectors() {
                     >
                       {c.type}
                     </span>
-                  </div>
-                  <div className="mt-0.5 font-mono text-[11px]" style={{ color: "var(--text-md)" }}>
-                    {c.detail}
                   </div>
                   {c.lastSync && (
                     <div className="mt-1 text-[11px]" style={{ color: "#334155" }}>

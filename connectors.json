@@ -1,3 +1,9 @@
 [
-  {"type": "folder", "id": "inbox", "path": "data/inbox"}
+  {"type": "folder", "id": "inbox", "path": "data/inbox"},
+  {
+    "type": "gdrive",
+    "id": "gdrive-docs",
+    "credentials_path": "credentials.json",
+    "folder_id": "1jPmObjqI7dDFWD-xawVypWbHFiATh4aH"
+  }
 ]
