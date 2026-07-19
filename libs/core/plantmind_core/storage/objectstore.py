@@ -53,3 +53,14 @@ class ObjectStore:
             filename = obj.object_name.rsplit("/", 1)[-1]
             return filename, self.get(obj.object_name)
         return None
+
+    def presigned_url(self, doc_id: str, expires_minutes: int = 5) -> str | None:
+        """Generates a short-lived URL for direct download from MinIO.
+        Bypasses the gateway proxy to eliminate bandwidth bottlenecks."""
+        from datetime import timedelta
+        prefix = f"raw/{doc_id}/"
+        for obj in self._client.list_objects(BUCKET, prefix=prefix):
+            return self._client.presigned_get_object(
+                BUCKET, obj.object_name, expires=timedelta(minutes=expires_minutes)
+            )
+        return None

@@ -14,6 +14,23 @@ async function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Wrapper to automatically catch 401 Unauthorized errors (expired token),
+// fetch a fresh token from Supabase in the background, and retry the request.
+async function fetchWithAuth(url, options = {}) {
+  let res = await fetch(url, options);
+  if (res.status === 401 && supabase) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (!error && data?.session) {
+      const headers = {
+        ...options.headers,
+        Authorization: `Bearer ${data.session.access_token}`,
+      };
+      res = await fetch(url, { ...options, headers });
+    }
+  }
+  return res;
+}
+
 // The thread travels with the question - the backend keeps no session, so a
 // follow-up like "what about its sibling?" is only answerable if we send the
 // turns that gave it meaning. Last few only: the gateway caps it anyway, and
@@ -28,7 +45,7 @@ export function toHistory(turns) {
 }
 
 export async function ask(question, history = []) {
-  const res = await fetch(`${BASE}/ask`, {
+  const res = await fetchWithAuth(`${BASE}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ question, history }),
@@ -40,7 +57,7 @@ export async function ask(question, history = []) {
 // Streams the answer. Calls onToken(text) for each delta and returns the
 // final answer object (citations, mode, confidence) from the 'done' event.
 export async function askStream(question, onToken, history = [], signal) {
-  const res = await fetch(`${BASE}/ask/stream`, {
+  const res = await fetchWithAuth(`${BASE}/ask/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ question, history }),
@@ -84,7 +101,7 @@ export function subscribeAlerts(onAlert, after = "0") {
   (async () => {
     while (!control.signal.aborted) {
       try {
-        const res = await fetch(
+        const res = await fetchWithAuth(
           `${BASE}/alerts?after=${encodeURIComponent(cursor)}`,
           { headers: await authHeaders(), signal: control.signal });
         if (!res.ok) throw new Error(`alerts failed: ${res.status}`);
@@ -119,7 +136,7 @@ export async function ingest(file) {
   const form = new FormData();
   form.append("file", file);
   // no Content-Type: the browser sets the multipart boundary itself
-  const res = await fetch(`${BASE}/ingest`, {
+  const res = await fetchWithAuth(`${BASE}/ingest`, {
     method: "POST", body: form, headers: await authHeaders(),
   });
   if (!res.ok) throw new Error(`ingest failed: ${res.status}`);
@@ -131,7 +148,7 @@ export async function ingest(file) {
 // app that changes what the plant knows. The author is not sent: the gateway
 // takes it off the verified token.
 export async function submitCorrection({ question, answer, correction, citedDocs }) {
-  const res = await fetch(`${BASE}/corrections`, {
+  const res = await fetchWithAuth(`${BASE}/corrections`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ question, answer, correction,
@@ -148,7 +165,7 @@ export async function submitCorrection({ question, answer, correction, citedDocs
 // never returns a verdict: approving a change is a competent person's
 // signature, not the model's.
 export async function assessChange({ tag, summary }) {
-  const res = await fetch(`${BASE}/moc/assess`, {
+  const res = await fetchWithAuth(`${BASE}/moc/assess`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ tag, summary }),
@@ -162,7 +179,7 @@ export async function assessChange({ tag, summary }) {
 // ImpactAssessment from the 'done' event. Same SSE-over-fetch shape as
 // askStream, for the same reason: the JWT rides in a header.
 export async function assessChangeStream({ tag, summary }, { onStep, onToken } = {}) {
-  const res = await fetch(`${BASE}/moc/assess/stream`, {
+  const res = await fetchWithAuth(`${BASE}/moc/assess/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ tag, summary }),
@@ -192,7 +209,7 @@ export async function assessChangeStream({ tag, summary }, { onStep, onToken } =
 }
 
 export async function metrics() {
-  const res = await fetch(`${BASE}/metrics`, { headers: await authHeaders() });
+  const res = await fetchWithAuth(`${BASE}/metrics`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`metrics failed: ${res.status}`);
   return res.json();
 }
@@ -201,18 +218,19 @@ export function documentUrl(docId) {
   return `${BASE}/documents/${docId}`;
 }
 
-// /documents needs the JWT, but an <iframe src> can't carry a header - so
-// fetch the bytes with auth and hand back a blob URL. Caller must revoke it.
+// /documents/{id}/url returns a short-lived presigned URL from MinIO, bypassing
+// the gateway proxy to eliminate bandwidth bottlenecks on large PDFs.
 export async function fetchDocumentUrl(docId) {
-  const res = await fetch(`${BASE}/documents/${docId}`, {
+  const res = await fetchWithAuth(`${BASE}/documents/${docId}/url`, {
     headers: await authHeaders(),
   });
   if (!res.ok) throw new Error(`document failed: ${res.status}`);
-  return URL.createObjectURL(await res.blob());
+  const data = await res.json();
+  return data.url;
 }
 
 export async function getGraph() {
-  const res = await fetch(`${BASE}/graph`, { headers: await authHeaders() });
+  const res = await fetchWithAuth(`${BASE}/graph`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`graph failed: ${res.status}`);
   return res.json();
 }

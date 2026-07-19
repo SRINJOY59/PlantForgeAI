@@ -58,6 +58,16 @@ class GatewayService:
         """(filename, bytes) for a citation's source, or None."""
         return self._store.find_document(doc_id)
 
+    def document_url(self, doc_id: str) -> str | None:
+        """Returns a presigned MinIO URL for the document, rewriting the 
+        internal docker hostname so the browser can reach it."""
+        url = self._store.presigned_url(doc_id)
+        if url:
+            # Re-write minio:9000 (docker internal) to localhost:9000 (browser facing)
+            # In a production environment this would rewrite to the public MinIO domain.
+            return url.replace("http://minio:9000", "http://localhost:9000")
+        return None
+
     def metrics(self) -> dict:
         return {"graph_version": self._bus.graph_version(),
                 "queues": self._bus.depths()}

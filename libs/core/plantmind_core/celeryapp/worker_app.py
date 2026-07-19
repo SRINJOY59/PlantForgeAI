@@ -2,10 +2,38 @@
 lives in one place and tasks are always registered/scheduled through their
 Route (right name, right queue)."""
 
-from celery import Celery
+import json
+from celery import Celery, Task
 
 from plantmind_core.config import get_settings
 from plantmind_core.queues import Route
+from plantmind_core.bus import RedisBus
+from plantmind_core.telemetry import get_logger
+
+log = get_logger("celeryapp.worker")
+
+
+class DLQTask(Task):
+    """Base task that intercepts final failures and publishes a DLQ alert."""
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        super().on_failure(exc, task_id, args, kwargs, einfo)
+        try:
+            bus = RedisBus.from_settings()
+            alert = {
+                "kind": "system",
+                "severity": "error",
+                "title": f"Background Task Failed: {self.name}",
+                "body": f"Task `{self.name}` failed permanently after exhausting all retries.\\n\\n**Error:** `{str(exc)}`\\n\\n**Task ID:** `{task_id}`",
+                "fingerprint": f"dlq:{task_id}",
+                "citations": [],
+                "verified": False,
+                "graph_version": 0
+            }
+            if bus.claim_alert(alert["fingerprint"]):
+                bus.publish_alert(json.dumps(alert))
+                log.info("published dlq alert", task=self.name, task_id=task_id)
+        except Exception as e:
+            log.warning("failed to publish dlq alert", error=str(e))
 
 
 class WorkerApp:
@@ -42,7 +70,7 @@ class WorkerApp:
 
     def task(self, route: Route):
         """Decorator: register a function under the route's task name."""
-        return self.app.task(name=route.task)
+        return self.app.task(name=route.task, base=DLQTask)
 
     def schedule(self, route: Route, every_seconds: float):
         """Run the route's task periodically, on its own queue."""

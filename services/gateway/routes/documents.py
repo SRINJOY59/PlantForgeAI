@@ -115,3 +115,13 @@ def document(doc_id: str, svc=Depends(get_service)):
                     headers={"Content-Disposition":
                              f'inline; filename="{filename}"',
                              "X-Content-Type-Options": "nosniff"})
+
+
+@router.get("/documents/{doc_id}/url")
+def document_url_endpoint(doc_id: str, svc=Depends(get_service)):
+    """Returns a short-lived presigned URL so the client can fetch the document
+    bytes directly from MinIO, bypassing the gateway proxy entirely."""
+    url = svc.document_url(doc_id)
+    if not url:
+        raise HTTPException(404, f"no document for {doc_id}")
+    return {"url": url}
