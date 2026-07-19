@@ -1,6 +1,5 @@
 """The agent alert stream, fanned out to browsers over SSE."""
 
-import asyncio
 import json
 
 from fastapi import APIRouter, Depends
@@ -18,8 +17,12 @@ async def alerts(after: str = "$", svc=Depends(get_service)):
     async def events():
         cursor = after
         while True:
-            # the bus read blocks; keep it off the event loop
-            entries = await asyncio.to_thread(svc.read_alerts, cursor, 15000)
+            # awaited on the loop via the async redis client, NOT to_thread: a
+            # connection spends its whole life parked on this read, and a
+            # thread-per-open-tab hold is how a few dozen Alerts pages starved
+            # the pool that Ask's graph reads run on. A parked await is free;
+            # a parked thread is 1/32nd of the platform.
+            entries = await svc.read_alerts_async(cursor, 15000)
             if not entries:
                 yield ": keep-alive\n\n"
                 continue

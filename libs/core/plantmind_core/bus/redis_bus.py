@@ -25,14 +25,29 @@ SOCKET_TIMEOUT_S = MAX_BLOCK_MS / 1000 + 5
 
 
 class RedisBus:
-    def __init__(self, client):
+    def __init__(self, client, async_client=None):
         self._r = client
+        # created lazily: only long-lived stream tails (the gateway's SSE
+        # fan-out) need it, and the celery workers must not pay for a client
+        # they never use - nor require a running event loop to construct one
+        self._ar = async_client
 
     @classmethod
     def from_settings(cls) -> "RedisBus":
         s = get_settings()
         return cls(redis.Redis.from_url(s.redis_url, decode_responses=True,
                                         socket_timeout=SOCKET_TIMEOUT_S))
+
+    def _async(self):
+        if self._ar is None:
+            import redis.asyncio
+            s = get_settings()
+            # same socket-timeout invariant as the sync client, for the same
+            # reason: the async client's default would hang up mid-block too
+            self._ar = redis.asyncio.Redis.from_url(
+                s.redis_url, decode_responses=True,
+                socket_timeout=SOCKET_TIMEOUT_S)
+        return self._ar
 
     # document dedup ledger -------------------------------------------------
     def claim_document(self, content_hash: str) -> bool:
@@ -81,9 +96,31 @@ class RedisBus:
     def read_alerts(self, after_id: str = "0", block_ms: int = 15000) -> list:
         return self._read_stream(keys.ALERT_STREAM, after_id, block_ms)
 
+    async def read_alerts_async(self, after_id: str = "0",
+                                block_ms: int = 15000) -> list:
+        """read_alerts for callers living on an event loop - the SSE fan-out.
+
+        Awaited, not wrapped in to_thread: an SSE connection spends its life
+        parked on this block, and a thread-per-connection hold is exactly how
+        a few dozen open Alerts tabs ate the pool that the query path's real
+        work runs on. Parked awaits cost nothing; parked threads cost the
+        platform."""
+        self._check_block(block_ms)
+        kwargs = {"block": block_ms} if block_ms else {}
+        reply = await self._async().xread({keys.ALERT_STREAM: after_id},
+                                          **kwargs)
+        return self._entries(reply)
+
     def _read_stream(self, stream, after_id, block_ms) -> list:
         # block_ms > 0 waits; 0/None returns immediately. (Raw redis treats
         # BLOCK 0 as block-forever - we don't want that footgun.)
+        self._check_block(block_ms)
+        kwargs = {"block": block_ms} if block_ms else {}
+        reply = self._r.xread({stream: after_id}, **kwargs)
+        return self._entries(reply)
+
+    @staticmethod
+    def _check_block(block_ms):
         if block_ms and block_ms > MAX_BLOCK_MS:
             # refuse rather than let the socket time out mid-block and report a
             # dead redis that is in fact fine
@@ -91,8 +128,9 @@ class RedisBus:
                 f"block_ms={block_ms} exceeds MAX_BLOCK_MS={MAX_BLOCK_MS}; the "
                 f"socket would time out at {SOCKET_TIMEOUT_S}s while redis is "
                 f"still waiting. Raise both together.")
-        kwargs = {"block": block_ms} if block_ms else {}
-        reply = self._r.xread({stream: after_id}, **kwargs)
+
+    @staticmethod
+    def _entries(reply) -> list:
         if not reply:
             return []
         return [(entry_id, fields["payload"])

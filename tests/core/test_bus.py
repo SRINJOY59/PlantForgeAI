@@ -78,6 +78,61 @@ def test_socket_outlasts_the_longest_block():
     assert SOCKET_TIMEOUT_S * 1000 > MAX_BLOCK_MS
 
 
+# -- the async stream tail (SSE fan-out) --------------------------------------
+def async_bus():
+    import fakeredis.aioredis
+    return RedisBus(fakeredis.FakeRedis(decode_responses=True),
+                    async_client=fakeredis.aioredis.FakeRedis(
+                        decode_responses=True))
+
+
+async def test_read_alerts_async_returns_published_alerts():
+    bus = async_bus()
+    # publish through the ASYNC client: fakeredis sync/async instances don't
+    # share state, and the reader under test is the async one
+    await bus._ar.xadd(keys.ALERT_STREAM, {"payload": '{"title": "a1"}'})
+    await bus._ar.xadd(keys.ALERT_STREAM, {"payload": '{"title": "a2"}'})
+
+    entries = await bus.read_alerts_async("0", block_ms=0)
+    assert [p for _, p in entries] == ['{"title": "a1"}', '{"title": "a2"}']
+    # ids come back so an SSE client can resume from the last one it saw
+    assert all(entry_id for entry_id, _ in entries)
+
+
+async def test_read_alerts_async_enforces_the_same_block_ceiling():
+    # the socket-vs-block invariant protects the async client identically
+    bus = async_bus()
+    with pytest.raises(ValueError, match="exceeds MAX_BLOCK_MS"):
+        await bus.read_alerts_async("0", MAX_BLOCK_MS + 1)
+
+
+def test_async_client_is_lazy_so_workers_never_build_one():
+    # celery workers and the agents consumer are sync-only; constructing the
+    # bus must not create (or require an event loop for) an async client
+    bus = RedisBus(fakeredis.FakeRedis(decode_responses=True))
+    assert bus._ar is None
+
+
+def test_lazily_built_async_client_sets_its_own_socket_timeout(monkeypatch):
+    """Same trap as the sync client: redis-py 8's default socket timeout is
+    shorter than our 15s block, so the lazy constructor must pass it
+    explicitly or every idle SSE read dies mid-block."""
+    import redis.asyncio
+    captured = {}
+
+    def fake_from_url(url, **kwargs):
+        captured.update(kwargs)
+        import fakeredis.aioredis
+        return fakeredis.aioredis.FakeRedis(decode_responses=True)
+
+    monkeypatch.setattr(redis.asyncio.Redis, "from_url", fake_from_url)
+    bus = RedisBus(fakeredis.FakeRedis(decode_responses=True))
+    bus._async()
+
+    assert captured["socket_timeout"] == SOCKET_TIMEOUT_S
+    assert captured["socket_timeout"] * 1000 > MAX_BLOCK_MS
+
+
 def test_the_client_sets_its_own_socket_timeout(monkeypatch):
     """The bug this pins: the client used to inherit redis-py's default, which
     was None on <=5 and 5s on 8.0 - shorter than our 15s block. A rebuild that

@@ -65,5 +65,8 @@ class GatewayService:
     def read_alerts(self, after: str, block_ms: int):
         return self._bus.read_alerts(after, block_ms=block_ms)
 
+    async def read_alerts_async(self, after: str, block_ms: int):
+        return await self._bus.read_alerts_async(after, block_ms=block_ms)
+
     def rate_check(self, bucket: str, limit: int, window_s: int):
         return self._bus.rate_check(bucket, limit, window_s)
