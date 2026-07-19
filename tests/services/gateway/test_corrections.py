@@ -23,8 +23,12 @@ BODY = {"question": "How many seal failures has P-101A had?",
         "cited_docs": ["sop-1"]}
 
 
-def token(email="eng@plant.com"):
+def token(email="eng@plant.com", role="engineer"):
+    # Shaped like a hook-minted Supabase token: the custom_jwt_claims hook nests
+    # app_role under app_metadata, which is where _role_from_claims reads it.
+    # Corrections are engineer-gated, so an authorized author carries that role.
     return jwt.encode({"sub": "user-1", "email": email, "aud": "authenticated",
+                       "app_metadata": {"app_role": role},
                        "exp": int(time.time()) + 3600},
                       SECRET, algorithm="HS256")
 
@@ -41,9 +45,9 @@ def parts(monkeypatch):
     get_settings.cache_clear()
 
 
-def post(client, body=None, email="eng@plant.com"):
+def post(client, body=None, email="eng@plant.com", role="engineer"):
     return client.post("/corrections", json=body or BODY,
-                       headers={"Authorization": f"Bearer {token(email)}"})
+                       headers={"Authorization": f"Bearer {token(email, role)}"})
 
 
 def test_a_correction_is_accepted_and_staged(parts):
@@ -85,6 +89,15 @@ def test_the_author_comes_off_the_token(parts):
     post(client, email="senior@plant.com")
     written = corrections.parse(next(iter(store.staged.values())).decode())
     assert written.author == "senior@plant.com"
+
+
+def test_an_operator_may_not_file_a_correction(parts):
+    # A correction outweighs the document it contradicts, so the gate is the
+    # point: an authenticated operator is still refused, and nothing is staged.
+    client, store, _ = parts
+    resp = post(client, role="operator")
+    assert resp.status_code == 403
+    assert not store.staged
 
 
 def test_the_author_cannot_be_set_from_the_request_body(parts):

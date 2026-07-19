@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
-  Plug, Leaf, UserRound, AudioLines, Shield,
+  Plug, Leaf, UserRound, AudioLines, Shield, LayoutDashboard,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
@@ -9,7 +9,8 @@ import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
 // minRole: the minimum role required to see this item.
 // The hierarchy is: operator < planner < engineer < admin
 const nav = [
-  { to: "/app",            icon: MessageSquare,      label: "Ask",           minRole: "operator", end: true  },
+  { to: "/app",            icon: LayoutDashboard,    label: "Home",          minRole: "operator", end: true  },
+  { to: "/app/ask",        icon: MessageSquare,      label: "Ask",           minRole: "operator" },
   { to: "/app/alerts",     icon: Bell,               label: "Alerts",        minRole: "operator", badge: true },
   { to: "/app/documents",  icon: FileStack,           label: "Documents",     minRole: "operator" },
   { to: "/app/moc",        icon: GitPullRequestArrow, label: "Change Impact", minRole: "engineer" },

@@ -8,6 +8,7 @@ import AppShell from "./components/shell/AppShell";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import Dashboard from "./pages/app/Dashboard";
 import Ask from "./pages/app/Ask";
 import Alerts from "./pages/app/Alerts";
 import Profile from "./pages/app/Profile";
@@ -41,7 +42,8 @@ export default function App() {
         }
       >
         {/* operator+ */}
-        <Route index element={<Ask />} />
+        <Route index element={<Dashboard />} />
+        <Route path="ask" element={<Ask />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="profile" element={<Profile />} />
         <Route path="documents" element={<Suspended><Documents /></Suspended>} />
