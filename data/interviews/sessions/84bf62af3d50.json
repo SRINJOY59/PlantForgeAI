@@ -1,0 +1,218 @@
+{
+  "session_id": "84bf62af3d50",
+  "profile": {
+    "id": "82726a69-5242-4c20-87f2-d5bb537f8fc3",
+    "full_name": "SD",
+    "employee_id": null,
+    "job_title": "Process Engineer",
+    "department": "Process",
+    "plant": "Bantu",
+    "home_unit": "Unit 100",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-19T06:58:43.57728+00:00",
+    "app_role": "engineer"
+  },
+  "context": {
+    "profile": {
+      "id": "82726a69-5242-4c20-87f2-d5bb537f8fc3",
+      "full_name": "SD",
+      "employee_id": null,
+      "job_title": "Process Engineer",
+      "department": "Process",
+      "plant": "Bantu",
+      "home_unit": "Unit 100",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-19T06:58:43.57728+00:00",
+      "app_role": "engineer"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: SD (no id)\n- Role: Process Engineer, Process\n- Plant / unit: Bantu / Unit 100\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Role and unwritten responsibilities of Process Engineer in Unit 100",
+      "category": "role",
+      "rationale": "Understanding the full scope of SD's role beyond job description, including informal leadership and decision-making patterns.",
+      "seed_questions": [
+        "What responsibilities have you taken on that aren’t in the official description?",
+        "How did you prioritize daily tasks when multiple issues arose simultaneously?",
+        "Who did you rely on most for cross-functional coordination, and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "Unit 100 process history and major modifications over the years",
+      "category": "projects",
+      "rationale": "Document significant process changes, bypasses, and de-bottlenecking projects that may not be fully documented.",
+      "seed_questions": [
+        "What were the biggest process changes you oversaw?",
+        "Which modifications were temporary but never removed?",
+        "Why were some improvement projects started but not completed?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Unwritten knowledge of Unit 100’s critical equipment",
+      "category": "equipment",
+      "rationale": "No equipment records exist; SD must identify key assets and their failure patterns, workarounds, and maintenance quirks.",
+      "seed_questions": [
+        "Which three pieces of equipment cause the most reliability headaches?",
+        "For each, what are the early warning signs of impending failure that you watch for?",
+        "Are there any non-standard repairs or temporary fixes that have become permanent?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Undocumented operating envelopes and limit-breaking practices",
+      "category": "procedures",
+      "rationale": "Process engineers often know safe limits beyond design and how to push them. Capture those boundaries.",
+      "seed_questions": [
+        "When the unit runs at 110% capacity, what do you monitor most closely?",
+        "Are there any instrumentation readings you distrust and compensate for mentally?",
+        "What conditions have led to near-miss events that aren’t in the incident system?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Tribal knowledge about process upsets and recovery",
+      "category": "tribal",
+      "rationale": "SD likely carries informal playbooks for upset conditions that aren’t in formal trouble-shooting guides.",
+      "seed_questions": [
+        "Describe a serious upset that isn’t well documented – what happened and how did you recover?",
+        "What manual interventions does the board operator perform that are not in the procedures?",
+        "Who are the go-to people (internal or external) when things go wrong, and why?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "SOP gaps and procedural workarounds in Unit 100",
+      "category": "procedures",
+      "rationale": "Some standard procedures may be outdated or missing steps known only to experienced staff.",
+      "seed_questions": [
+        "Which start-up or shutdown steps are routinely done differently from the written SOP?",
+        "Have you ever bypassed a safety interlock? Under what circumstances?",
+        "Are there batch or recipe adjustments that operators make based on your verbal instructions?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Vendor, contractor, and lab relationship quirks",
+      "category": "tribal",
+      "rationale": "Personal relationships and unwritten knowledge about external parties can affect unit performance.",
+      "seed_questions": [
+        "Which equipment vendor’s field service engineer do you trust most, and why?",
+        "Are there analytical results you always double-check because the lab’s method is unreliable?",
+        "Which contractors understand the unit’s idiosyncrasies, and who should never be hired again?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Half-finished projects and open modifications in Unit 100",
+      "category": "projects",
+      "rationale": "Capture the status of incomplete work that could create risk or wasted effort if not understood.",
+      "seed_questions": [
+        "What improvement projects are in limbo right now?",
+        "Why were they paused or not completed?",
+        "What’s the minimal effort to get them to a safe, operable state?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Control system tuning and alarm management secrets",
+      "category": "projects",
+      "rationale": "PID tuning values, alarm setpoints, and suppression strategies are often only in the engineer’s head or personal notes.",
+      "seed_questions": [
+        "Which control loops have you retuned, and what are the final parameters?",
+        "Are there alarms that are routinely suppressed or ignored, and why?",
+        "Have you developed any custom trends or calculation blocks that aren’t documented?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Handover: Top risks and advice for the successor",
+      "category": "handover",
+      "rationale": "Succession planning requires identifying immediate risks and unwritten knowledge needed to run the unit safely.",
+      "seed_questions": [
+        "What keeps you awake at night about Unit 100 after you leave?",
+        "If you could give your successor only three pieces of advice, what would they be?",
+        "Are there any deteriorations or near-miss patterns that will likely escalate in the next six months?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Informal coordination with Operations and Maintenance",
+      "category": "role",
+      "rationale": "The engineer’s effectiveness often depends on relationships and informal communication channels.",
+      "seed_questions": [
+        "How did you typically negotiate priorities with the shift supervisor?",
+        "What maintenance requests did you fast-track by talking to the planner directly, and why?",
+        "Are there operators whose instinct you trust more than instrument data?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Essential reference documents and personal files",
+      "category": "handover",
+      "rationale": "SD may have personal spreadsheets, marked-up P&IDs, or notes that contain critical data not in the official repository.",
+      "seed_questions": [
+        "What files or notebooks do you have that your successor absolutely needs?",
+        "Are there any P&IDs you annotated with corrections that were never updated?",
+        "Which engineering calculations or spreadsheets do you rely on most?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [
+    {
+      "role": "assistant",
+      "text": "SD, thank you so much for making time to sit down with me today. I know you're heading into retirement soon, and honestly, there's a lot of knowledge in your head about Unit 100 that probably isn't written down anywhere. That's exactly what I want to capture before you go. So let me start with a broad question: if you could sit your replacement down and tell them just one thing — what would you say is the most important thing to know about running Unit 100?",
+      "ts": "2026-07-19T07:17:00.866178+00:00"
+    }
+  ],
+  "status": "done",
+  "followup_hints": [],
+  "skills_path": "data/interviews/exports/84bf62af3d50/skills_unknown.md",
+  "staging_key": "staging/e663de374d544a13ba55f7d5859cd712/skills_unknown.md",
+  "error": null,
+  "created_at": "2026-07-19T07:16:29.250071+00:00",
+  "notes_cursor": 1
+}

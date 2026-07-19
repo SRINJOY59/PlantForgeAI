@@ -1,19 +1,35 @@
 import { useEffect, useState } from "react";
-import { BadgeCheck, Building2, Check, MapPin, Save, Wrench } from "lucide-react";
+import { BadgeCheck, Building2, Check, MapPin, Save, Shield, Wrench } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { useProfile } from "../../state/ProfileContext";
+import { useRole, ROLE_HIERARCHY } from "../../auth/useRole";
 import {
   DEPARTMENTS, JOB_TITLES, UNITS, displayName, initials,
 } from "../../lib/profile";
 
 const BLANK = {
   full_name: "", employee_id: "", job_title: "", department: "",
-  plant: "", home_unit: "", projects: [], expertise: [],
+  plant: "", home_unit: "", projects: [], expertise: [], app_role: "operator",
+};
+
+const APP_ROLES = [
+  { value: "operator",  label: "Operator",  desc: "Ask, Alerts, Documents" },
+  { value: "planner",   label: "Planner",   desc: "+ Connectors read" },
+  { value: "engineer",  label: "Engineer",  desc: "+ Graph, MoC, Compliance, Interview" },
+  { value: "admin",     label: "Admin",     desc: "Full access + user management" },
+];
+
+const ROLE_COLORS = {
+  operator: "#64748b",
+  planner:  "#0284c7",
+  engineer: "#2563eb",
+  admin:    "#7c3aed",
 };
 
 export default function Profile() {
   const { user, demoMode } = useAuth();
   const { profile, loading, update } = useProfile();
+  const currentRole = useRole();
   const [form, setForm] = useState(BLANK);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -94,6 +110,23 @@ export default function Profile() {
                 placeholder="Select or type a department"
                 onChange={(v) => set("department", v)} />
             </Field>
+            {/* Admins can change any user's access tier */}
+            {currentRole === "admin" && (
+              <Field label="Access role"
+                hint="Determines which features this account can access">
+                <select
+                  className="input"
+                  value={form.app_role ?? "operator"}
+                  onChange={(e) => set("app_role", e.target.value)}
+                >
+                  {APP_ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label} — {r.desc}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
           </Section>
 
           <Section title="Where you work" icon={MapPin}>
@@ -151,7 +184,10 @@ export default function Profile() {
 }
 
 function Header({ profile, user }) {
-  const role = [profile?.job_title, profile?.department].filter(Boolean).join(" · ");
+  const role = profile?.app_role ?? "operator";
+  const roleColor = ROLE_COLORS[role] ?? ROLE_COLORS.operator;
+  const roleLabel = APP_ROLES.find((r) => r.value === role)?.label ?? "Operator";
+  const jobLine = [profile?.job_title, profile?.department].filter(Boolean).join(" · ");
   const where = [profile?.plant, profile?.home_unit].filter(Boolean).join(" · ");
   return (
     <div className="mb-6 flex items-center gap-4">
@@ -165,8 +201,16 @@ function Header({ profile, user }) {
           {displayName(profile, user)}
         </h1>
         <p className="truncate text-xs" style={{ color: "var(--muted)" }}>
-          {role || "Add your role below"}{where ? ` — ${where}` : ""}
+          {jobLine || "Add your role below"}{where ? ` — ${where}` : ""}
         </p>
+        {/* Role badge */}
+        <div className="mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5"
+          style={{ background: `${roleColor}15`, border: `1px solid ${roleColor}40` }}>
+          <Shield size={9} style={{ color: roleColor }} />
+          <span className="text-[10px] font-semibold" style={{ color: roleColor }}>
+            {roleLabel}
+          </span>
+        </div>
       </div>
     </div>
   );

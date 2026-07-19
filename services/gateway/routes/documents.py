@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from gateway.auth import current_user
-from gateway.deps import get_service
+from gateway.deps import get_service, require_role
 
 router = APIRouter()
 
@@ -63,7 +63,7 @@ class CorrectionRequest(BaseModel):
     cited_docs: list[str] = Field(default_factory=list, max_length=20)
 
 
-@router.post("/ingest")
+@router.post("/ingest", dependencies=[require_role("engineer")])
 async def ingest(file: UploadFile, svc=Depends(get_service)):
     ext = _ext(file.filename)
     if ext not in ALLOWED_EXTENSIONS:
@@ -85,7 +85,7 @@ async def ingest(file: UploadFile, svc=Depends(get_service)):
     return await asyncio.to_thread(svc.ingest, file.filename, data)
 
 
-@router.post("/corrections")
+@router.post("/corrections", dependencies=[require_role("engineer")])
 def correct(request: CorrectionRequest, svc=Depends(get_service),
             user: dict = Depends(current_user)):
     """An engineer overturning something we said.

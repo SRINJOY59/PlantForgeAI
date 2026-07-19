@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import RoleRoute from "./auth/RoleRoute";
 import AppShell from "./components/shell/AppShell";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -28,15 +29,30 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        {/* operator+ */}
         <Route index element={<Ask />} />
         <Route path="alerts" element={<Alerts />} />
-        <Route path="moc" element={<Moc />} />
-        <Route path="graph" element={<GraphExplorer />} />
         <Route path="documents" element={<Documents />} />
-        <Route path="compliance" element={<Compliance />} />
-        <Route path="connectors" element={<Connectors />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="interview" element={<Interview />} />
+
+        {/* engineer+ */}
+        <Route path="moc" element={
+          <RoleRoute minRole="engineer"><Moc /></RoleRoute>
+        } />
+        <Route path="graph" element={
+          <RoleRoute minRole="engineer"><GraphExplorer /></RoleRoute>
+        } />
+        <Route path="compliance" element={
+          <RoleRoute minRole="engineer"><Compliance /></RoleRoute>
+        } />
+        <Route path="interview" element={
+          <RoleRoute minRole="engineer"><Interview /></RoleRoute>
+        } />
+
+        {/* admin only */}
+        <Route path="connectors" element={
+          <RoleRoute minRole="admin"><Connectors /></RoleRoute>
+        } />
       </Route>
     </Routes>
   );

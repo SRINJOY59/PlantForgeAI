@@ -10,11 +10,12 @@ from fastapi.responses import Response, StreamingResponse
 
 from plantmind_core.schemas import ChangeProposal
 
-from gateway.deps import get_agents_http
+from gateway.deps import get_agents_http, require_role
 from gateway.ratelimit import rate_limit
 
 router = APIRouter()
-metered = [Depends(rate_limit("moc"))]
+# MoC requires engineer role AND is rate-limited (billed, multi-tool LLM call)
+metered = [require_role("engineer"), Depends(rate_limit("moc"))]
 
 
 @router.post("/moc/assess", dependencies=metered)

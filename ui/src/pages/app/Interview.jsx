@@ -297,8 +297,7 @@ function Welcome({ profile, health, textMode, onStart }) {
 
       {offline && (
         <p className="mt-4 text-sm" style={{ color: "#dc2626" }}>
-          Interview service unreachable — start it with{" "}
-          <code className="font-mono text-xs">uvicorn interview.main:app --port 8002</code>
+          Interview service unreachable — check that it is running on port 8003.
         </p>
       )}
       {noVoiceNoText && (

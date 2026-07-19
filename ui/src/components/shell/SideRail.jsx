@@ -1,24 +1,43 @@
 import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
-  Plug, Leaf, UserRound, AudioLines,
+  Plug, Leaf, UserRound, AudioLines, Shield,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
+import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
 
+// minRole: the minimum role required to see this item.
+// The hierarchy is: operator < planner < engineer < admin
 const nav = [
-  { to: "/app",            icon: MessageSquare, label: "Ask",        end: true  },
-  { to: "/app/alerts",     icon: Bell,          label: "Alerts",     badge: true },
-  { to: "/app/moc",        icon: GitPullRequestArrow, label: "Change Impact" },
-  { to: "/app/graph",      icon: GitBranch,     label: "Graph"       },
-  { to: "/app/documents",  icon: FileStack,     label: "Documents"   },
-  { to: "/app/compliance", icon: ShieldCheck,   label: "Compliance"  },
-  { to: "/app/connectors", icon: Plug,          label: "Connectors"  },
-  { to: "/app/profile",    icon: UserRound,     label: "Profile"     },
-  { to: "/app/interview",  icon: AudioLines,    label: "Interview"   },
+  { to: "/app",            icon: MessageSquare,      label: "Ask",           minRole: "operator", end: true  },
+  { to: "/app/alerts",     icon: Bell,               label: "Alerts",        minRole: "operator", badge: true },
+  { to: "/app/documents",  icon: FileStack,           label: "Documents",     minRole: "operator" },
+  { to: "/app/moc",        icon: GitPullRequestArrow, label: "Change Impact", minRole: "engineer" },
+  { to: "/app/graph",      icon: GitBranch,           label: "Graph",         minRole: "engineer" },
+  { to: "/app/compliance", icon: ShieldCheck,         label: "Compliance",    minRole: "engineer" },
+  { to: "/app/interview",  icon: AudioLines,          label: "Interview",     minRole: "engineer" },
+  { to: "/app/connectors", icon: Plug,                label: "Connectors",    minRole: "admin"    },
+  { to: "/app/profile",    icon: UserRound,           label: "Profile",       minRole: "operator" },
 ];
+
+const ROLE_LABELS = {
+  operator: { label: "Operator",  color: "#64748b" },
+  planner:  { label: "Planner",   color: "#0284c7" },
+  engineer: { label: "Engineer",  color: "#2563eb" },
+  admin:    { label: "Admin",     color: "#7c3aed" },
+};
 
 export default function SideRail() {
   const { unread } = useAlerts();
+  const role = useRole();
+  const userRank = ROLE_HIERARCHY.indexOf(role);
+
+  // Only show items the current user's role can access
+  const visibleNav = nav.filter(
+    (item) => userRank >= ROLE_HIERARCHY.indexOf(item.minRole)
+  );
+
+  const roleInfo = ROLE_LABELS[role] ?? ROLE_LABELS.operator;
 
   return (
     <nav
@@ -51,7 +70,7 @@ export default function SideRail() {
 
       {/* Nav items */}
       <div className="flex-1 px-2 pt-1">
-        {nav.map((item) => (
+        {visibleNav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -85,8 +104,17 @@ export default function SideRail() {
         ))}
       </div>
 
-      {/* Bottom version */}
-      <div className="px-4 pb-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+      {/* Bottom: role badge + version */}
+      <div className="px-4 pb-3 pt-2 space-y-1.5" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-1.5">
+          <Shield size={10} style={{ color: roleInfo.color }} />
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: roleInfo.color }}
+          >
+            {roleInfo.label}
+          </span>
+        </div>
         <span className="text-[11px] font-mono" style={{ color: "var(--muted-lt)" }}>
           PlantMind v2.0
         </span>
