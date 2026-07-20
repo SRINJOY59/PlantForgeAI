@@ -7,7 +7,8 @@ if the token is invalid or missing.
 
 import json
 import jwt
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import Response
 
 from plantmind_core.config import get_settings
 from plantmind_core.telemetry import get_logger
@@ -17,6 +18,12 @@ from gateway.deps import get_agents_http
 log = get_logger("gateway.voice")
 
 router = APIRouter()
+
+@router.post("/agents/copilot/session")
+async def create_copilot_session(request: Request, http=Depends(get_agents_http)):
+    payload = await request.json()
+    resp = await http.post("/copilot/session", json=payload)
+    return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
 
 
 def _verify_ws_token(token: str) -> dict | None:

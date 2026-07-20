@@ -17,7 +17,8 @@ from plantmind_core.telemetry import get_logger
 
 from agents import tools
 from agents.usecases.base import GraphAgent
-from agents.usecases.report_generator import pdf_renderer, prompts
+from agents.usecases.report_generator import prompts
+from plantmind_core.reporting import pdf_renderer
 
 if TYPE_CHECKING:
     from agents.usecases.broker import AgentBroker

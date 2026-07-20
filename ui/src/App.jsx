@@ -14,7 +14,6 @@ import Alerts from "./pages/app/Alerts";
 import Profile from "./pages/app/Profile";
 
 // Heavy pages (lazy loaded to save bandwidth)
-const FieldCopilot = React.lazy(() => import("./pages/app/FieldCopilot"));
 const Moc = React.lazy(() => import("./pages/app/Moc"));
 const Documents = React.lazy(() => import("./pages/app/Documents"));
 const GraphExplorer = React.lazy(() => import("./pages/app/GraphExplorer"));
@@ -47,7 +46,6 @@ export default function App() {
         {/* operator+ */}
         <Route index element={<Dashboard />} />
         <Route path="ask" element={<Ask />} />
-        <Route path="copilot" element={<Suspended><FieldCopilot /></Suspended>} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="profile" element={<Profile />} />
         <Route path="documents" element={<Suspended><Documents /></Suspended>} />

@@ -12,6 +12,7 @@ import json
 
 from plantmind_core.llm import Tier, get_llm
 from plantmind_core.telemetry import get_logger
+from plantmind_core.storage.objectstore import ObjectStore
 
 from interview.context import ContextBuilder, InterviewGraphReader
 from interview.domain import Agenda, Interviewer, Notetaker, SessionMemory
@@ -104,6 +105,14 @@ class InterviewService:
             memory.error = None
             log.info("interview finalized", session=memory.session_id,
                      skills=memory.skills_path, staged=bool(memory.staging_key))
+            
+            # Archive raw session to cold storage
+            store = ObjectStore.from_settings()
+            store.put(
+                f"interviews/{memory.session_id}.json",
+                memory.model_dump_json(indent=2).encode("utf-8"),
+                content_type="application/json"
+            )
         except Exception as e:
             memory.status = "failed"
             memory.error = str(e)[:300]
