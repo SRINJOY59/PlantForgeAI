@@ -289,3 +289,14 @@ function parseSse(frame) {
     return null;
   }
 }
+
+export async function startCopilotSession({ worker_id, work_order_id }) {
+  const res = await fetchWithAuth(`${BASE}/agents/copilot/session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ worker_id, work_order_id }),
+  });
+  if (!res.ok) throw new Error(`copilot session failed: ${res.status}`);
+  return res.json();
+}
+
