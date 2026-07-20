@@ -2,10 +2,15 @@
 
 Combines tool-calling LLM reasoning to produce a report, then renders a PDF
 and uploads it to MinIO for user download.
+
+When wired with an AgentBroker the report also:
+  - Appends an Overdue Inspections section if the ComplianceScanner finds any
+    outstanding items for the target equipment.
 """
 
 import asyncio
 import hashlib
+from typing import TYPE_CHECKING
 
 from plantmind_core.storage import ObjectStore
 from plantmind_core.telemetry import get_logger
@@ -14,14 +19,24 @@ from agents import tools
 from agents.usecases.base import GraphAgent
 from agents.usecases.report_generator import pdf_renderer, prompts
 
+if TYPE_CHECKING:
+    from agents.usecases.broker import AgentBroker
+
 log = get_logger("agents.usecases.report_generator")
 
 
 class ReportGeneratorAgent(GraphAgent):
     """Agent that runs graph tools to gather info, compiles a markdown report,
     and renders a beautiful PDF report with tables and failure charts.
+
+    Optionally accepts an AgentBroker. When wired, the report will include
+    an Overdue Inspections section sourced from the ComplianceScanner.
     """
     system = prompts.SYSTEM
+
+    def __init__(self, reader, llm=None, broker: "AgentBroker | None" = None):
+        super().__init__(reader, llm)
+        self._broker = broker
 
     def tools(self) -> list:
         r = self._reader
@@ -53,6 +68,22 @@ class ReportGeneratorAgent(GraphAgent):
                 "assessment evidence and may be incorrect: "
                 + ", ".join(reasoned.grounding.ungrounded_tags) + "]"
             )
+
+        # Broker enrichment: append overdue inspections section
+        if self._broker:
+            compliance_flags = await asyncio.to_thread(
+                self._broker.get_compliance_flags, tag
+            )
+            if compliance_flags:
+                overdue_md = "\n\n## ⚠️ Overdue Inspections\n\n"
+                overdue_md += "The following compliance inspections are outstanding for this equipment:\n\n"
+                for flag in compliance_flags:
+                    overdue_md += f"- {flag}\n"
+                overdue_md += ("\n> **Action required:** Schedule inspections before "
+                               "proceeding with any maintenance work.")
+                markdown_content += overdue_md
+                log.info("report enriched with compliance flags",
+                         tag=tag, flags=len(compliance_flags))
             
         # 3. Render the PDF with embedded Matplotlib chart and tables
         pdf_bytes = await asyncio.to_thread(

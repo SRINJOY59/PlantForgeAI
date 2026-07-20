@@ -211,3 +211,41 @@ class ImpactAssessment(BaseModel):
     graph_version: int = 0
     verified: bool = True
     unverified_claims: list[str] = Field(default_factory=list)
+
+
+class PermitRequest(BaseModel):
+    """What a technician intends to do, before a work permit is issued.
+
+    A tag, a description of the work, and who is requesting it.  The agent
+    needs nothing more to walk the isolation boundary, surface the known
+    hazards, and draft what the permit authority must verify.
+    """
+    tag: str                            # primary equipment being worked on
+    work_description: str               # "replace mechanical seal on pump"
+    requested_by: str = ""
+
+
+class WorkPermit(BaseModel):
+    """Structured output of the Permit-to-Work agent.
+
+    There is no 'approved / rejected' field here, on purpose.  Signing a hot-
+    work or confined-space permit is a legal act by a competent person.  This
+    is the pre-populated checklist the permit authority reviews and signs —
+    not the signature itself.
+
+    The lists (isolation_points, hazards, governing_clauses) are harvested
+    directly from tool results, not from model prose, so they are facts about
+    the graph rather than claims about it.
+    """
+    request: PermitRequest
+    body: str                                          # LLM-written narrative
+    permit_type: str = "General"                       # Hot-Work / Cold-Work / CSE / …
+    isolation_points: list[str] = Field(default_factory=list)  # tags to lock out
+    identified_hazards: list[str] = Field(default_factory=list)
+    required_ppe: list[str] = Field(default_factory=list)
+    governing_clauses: list[str] = Field(default_factory=list)
+    procedures_to_follow: list[str] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
+    graph_version: int = 0
+    verified: bool = True
+    unverified_claims: list[str] = Field(default_factory=list)
