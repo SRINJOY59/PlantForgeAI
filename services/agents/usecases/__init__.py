@@ -15,6 +15,7 @@ from agents.usecases.compliance import ComplianceScanner
 from agents.usecases.failure_rca import InvestigatorAgent
 from agents.usecases.moc import ChangeImpact
 from agents.usecases.standards_watch import StandardsWatcher, WebRevisionSource
+from agents.usecases.report_generator import ReportGeneratorAgent
 
 __all__ = ["ChangeImpact", "ComplianceScanner", "InvestigatorAgent",
-           "StandardsWatcher", "WebRevisionSource"]
+           "StandardsWatcher", "WebRevisionSource", "ReportGeneratorAgent"]

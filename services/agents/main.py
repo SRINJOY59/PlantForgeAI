@@ -22,9 +22,13 @@ from fastapi.responses import StreamingResponse
 
 from plantmind_core.bus import RedisBus
 from plantmind_core.schemas import ChangeProposal
+from pydantic import BaseModel
 
 from agents.reader import AgentReader
-from agents.usecases import ChangeImpact
+from agents.usecases import ChangeImpact, ReportGeneratorAgent
+
+class ReportRequest(BaseModel):
+    tag: str
 
 _reader = None
 _bus = None
@@ -76,6 +80,16 @@ async def assess_stream(proposal: ChangeProposal):
                 yield _sse("done", payload.model_dump(mode="json"))
 
     return StreamingResponse(events(), media_type="text/event-stream")
+
+
+@app.post("/report/generate")
+async def generate_report(request: ReportRequest):
+    """Generates a comprehensive Markdown report and compiled PDF report
+    for the given equipment tag, storing it in MinIO.
+    """
+    agent = ReportGeneratorAgent(_reader)
+    graph_version = _bus.graph_version() if _bus else 0
+    return await agent.generate_report(request.tag, graph_version=graph_version)
 
 
 @app.get("/health")
