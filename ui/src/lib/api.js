@@ -208,6 +208,46 @@ export async function assessChangeStream({ tag, summary }, { onStep, onToken } =
   return done;
 }
 
+export async function generateReport({ tag }) {
+  const res = await fetchWithAuth(`${BASE}/reports/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ tag }),
+  });
+  if (!res.ok) throw new Error(`report generation failed: ${res.status}`);
+  return res.json();
+}
+
+export async function draftPermitStream({ tag, workDescription, requestedBy }, { onStep, onToken } = {}) {
+  const res = await fetchWithAuth(`${BASE}/permit/draft/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ tag, work_description: workDescription, requested_by: requestedBy }),
+  });
+  if (!res.ok) throw new Error(`permit drafting failed: ${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let done = null;
+
+  while (true) {
+    const { value, done: finished } = await reader.read();
+    if (finished) break;
+    buffer += decoder.decode(value, { stream: true });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || "";
+    for (const frame of frames) {
+      const event = parseSse(frame);
+      if (!event) continue;
+      if (event.name === "step") onStep?.(event.data.tool);
+      else if (event.name === "token") onToken?.(event.data.text);
+      else if (event.name === "done") done = event.data;
+    }
+  }
+  return done;
+}
+
 export async function metrics() {
   const res = await fetchWithAuth(`${BASE}/metrics`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`metrics failed: ${res.status}`);
