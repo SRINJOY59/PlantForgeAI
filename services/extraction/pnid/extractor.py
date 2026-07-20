@@ -17,8 +17,9 @@ EXTRACTOR_VERSION = "pnid-v1"
 
 class Component(BaseModel):
     tag: str
-    kind: Literal["equipment", "instrument", "valve", "other"] = "equipment"
+    kind: Literal["equipment", "instrument", "valve", "line", "other"] = "equipment"
     description: str = ""
+    bbox: tuple[float, float, float, float] | None = None
 
 
 class ComponentList(BaseModel):
@@ -28,6 +29,7 @@ class ComponentList(BaseModel):
 class Connection(BaseModel):
     from_tag: str
     to_tag: str
+    direction: Literal["forward", "bidirectional", "unknown"] = "forward"
 
 
 class ConnectionList(BaseModel):
@@ -37,14 +39,16 @@ class ConnectionList(BaseModel):
 PASS1 = """This is a piping and instrumentation diagram (P&ID).
 List every tagged component you can identify: equipment (pumps, vessels,
 exchangers, compressors, tanks), instruments (circles with letter-number
-labels like PI-102), and valves (including relief valves like PSV-204).
-Report tags exactly as written on the drawing."""
+labels like PI-102), valves (including relief valves like PSV-204), and
+line numbers (e.g. 4"-CS-150).
+Report tags exactly as written on the drawing.
+If bounding box coordinates are provided in the input, include them in the bbox field."""
 
 PASS2 = """Same P&ID. These components were identified: {tag_list}
 
 Now trace the process lines. List every direct connection between two of
-those tags, in flow direction (from upstream to downstream). Only report
-connections you can actually follow along a drawn line."""
+those tags. Determine flow direction (forward, bidirectional, unknown) based on arrowheads.
+Only report connections you can actually follow along a drawn line."""
 
 
 class PnidExtractor:
@@ -66,6 +70,31 @@ class PnidExtractor:
                            PASS2.format(tag_list=self._tag_list(comps)) +
                            "\n\nSVG source:\n" + data.decode("utf-8", "replace")}]
             conns = await self._llm.structured(pass2_msgs, ConnectionList)
+        elif filename.lower().endswith(".pdf"):
+            import fitz
+            import re
+            
+            # Layer 1: Vector Path for PDFs to get deterministic text & bboxes
+            doc = fitz.open(stream=data, filetype="pdf")
+            blocks = []
+            for page in doc:
+                text_blocks = page.get_text("blocks")
+                for b in text_blocks:
+                    x0, y0, x1, y1, text, block_no, block_type = b
+                    text = text.strip().replace("\n", " ")
+                    if text:
+                        blocks.append(f"Text: '{text}', BBox: [{x0:.1f}, {y0:.1f}, {x1:.1f}, {y1:.1f}]")
+            doc.close()
+            
+            vector_context = "\n".join(blocks)
+            doc_content = [{"role": "user", "content":
+                            PASS1 + "\n\nExtracted PDF Vector Text Blocks:\n" + vector_context}]
+            comps = await self._llm.structured(doc_content, ComponentList)
+            
+            # Fallback raster for pass 2 to trace lines visually
+            images = to_png_b64(data, filename)
+            conns = await self._llm.vision_structured(
+                PASS2.format(tag_list=self._tag_list(comps)), images, ConnectionList)
         else:
             images = to_png_b64(data, filename)
             comps = await self._llm.vision_structured(PASS1, images, ComponentList)
@@ -98,6 +127,8 @@ class PnidExtractor:
             props = {"kind": comp.kind}
             if comp.description:
                 props["description"] = comp.description
+            if comp.bbox:
+                props["bbox"] = comp.bbox
             nodes[tag] = CandidateNode(type=node_type, surface_form=tag,
                                        props=props)
             edges.append(CandidateEdge(type=EdgeType.MENTIONED_IN,
@@ -110,7 +141,8 @@ class PnidExtractor:
                             src=conn.from_tag, dst=conn.to_tag)
                 continue
             edges.append(CandidateEdge(type=EdgeType.CONNECTED_TO,
-                                       src=src, dst=dst, provenance=prov))
+                                       src=src, dst=dst, provenance=prov,
+                                       props={"direction": conn.direction}))
 
         doc_node = CandidateNode(type=NodeType.DOCUMENT, surface_form=doc_id,
                                  props={"filename": filename,

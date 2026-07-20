@@ -14,12 +14,15 @@ import Alerts from "./pages/app/Alerts";
 import Profile from "./pages/app/Profile";
 
 // Heavy pages (lazy loaded to save bandwidth)
+const FieldCopilot = React.lazy(() => import("./pages/app/FieldCopilot"));
 const Moc = React.lazy(() => import("./pages/app/Moc"));
 const Documents = React.lazy(() => import("./pages/app/Documents"));
 const GraphExplorer = React.lazy(() => import("./pages/app/GraphExplorer"));
 const Compliance = React.lazy(() => import("./pages/app/Compliance"));
 const Connectors = React.lazy(() => import("./pages/app/Connectors"));
 const Interview = React.lazy(() => import("./pages/app/Interview"));
+const Reports = React.lazy(() => import("./pages/app/Reports"));
+const Permits = React.lazy(() => import("./pages/app/Permits"));
 
 const Suspended = ({ children }) => (
   <Suspense fallback={<div className="flex h-full items-center justify-center p-8 text-slate-500">Loading...</div>}>
@@ -44,6 +47,7 @@ export default function App() {
         {/* operator+ */}
         <Route index element={<Dashboard />} />
         <Route path="ask" element={<Ask />} />
+        <Route path="copilot" element={<Suspended><FieldCopilot /></Suspended>} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="profile" element={<Profile />} />
         <Route path="documents" element={<Suspended><Documents /></Suspended>} />
@@ -60,6 +64,12 @@ export default function App() {
         } />
         <Route path="interview" element={
           <RoleRoute minRole="engineer"><Suspended><Interview /></Suspended></RoleRoute>
+        } />
+        <Route path="reports" element={
+          <RoleRoute minRole="engineer"><Suspended><Reports /></Suspended></RoleRoute>
+        } />
+        <Route path="permits" element={
+          <RoleRoute minRole="engineer"><Suspended><Permits /></Suspended></RoleRoute>
         } />
 
         {/* admin only */}
