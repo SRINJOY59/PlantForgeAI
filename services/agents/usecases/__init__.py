@@ -11,10 +11,15 @@ main.py wires the ones a person does - so this is a re-export for readable
 imports, not a registry.
 """
 
+from agents.usecases.broker import AgentBroker
 from agents.usecases.compliance import ComplianceScanner
 from agents.usecases.failure_rca import InvestigatorAgent
 from agents.usecases.moc import ChangeImpact
+from agents.usecases.permit_to_work import PermitToWorkAgent
 from agents.usecases.standards_watch import StandardsWatcher, WebRevisionSource
+from agents.usecases.report_generator import ReportGeneratorAgent
+from agents.usecases.field_copilot import FieldCopilotAgent
 
-__all__ = ["ChangeImpact", "ComplianceScanner", "InvestigatorAgent",
+__all__ = ["AgentBroker", "ChangeImpact", "ComplianceScanner", "InvestigatorAgent",
+           "PermitToWorkAgent", "ReportGeneratorAgent", "FieldCopilotAgent",
            "StandardsWatcher", "WebRevisionSource"]

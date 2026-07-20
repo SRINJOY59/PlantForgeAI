@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
   Plug, Leaf, UserRound, AudioLines, Shield, LayoutDashboard,
+  FilePieChart, FileSignature, Mic,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
@@ -11,9 +12,12 @@ import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
 const nav = [
   { to: "/app",            icon: LayoutDashboard,    label: "Home",          minRole: "operator", end: true  },
   { to: "/app/ask",        icon: MessageSquare,      label: "Ask",           minRole: "operator" },
+  { to: "/app/copilot",    icon: Mic,                label: "Field Copilot", minRole: "operator" },
   { to: "/app/alerts",     icon: Bell,               label: "Alerts",        minRole: "operator", badge: true },
   { to: "/app/documents",  icon: FileStack,           label: "Documents",     minRole: "operator" },
   { to: "/app/moc",        icon: GitPullRequestArrow, label: "Change Impact", minRole: "engineer" },
+  { to: "/app/reports",    icon: FilePieChart,       label: "Asset Reports", minRole: "engineer" },
+  { to: "/app/permits",    icon: FileSignature,      label: "Permits",       minRole: "engineer" },
   { to: "/app/graph",      icon: GitBranch,           label: "Graph",         minRole: "engineer" },
   { to: "/app/compliance", icon: ShieldCheck,         label: "Compliance",    minRole: "engineer" },
   { to: "/app/interview",  icon: AudioLines,          label: "Interview",     minRole: "engineer" },

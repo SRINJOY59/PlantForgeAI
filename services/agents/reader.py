@@ -188,5 +188,47 @@ class AgentReader:
         with self._driver.session() as session:
             return [dict(r) for r in session.run(query, **params)]
 
+    def sop_steps(self, work_order_id: str) -> list:
+        """Ordered SOP steps for a work order.
+
+        Tries two paths:
+        1. WorkOrder -[:FOLLOWS_SOP]-> Procedure  (direct link if extracted)
+        2. WorkOrder mentions Equipment, Equipment -[:FIXED_BY]-> Procedure
+           (the common case when WO and SOP were ingested separately)
+
+        Returns rows with 'step_index', 'step_text', 'sop_id', 'sop_name'
+        so the caller can cache the full list at session start.
+        """
+        # Path 1: direct SOP link
+        direct = self._run(
+            "MATCH (w:WorkOrder {surface_form: $wo_id})-[:FOLLOWS_SOP]->(p:Procedure) "
+            "UNWIND range(0, size(p.steps)-1) AS i "
+            "RETURN i AS step_index, p.steps[i] AS step_text, "
+            "p.id AS sop_id, p.surface_form AS sop_name",
+            wo_id=work_order_id)
+        if direct:
+            return direct
+
+        # Path 2: via equipment the WO mentions
+        return self._run(
+            "MATCH (w:WorkOrder {surface_form: $wo_id})-[:MENTIONED_IN|MENTIONS*1..2]-(e:Equipment) "
+            "MATCH (e)-[:FIXED_BY]->(p:Procedure) "
+            "UNWIND range(0, size(p.steps)-1) AS i "
+            "RETURN i AS step_index, p.steps[i] AS step_text, "
+            "p.id AS sop_id, p.surface_form AS sop_name "
+            "ORDER BY i LIMIT 50",
+            wo_id=work_order_id)
+
+    def work_order_details(self, work_order_id: str) -> dict:
+        """Summary of a work order: description, linked equipment, status."""
+        rows = self._run(
+            "MATCH (w:WorkOrder {surface_form: $wo_id}) "
+            "OPTIONAL MATCH (w)-[:MENTIONED_IN|MENTIONS*1..2]-(e:Equipment) "
+            "RETURN w.surface_form AS wo_id, w.description AS description, "
+            "w.action_taken AS action_taken, w.date AS date, "
+            "collect(DISTINCT e.surface_form) AS equipment",
+            wo_id=work_order_id)
+        return rows[0] if rows else {}
+
     def close(self):
         self._driver.close()
