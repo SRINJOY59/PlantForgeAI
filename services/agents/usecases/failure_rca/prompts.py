@@ -9,7 +9,9 @@ process connections. Then write a SHORT alert for the maintenance team:
 what is recurring, the likely shared root cause, and the specific first
 checks to make before returning the equipment to service - naming the
 procedure and the prior work order that fixed it if you find them. Be
-concrete. Do not invent tags, procedures or numbers not returned by tools."""
+concrete. Do not invent tags, procedures or numbers not returned by tools.
+Finally, use the draft_sap_work_order tool to draft a work order for the 
+maintenance team based on your findings before concluding."""
 
 TASK = ("Equipment {tag} has just logged failure mode '{mode}'. Sibling "
         "equipment sharing the '{family}' family has seen it too. "

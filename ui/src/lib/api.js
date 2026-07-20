@@ -300,3 +300,41 @@ export async function startCopilotSession({ worker_id, work_order_id }) {
   return res.json();
 }
 
+export function subscribeDraftWorkOrders(onWorkOrder, after = "0") {
+  const control = new AbortController();
+  let cursor = after;
+
+  (async () => {
+    while (!control.signal.aborted) {
+      try {
+        const res = await fetchWithAuth(
+          `${BASE}/work-orders/drafts?after=${encodeURIComponent(cursor)}`,
+          { headers: await authHeaders(), signal: control.signal });
+        if (!res.ok) throw new Error(`work orders failed: ${res.status}`);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const frames = buffer.split("\n\n");
+          buffer = frames.pop() || "";
+          for (const frame of frames) {
+            const event = parseSse(frame);
+            if (event?.name !== "work_order") continue;
+            cursor = event.data.id ?? cursor;
+            onWorkOrder(event.data);
+          }
+        }
+      } catch (e) {
+        if (control.signal.aborted) return;
+      }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  })();
+
+  return () => control.abort();
+}
+

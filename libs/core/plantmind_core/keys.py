@@ -8,6 +8,7 @@ FLUSH_LOCK = "graphd:flush_lock"
 GRAPH_VERSION = "graph:version"          # INCR on every committed batch
 DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
 ALERT_STREAM = "alerts"                  # agents publish, UI/gateway tail
+DRAFT_WORK_ORDERS_STREAM = "work_orders:drafts"
 CURSOR_PREFIX = "cursor:"                # cursor:<name> = a consumer's position
 ALERTED_SET = "agents:alerted"           # fingerprints of alerts already raised
 ANSWER_CACHE = "answercache:entries"     # id -> cached (question, answer, deps)
