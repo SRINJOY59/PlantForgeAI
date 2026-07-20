@@ -27,7 +27,7 @@ MAX_TRANSCRIPT_CHARS = 60_000
 
 
 def _skills_filename(memory: SessionMemory) -> str:
-    employee = memory.profile.get("employee_id") or "unknown"
+    employee = memory.profile.get("employee_id") or memory.session_id
     return f"skills_{employee}.md"
 
 
@@ -71,7 +71,7 @@ class SkillsWriter:
         extract -> resolve -> graph). Content-hash dedup upstream makes a
         double call harmless. Returns the staging key, or None if the pipeline
         is unreachable."""
-        employee = memory.profile.get("employee_id") or "unknown"
+        employee = memory.profile.get("employee_id") or memory.session_id
         try:
             store = ObjectStore.from_settings()
             sender = WorkerApp("interview").send

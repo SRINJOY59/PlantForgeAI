@@ -22,6 +22,7 @@ const Connectors = React.lazy(() => import("./pages/app/Connectors"));
 const Interview = React.lazy(() => import("./pages/app/Interview"));
 const Reports = React.lazy(() => import("./pages/app/Reports"));
 const Permits = React.lazy(() => import("./pages/app/Permits"));
+const WorkOrders = React.lazy(() => import("./pages/app/WorkOrders"));
 
 const Suspended = ({ children }) => (
   <Suspense fallback={<div className="flex h-full items-center justify-center p-8 text-slate-500">Loading...</div>}>
@@ -68,6 +69,9 @@ export default function App() {
         } />
         <Route path="permits" element={
           <RoleRoute minRole="engineer"><Suspended><Permits /></Suspended></RoleRoute>
+        } />
+        <Route path="work-orders" element={
+          <RoleRoute minRole="engineer"><Suspended><WorkOrders /></Suspended></RoleRoute>
         } />
 
         {/* admin only */}

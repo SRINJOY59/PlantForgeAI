@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 import {
   Bell, MessageSquare, FileStack, GitPullRequestArrow, GitBranch,
   ShieldCheck, AudioLines, Plug, Shield, Activity, ArrowRight, Layers,
-  AlertTriangle, TrendingUp, Factory, Globe
+  AlertTriangle, TrendingUp, Factory, Globe, ClipboardList
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { useRole, useHasRole, ROLE_HIERARCHY } from "../../auth/useRole";
@@ -46,6 +46,7 @@ const FEATURES = [
   { to: "/app/documents",  minRole: "operator", icon: FileStack,           title: "Documents",     accent: "#0284c7" },
   { to: "/app/moc",        minRole: "engineer", icon: GitPullRequestArrow, title: "Change Impact", accent: "#7c3aed" },
   { to: "/app/graph",      minRole: "engineer", icon: GitBranch,           title: "Graph",         accent: "#059669" },
+  { to: "/app/work-orders", minRole: "engineer", icon: ClipboardList,      title: "Work Orders",   accent: "#f59e0b" },
   { to: "/app/compliance", minRole: "engineer", icon: ShieldCheck,         title: "Compliance",    accent: "#d97706" },
   { to: "/app/interview",  minRole: "engineer", icon: AudioLines,          title: "Interview",     accent: "#db2777" },
   { to: "/app/connectors", minRole: "admin",    icon: Plug,                title: "Connectors",    accent: "#4f46e5" },
