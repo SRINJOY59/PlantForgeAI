@@ -21,6 +21,7 @@ from gateway.deps import get_service
 LIMITS = {
     "ask": (30, 60),
     "moc": (10, 60),
+    "reports": (10, 60),
 }
 
 

@@ -6,3 +6,5 @@ httpx>=0.27
 # door a person knocks on (agents.main). Only the second needs these.
 fastapi>=0.115
 uvicorn[standard]>=0.30
+reportlab>=4.0
+matplotlib>=3.8
