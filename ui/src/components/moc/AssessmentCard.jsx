@@ -54,7 +54,7 @@ function Sources({ citations, onOpenDoc }) {
           <button key={i} type="button" onClick={() => onOpenDoc?.(c.doc_id, c.filename)}
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] transition-colors"
             style={{ background: "var(--bg-subtle)", color: "var(--text-md)", border: "1px solid var(--border)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.background = "#eff6ff"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.background = "var(--brand-light)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg-subtle)"; }}
             title={c.doc_id}>
             <FileText size={11} style={{ color: "var(--blue)" }} />

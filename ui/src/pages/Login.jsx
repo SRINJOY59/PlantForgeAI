@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase, supabaseEnabled } from "../lib/supabase";
-import { Leaf, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { Wordmark } from "../components/Logo";
 
 export default function Login() {
   const nav = useNavigate();
@@ -79,18 +80,7 @@ export function AuthShell({ title, subtitle, children, foot }) {
       <div className="w-full max-w-sm animate-slide-up">
         {/* Logo */}
         <Link to="/" className="mb-8 flex items-center justify-center gap-2.5">
-          <div
-            className="grid h-10 w-10 place-items-center rounded-xl"
-            style={{ background: "var(--blue)", boxShadow: "0 2px 12px rgba(37,99,235,0.3)" }}
-          >
-            <Leaf size={18} className="text-white" />
-          </div>
-          <span
-            className="text-xl font-bold"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: "var(--text)" }}
-          >
-            PlantMind
-          </span>
+          <Wordmark size={38} className="text-xl" />
         </Link>
 
         {/* Card */}

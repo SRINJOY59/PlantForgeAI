@@ -74,7 +74,7 @@ export default function ProposalForm({ onSubmit, busy }) {
               onClick={() => { setTag(ex.tag); setSummary(ex.summary); }}
               className="rounded-lg px-2.5 py-1.5 text-left text-[11px] transition-colors"
               style={{ background: "var(--bg-subtle)", color: "var(--muted)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--brand-light)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-subtle)"; }}>
               <span className="tag">{ex.tag}</span>
               <span className="ml-1.5">{ex.summary}</span>

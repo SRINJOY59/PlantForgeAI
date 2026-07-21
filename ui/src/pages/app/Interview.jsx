@@ -266,7 +266,7 @@ function Welcome({ profile, health, textMode, onStart }) {
     <Centered>
       <div
         className="grid h-14 w-14 place-items-center rounded-2xl"
-        style={{ background: "var(--blue)", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
+        style={{ background: "var(--blue)", boxShadow: "0 4px 14px rgba(122,84,160,0.35)" }}
       >
         <AudioLines size={26} className="text-white" />
       </div>
@@ -276,7 +276,7 @@ function Welcome({ profile, health, textMode, onStart }) {
         the workarounds, the early-warning signs, the people to call. The agent
         already knows your projects and equipment history, so it will only ask
         about what isn't written down. At the end you get a handover document,
-        and PlantMind learns it too.
+        and PlantForge.ai learns it too.
       </p>
 
       {profile && (
@@ -467,7 +467,7 @@ function Done({ skills, session, onDownload }) {
             <h1 className="page-title">Skills & Knowledge Handover</h1>
             <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
               {session?.staging_key
-                ? "Saved and sent to the PlantMind pipeline — it will be answerable in Ask shortly."
+                ? "Saved and sent to the PlantForge.ai pipeline — it will be answerable in Ask shortly."
                 : "Saved locally. The ingestion pipeline was unreachable — retry from the backend when it's up."}
             </p>
           </div>

@@ -50,7 +50,7 @@ function Row({ conversation, active, onSelect, onDelete }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       className="group flex items-center gap-1.5 rounded-lg px-2 py-2 transition-colors duration-150"
-      style={{ background: active ? "#eff6ff" : hover ? "var(--bg-subtle)" : "transparent" }}
+      style={{ background: active ? "var(--brand-light)" : hover ? "var(--bg-subtle)" : "transparent" }}
     >
       <button onClick={onSelect} className="flex min-w-0 flex-1 items-center gap-2 text-left">
         <MessageSquare size={12} className="flex-shrink-0"

@@ -89,7 +89,7 @@ export default function Documents() {
         </div>
         <div className="flex items-center gap-1.5 rounded-lg p-1 overflow-x-auto whitespace-nowrap scrollbar-hide" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <button onClick={() => setTypeFilter("all")}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${typeFilter === "all" ? "bg-[var(--bg-panel)] shadow-sm text-blue-600" : "text-[var(--muted)] hover:text-[var(--text)]"}`}>
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${typeFilter === "all" ? "bg-[var(--bg-panel)] shadow-sm text-brand-600" : "text-[var(--muted)] hover:text-[var(--text)]"}`}>
             All
           </button>
           {Object.entries(TYPE_CFG).map(([k, cfg]) => (
@@ -118,7 +118,7 @@ export default function Documents() {
             return (
               <div key={doc.id} className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-150 cursor-pointer"
                 style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.06)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(122,84,160,0.06)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.03)"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg" style={{ background: cfg.bg }}>

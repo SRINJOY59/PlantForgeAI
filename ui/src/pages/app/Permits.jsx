@@ -83,7 +83,7 @@ export default function Permits() {
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}
                   disabled={busy}
-                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-brand-500"
                   style={{ background: "var(--bg-panel)", borderColor: "var(--border)", color: "var(--text-main)" }}
                 />
               </div>
@@ -99,7 +99,7 @@ export default function Permits() {
                   onChange={(e) => setWorkDescription(e.target.value)}
                   disabled={busy}
                   rows={3}
-                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-brand-500 resize-none"
                   style={{ background: "var(--bg-panel)", borderColor: "var(--border)", color: "var(--text-main)" }}
                 />
               </div>
@@ -114,7 +114,7 @@ export default function Permits() {
                   value={requestedBy}
                   onChange={(e) => setRequestedBy(e.target.value)}
                   disabled={busy}
-                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-brand-500"
                   style={{ background: "var(--bg-panel)", borderColor: "var(--border)", color: "var(--text-main)" }}
                 />
               </div>
@@ -340,7 +340,7 @@ function PermitCard({ permit }) {
               <ul className="space-y-1.5">
                 {permit.governing_clauses.map((cl, i) => (
                   <li key={i} className="text-xs flex items-start gap-2" style={{ color: "var(--text-md)" }}>
-                    <span className="text-blue-500 font-bold">•</span>
+                    <span className="text-brand-500 font-bold">•</span>
                     {cl}
                   </li>
                 ))}
@@ -356,7 +356,7 @@ function PermitCard({ permit }) {
 function EmptyState() {
   return (
     <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-xl" style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}>
+      <div className="grid h-12 w-12 place-items-center rounded-xl" style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
         <FileSignature size={20} style={{ color: "var(--blue)" }} />
       </div>
       <p className="max-w-xs text-xs leading-relaxed" style={{ color: "var(--muted)" }}>

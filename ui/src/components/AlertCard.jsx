@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 const SEVERITY = {
   critical: { border: "#fca5a5", bg: "#fff1f2", iconBg: "#fee2e2", color: "#991b1b", chipBg: "#fee2e2" },
   warning:  { border: "#fcd34d", bg: "#fffbeb", iconBg: "#fef3c7", color: "#92400e", chipBg: "#fef3c7" },
-  info:     { border: "var(--blue-mid)", bg: "#f0f9ff", iconBg: "#dbeafe", color: "#1d4ed8", chipBg: "#dbeafe" },
+  info:     { border: "var(--blue-mid)", bg: "#f0f9ff", iconBg: "var(--brand-light)", color: "var(--brand-dark)", chipBg: "var(--brand-light)" },
 };
 
 // Alerts whose evidence is somebody else's web page rather than a document we
@@ -74,9 +74,9 @@ export default function AlertCard({ alert, onOpenDoc }) {
             {alert.citations.map((c, i) => (
               <button key={i} type="button" onClick={() => onOpenDoc?.(c.doc_id, c.filename)}
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors"
-                style={{ background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#bfdbfe"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "#dbeafe"; }}
+                style={{ background: "var(--brand-light)", color: "var(--brand-dark)", border: "1px solid var(--brand-mid)" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--brand-mid)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--brand-light)"; }}
                 title={c.doc_id}>
                 <ExternalLink size={9} />
                 {c.filename || c.doc_id}

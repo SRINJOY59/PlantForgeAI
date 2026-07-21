@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
-  Plug, Leaf, UserRound, AudioLines, Shield, LayoutDashboard,
-  FilePieChart, FileSignature, Mic,
+  Plug, UserRound, AudioLines, Shield, LayoutDashboard,
+  FilePieChart, FileSignature,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
+import { Wordmark } from "../Logo";
 
 // minRole: the minimum role required to see this item.
 // The hierarchy is: operator < planner < engineer < admin
@@ -55,21 +56,10 @@ export default function SideRail() {
     >
       {/* Logo */}
       <div
-        className="flex items-center gap-2.5 px-4 pb-3 mb-1"
+        className="flex items-center px-4 pb-3 mb-1"
         style={{ borderBottom: "1px solid var(--border)" }}
       >
-        <div
-          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg"
-          style={{ background: "var(--blue)", boxShadow: "0 2px 8px rgba(37,99,235,0.3)" }}
-        >
-          <Leaf size={15} className="text-white" />
-        </div>
-        <span
-          className="font-bold text-sm tracking-tight"
-          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#1e293b" }}
-        >
-          PlantMind
-        </span>
+        <Wordmark size={28} className="text-sm" />
       </div>
 
       {/* Nav items */}
@@ -81,7 +71,7 @@ export default function SideRail() {
             end={item.end}
             className="group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 mb-0.5"
             style={({ isActive }) => ({
-              background: isActive ? "#eff6ff" : "transparent",
+              background: isActive ? "var(--brand-light)" : "transparent",
               color: isActive ? "var(--blue)" : "var(--muted)",
               borderLeft: isActive ? "3px solid var(--blue)" : "3px solid transparent",
             })}
@@ -120,7 +110,7 @@ export default function SideRail() {
           </span>
         </div>
         <span className="text-[11px] font-mono" style={{ color: "var(--muted-lt)" }}>
-          PlantMind v2.0
+          PlantForge.ai v2.0
         </span>
       </div>
     </nav>

@@ -9,7 +9,7 @@ export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) 
         style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
       >
         <div className="mb-3 grid h-12 w-12 place-items-center rounded-xl"
-          style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}>
+          style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
           <BookOpen size={20} style={{ color: "var(--blue)" }} />
         </div>
         <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
@@ -70,7 +70,7 @@ function SourceCard({ citation: c, correction, onSelect }) {
       >
         <div className="flex items-center gap-2">
           <div className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-md"
-            style={{ background: flagged ? "#fef3c7" : "#dbeafe" }}>
+            style={{ background: flagged ? "#fef3c7" : "var(--brand-light)" }}>
             {flagged
               ? <PencilLine size={11} style={{ color: "#92400e" }} />
               : <FileText size={11} style={{ color: "var(--blue)" }} />}
