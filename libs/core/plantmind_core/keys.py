@@ -18,4 +18,3 @@ ANSWER_CACHE_LRU = "answercache:lru"     # id -> ts, for eviction
 # of the graph, where every fact is supposed to trace to a document we hold.
 STANDARD_REVISION_PREFIX = "standards:revision:"
 RATE_PREFIX = "ratelimit:"               # ratelimit:<bucket>:<who> fixed window
-COPILOT_SESSION_PREFIX = "copilot:session:"  # copilot:session:<session_id> -> SessionState JSON

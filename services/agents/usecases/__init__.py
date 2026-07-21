@@ -18,8 +18,7 @@ from agents.usecases.moc import ChangeImpact
 from agents.usecases.permit_to_work import PermitToWorkAgent
 from agents.usecases.standards_watch import StandardsWatcher, WebRevisionSource
 from agents.usecases.report_generator import ReportGeneratorAgent
-from agents.usecases.field_copilot import FieldCopilotAgent
 
 __all__ = ["AgentBroker", "ChangeImpact", "ComplianceScanner", "InvestigatorAgent",
-           "PermitToWorkAgent", "ReportGeneratorAgent", "FieldCopilotAgent",
+           "PermitToWorkAgent", "ReportGeneratorAgent",
            "StandardsWatcher", "WebRevisionSource"]
