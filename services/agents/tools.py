@@ -74,33 +74,3 @@ def documents_mentioning(reader) -> Tool:
                 "would therefore have to be revised if it changed.",
                 _one_tag(),
                 lambda tag: reader.documents_mentioning(_id_for(tag)))
-
-
-def draft_sap_work_order() -> Tool:
-    def _execute(equipment_id: str, root_cause: str, recommended_fix: str):
-        from plantmind_core.bus import RedisBus
-        import json
-        payload = {
-            "equipment_id": equipment_id,
-            "root_cause": root_cause,
-            "recommended_fix": recommended_fix,
-            "status": "pending_approval"
-        }
-        bus = RedisBus.from_settings()
-        bus.publish_draft_work_order(json.dumps(payload))
-        return f"Drafted SAP work order for {equipment_id}."
-    
-    return Tool(
-        "draft_sap_work_order",
-        "Draft a simulated work order in SAP for the engineering team to approve. Call this after concluding a failure investigation.",
-        {
-            "type": "object",
-            "properties": {
-                "equipment_id": {"type": "string"},
-                "root_cause": {"type": "string"},
-                "recommended_fix": {"type": "string"}
-            },
-            "required": ["equipment_id", "root_cause", "recommended_fix"]
-        },
-        _execute
-    )

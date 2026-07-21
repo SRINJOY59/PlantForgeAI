@@ -1,6 +1,20 @@
 import { useState } from "react";
 import { FileSignature, ShieldAlert, Check, Loader2, Key, HelpCircle, HardHat, ClipboardCheck } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { draftPermitStream } from "../../lib/api";
+
+// /permit/draft/stream is engineer-gated and rate-limited, so "is the backend
+// running?" is the wrong story for its two most likely failures. api.js throws
+// Error(`... failed: ${status}`), so the status code is recoverable from there.
+function explainFailure(e) {
+  const status = Number(String(e?.message ?? "").match(/\b(\d{3})\b/)?.[1]);
+  if (status === 401) return "Your session expired. Sign in again.";
+  if (status === 403) return "Drafting a permit requires the engineer role, and this account does not have it.";
+  if (status === 429) return "Too many permit drafts in the last minute. Wait a moment and retry.";
+  if (status >= 500) return `The permit service failed (${status}). Check the agents service logs.`;
+  return "Failed to draft safety permit. Is the backend running?";
+}
 
 const STEP_LABEL = {
   get_connected_equipment: "Process connections (LOTO)",
@@ -44,9 +58,17 @@ export default function Permits() {
           onToken: (token) => setStreamBody((body) => body + token),
         }
       );
+      // A 200 whose stream never delivers a 'done' frame leaves data null.
+      // Without this the page falls back to the empty state and looks like the
+      // button did nothing, rather than like the draft failed.
+      if (!data) {
+        setError("The draft ended before it returned a permit. The agents "
+                 + "service likely failed mid-stream — check its logs.");
+        return;
+      }
       setPermit(data);
     } catch (err) {
-      setError("Failed to draft safety permit. Is the backend running?");
+      setError(explainFailure(err));
     } finally {
       setBusy(false);
     }
@@ -240,9 +262,15 @@ function PermitCard({ permit }) {
         <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b" style={{ color: "var(--muted)", borderColor: "var(--border)" }}>
           Safety Analysis & Pre-Job Instruction
         </h3>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "var(--text-md)" }}>
-          {permit.body}
-        </p>
+        {/* body is the agent's written safety narrative - markdown, with
+            headings, lists and often a table. It was being printed raw inside
+            a <p>, so the reader saw the ## and | characters instead of the
+            document. dark:prose-invert is required, not cosmetic: typography
+            colours .prose descendants and beats the wrapper's colour. */}
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-li:my-0.5 prose-td:border prose-th:border prose-td:px-2 prose-th:px-2 prose-table:text-[13px]"
+          style={{ color: "var(--text-md)" }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{permit.body}</ReactMarkdown>
+        </div>
       </div>
 
       {/* LOTO Isolation Points */}

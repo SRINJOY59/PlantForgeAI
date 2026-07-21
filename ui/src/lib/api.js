@@ -266,7 +266,10 @@ export async function fetchDocumentUrl(docId) {
   });
   if (!res.ok) throw new Error(`document failed: ${res.status}`);
   const data = await res.json();
-  return data.url;
+  // filename comes back too: storage always knows it (the key is
+  // raw/<doc_id>/<filename>), so it is the reliable name even when the
+  // citation that got us here only carried a content hash.
+  return { url: data.url, filename: data.filename ?? null };
 }
 
 export async function getGraph() {
@@ -288,6 +291,40 @@ function parseSse(frame) {
   } catch {
     return null;
   }
+}
+
+// The plant's statutory position: every obligation with a due date, its status
+// computed server-side so the summary cards and the list cannot disagree.
+export async function getCompliance() {
+  const res = await fetchWithAuth(`${BASE}/compliance`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`compliance failed: ${res.status}`);
+  return res.json();
+}
+
+// Turn one due obligation into a preventive (PM02) work-order draft. Only the
+// item id goes over the wire - the obligation's own facts are re-read from the
+// graph, so a client cannot draft work against an asset it never looked at.
+export async function scheduleInspection(itemId) {
+  const res = await fetchWithAuth(`${BASE}/compliance/schedule`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ item_id: itemId }),
+  });
+  if (!res.ok) throw new Error(`schedule failed: ${res.status}`);
+  return res.json();
+}
+
+// Approve or reject a drafted work order. The approver is not sent - the
+// gateway takes it off the verified token, the same way a correction's author
+// is established rather than asserted.
+export async function decideWorkOrder(draftId, decision) {
+  const res = await fetchWithAuth(`${BASE}/work-orders/${encodeURIComponent(draftId)}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ decision }),
+  });
+  if (!res.ok) throw new Error(`decision failed: ${res.status}`);
+  return res.json();
 }
 
 export function subscribeDraftWorkOrders(onWorkOrder, after = "0") {

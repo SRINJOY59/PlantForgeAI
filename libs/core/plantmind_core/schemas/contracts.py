@@ -249,3 +249,56 @@ class WorkPermit(BaseModel):
     graph_version: int = 0
     verified: bool = True
     unverified_claims: list[str] = Field(default_factory=list)
+
+
+class WorkOrderDraftProse(BaseModel):
+    """The only two fields the model is allowed to write. Split out so the
+    structured call can be schema-constrained to exactly this and nothing
+    else - it cannot reach the fact lists even by accident."""
+    root_cause: str
+    recommended_fix: str
+
+
+class WorkOrderDraft(BaseModel):
+    """A maintenance work order drafted off a failure investigation, for a
+    planner to approve before anything reaches SAP.
+
+    Same split as ImpactAssessment and WorkPermit, for the same reason: the
+    lists are harvested from what the investigation's tools actually returned,
+    so the model cannot invent an asset, a prior work order or a procedure
+    into them. It can only invent inside root_cause / recommended_fix, where
+    check_grounding catches it and `verified` says so out loud.
+
+    priority and order_type are derived from the trigger and the graph, never
+    asked of the model: 'how urgent is this' is a scheduling decision with a
+    rule behind it, and a model that can choose it will drift.
+
+    There is no approved/rejected field here. Approving a work order commits
+    money and a technician's shift; that is a planner's act, recorded against
+    the draft rather than stored inside it - which is also what keeps the
+    draft itself immutable and replayable off the stream.
+    """
+    equipment: str
+    failure_mode: str = ""
+
+    # --- harvested from the investigation trace; model cannot write these ---
+    affected_equipment: list[str] = Field(default_factory=list)
+    prior_work_orders: list[str] = Field(default_factory=list)
+    procedures: list[str] = Field(default_factory=list)
+    governing_clauses: list[str] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
+
+    # --- model prose, grounding-checked ---
+    root_cause: str = ""
+    recommended_fix: str = ""
+
+    # --- derived, deterministic ---
+    # SAP order types: PM01 corrective (something broke), PM02 preventive.
+    # A failure investigation is corrective by definition.
+    order_type: str = "PM01"
+    priority: Literal["immediate", "high", "medium", "low"] = "medium"
+
+    # --- provenance ---
+    graph_version: int = 0
+    verified: bool = True
+    unverified_claims: list[str] = Field(default_factory=list)

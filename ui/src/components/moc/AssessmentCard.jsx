@@ -29,7 +29,13 @@ export default function AssessmentCard({ assessment: a, onOpenDoc }) {
           style={{ color: "var(--muted)" }}>
           Assessment
         </h3>
-        <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-li:my-0.5"
+        {/* dark:prose-invert is load-bearing, not cosmetic: @tailwindcss/
+            typography sets its own colours on the descendants of .prose, which
+            beat the colour set on this wrapper. Without it the assessment
+            renders near-black on a dark panel. Table borders are explicit for
+            the same reason - assessments come back with markdown tables, and
+            prose ships them borderless. */}
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-li:my-0.5 prose-td:border prose-th:border prose-td:px-2 prose-th:px-2 prose-table:text-[13px]"
           style={{ color: "var(--text-md)" }}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{a.body}</ReactMarkdown>
         </div>

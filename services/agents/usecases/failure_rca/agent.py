@@ -23,9 +23,21 @@ class InvestigatorAgent(GraphAgent):
         r = self._reader
         return [tools.failure_history(r), tools.sibling_history(r),
                 tools.fix_procedures(r), tools.connected_equipment(r),
-                tools.work_orders(r), tools.draft_sap_work_order()]
+                tools.work_orders(r)]
 
     async def investigate(self, trigger) -> Alert:
+        alert, _ = await self.investigate_reasoned(trigger)
+        return alert
+
+    async def investigate_reasoned(self, trigger):
+        """The alert plus the reasoning behind it, as (Alert, Reasoned).
+
+        The work-order drafter needs the trace rather than the prose: it
+        harvests assets, prior work orders and procedures out of what the tools
+        actually returned. Handing it this trace is what lets a draft be built
+        without a second walk over the same graph, and what stops the alert and
+        the work order disagreeing about one failure.
+        """
         # Layer 1: every tag the agent named must trace to its evidence
         given = {trigger.tag, trigger.family,
                  *(s["tag"] for s in trigger.siblings)}
@@ -46,7 +58,7 @@ class InvestigatorAgent(GraphAgent):
         recurring_pattern = trigger.siblings and trigger.count >= 2
         severity = "critical" if (recurring_pattern and grounding.verified) \
             else "warning"
-        return Alert(
+        alert = Alert(
             kind="failure_pattern", severity=severity,
             title=f"Recurring failure pattern: {trigger.tag} {trigger.mode}",
             body=body, equipment=trigger.tag,
@@ -55,3 +67,4 @@ class InvestigatorAgent(GraphAgent):
             graph_version=trigger.graph_version,
             verified=grounding.verified,
             unverified_claims=grounding.ungrounded_tags)
+        return alert, reasoned

@@ -18,7 +18,8 @@ from agents.usecases.moc import ChangeImpact
 from agents.usecases.permit_to_work import PermitToWorkAgent
 from agents.usecases.standards_watch import StandardsWatcher, WebRevisionSource
 from agents.usecases.report_generator import ReportGeneratorAgent
+from agents.usecases.work_order import WorkOrderDrafter
 
 __all__ = ["AgentBroker", "ChangeImpact", "ComplianceScanner", "InvestigatorAgent",
            "PermitToWorkAgent", "ReportGeneratorAgent",
-           "StandardsWatcher", "WebRevisionSource"]
+           "StandardsWatcher", "WebRevisionSource", "WorkOrderDrafter"]
