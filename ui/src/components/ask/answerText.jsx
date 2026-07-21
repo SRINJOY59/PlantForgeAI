@@ -30,7 +30,7 @@ export default function AnswerText({ text, onCite, names }) {
   });
 
   return (
-    <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-a:text-brand-600 prose-p:leading-relaxed prose-li:my-0.5">
+    <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-brand-600 prose-p:leading-relaxed prose-li:my-0.5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         urlTransform={urlTransform}

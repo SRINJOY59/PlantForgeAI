@@ -119,9 +119,15 @@ def document(doc_id: str, svc=Depends(get_service)):
 
 @router.get("/documents/{doc_id}/url")
 def document_url_endpoint(doc_id: str, svc=Depends(get_service)):
-    """Returns a short-lived presigned URL so the client can fetch the document
-    bytes directly from MinIO, bypassing the gateway proxy entirely."""
+    """A short-lived presigned URL so the client fetches the bytes straight
+    from MinIO, bypassing the gateway proxy entirely.
+
+    The filename rides along because storage is the one place that always knows
+    it - the key is raw/<doc_id>/<filename>. A citation whose graph node never
+    got a filename prop, or that was named before that node was written, would
+    otherwise show a content hash on screen forever.
+    """
     url = svc.document_url(doc_id)
     if not url:
         raise HTTPException(404, f"no document for {doc_id}")
-    return {"url": url}
+    return {"url": url, "filename": svc.document_name(doc_id)}

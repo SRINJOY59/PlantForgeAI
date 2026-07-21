@@ -18,7 +18,7 @@ import asyncio
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
 from plantmind_core.bus import RedisBus
@@ -30,10 +30,17 @@ from agents.usecases import (
     AgentBroker, ChangeImpact, ComplianceScanner,
     PermitToWorkAgent, ReportGeneratorAgent,
 )
+from agents.usecases.compliance import position
+from agents.usecases.work_order import from_compliance
 
 
 class ReportRequest(BaseModel):
     tag: str
+
+
+class ScheduleRequest(BaseModel):
+    """One obligation off the compliance view, echoed back to be actioned."""
+    item_id: str
 
 
 _reader: AgentReader | None = None
@@ -145,6 +152,35 @@ async def generate_report(request: ReportRequest):
     agent = ReportGeneratorAgent(_reader, broker=_broker)
     graph_version = await asyncio.to_thread(_bus.graph_version) if _bus else 0
     return await agent.generate_report(request.tag, graph_version=graph_version)
+
+
+@app.get("/compliance")
+def compliance():
+    """The plant's statutory position: every obligation with a due date, and
+    where each one stands. Read-only and LLM-free - these are dates in the
+    graph, and a model has nothing to add to a date."""
+    return position(_reader.inspection_schedule())
+
+
+@app.post("/compliance/schedule")
+def schedule_inspection(request: ScheduleRequest):
+    """Turn one due obligation into a preventive work order draft.
+
+    Resolved from the item id rather than trusting a body full of fields: the
+    client tells us WHICH obligation, and the obligation's own facts come back
+    out of the graph. A client that could post its own equipment tag and
+    standard could draft work against an asset it never looked at.
+    """
+    graph_version = _bus.graph_version() if _bus else 0
+    for item in position(_reader.inspection_schedule())["items"]:
+        if item["id"] == request.item_id:
+            draft = from_compliance(item, graph_version)
+            _reader.name_citations(draft.citations)
+            if _bus:
+                _bus.publish_draft_work_order(draft.model_dump_json())
+            return {"status": "drafted", "equipment": item["equipment"],
+                    "order_type": draft.order_type}
+    raise HTTPException(404, f"no compliance item {request.item_id}")
 
 
 @app.get("/health")

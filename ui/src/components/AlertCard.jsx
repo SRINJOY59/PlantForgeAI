@@ -49,7 +49,7 @@ export default function AlertCard({ alert, onOpenDoc }) {
         <div className="mt-2 font-mono text-[11px]" style={{ color: "var(--muted)" }}>📍 {alert.equipment}</div>
       )}
 
-      <div className="mt-2.5 text-sm leading-relaxed prose prose-sm max-w-none" style={{ color: "var(--muted)" }}>
+      <div className="mt-2.5 text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert" style={{ color: "var(--muted)" }}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{alert.body}</ReactMarkdown>
       </div>
 
