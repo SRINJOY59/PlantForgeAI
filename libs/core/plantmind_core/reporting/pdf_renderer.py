@@ -1,11 +1,11 @@
 """PDF generation and plotting utility for asset reports.
 
-Parses Markdown reports into ReportLab Flowables and generates supporting charts
-with Matplotlib.
+Parses Markdown reports into an AST using Mistune, and generates ReportLab Flowables.
 """
 
 import io
 import re
+import mistune
 import matplotlib
 matplotlib.use('Agg')  # headless backend for server execution
 import matplotlib.pyplot as plt
@@ -52,7 +52,7 @@ class NumberedCanvas(canvas.Canvas):
         # Running Footer (on all pages)
         page_text = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(558, 40, page_text)
-        self.drawString(54, 40, "CONFIDENTIAL — PlantMind Operations Intelligence")
+        self.drawString(54, 40, "CONFIDENTIAL \u2014 PlantMind Operations Intelligence")
         self.setStrokeColor(colors.HexColor('#e2e8f0'))
         self.setLineWidth(0.5)
         self.line(54, 52, 558, 52)
@@ -119,14 +119,46 @@ def generate_failure_chart(failure_data: list[dict]) -> io.BytesIO | None:
     return buf
 
 
-def _clean_bold(text: str) -> str:
-    """Helper to convert Markdown formatting to ReportLab XML tags."""
-    # **bold** -> <b>bold</b>
-    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
-    # *italic* or _italic_ -> <i>italic</i>
-    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
-    text = re.sub(r'_(.*?)_', r'<i>\1</i>', text)
-    return text
+def _render_inline(tokens: list) -> str:
+    """Recursively converts mistune inline tokens to ReportLab XML."""
+    if not tokens:
+        return ""
+    out = ""
+    for token in tokens:
+        ttype = token.get('type')
+        if ttype == 'text':
+            out += token.get('raw', '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        elif ttype == 'strong':
+            out += f"<b>{_render_inline(token.get('children', []))}</b>"
+        elif ttype == 'emphasis':
+            out += f"<i>{_render_inline(token.get('children', []))}</i>"
+        elif ttype == 'codespan':
+            out += f"<font name='Courier'>{_render_inline(token.get('children', [{'type': 'text', 'raw': token.get('raw', '')}]))}</font>"
+        elif ttype == 'link':
+            # ReportLab supports limited anchor tags, we can just underline and color it
+            out += f"<font color='blue'><u>{_render_inline(token.get('children', []))}</u></font>"
+        elif ttype == 'linebreak' or ttype == 'softbreak':
+            out += " "
+        elif ttype == 'inline_html':
+            pass # Strip raw HTML
+        else:
+            if 'children' in token:
+                out += _render_inline(token['children'])
+            elif 'raw' in token:
+                out += token['raw'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    return out
+
+
+def _extract_text_for_list_item(block_tokens: list) -> str:
+    """Extracts inline text formatting from inside a list item block token."""
+    out = ""
+    for token in block_tokens:
+        ttype = token.get('type')
+        if ttype == 'paragraph' or ttype == 'block_text':
+            out += _render_inline(token.get('children', []))
+        elif 'children' in token:
+            out += _extract_text_for_list_item(token['children'])
+    return out
 
 
 def _build_rl_table(headers: list[str], rows: list[list[str]], styles) -> Table:
@@ -141,7 +173,7 @@ def _build_rl_table(headers: list[str], rows: list[list[str]], styles) -> Table:
         fontSize=9,
         textColor=colors.white
     )
-    data.append([Paragraph(f"<b>{_clean_bold(h)}</b>", hdr_style) for h in headers])
+    data.append([Paragraph(f"<b>{h}</b>", hdr_style) for h in headers])
 
     # Body cells
     body_style = ParagraphStyle(
@@ -153,10 +185,10 @@ def _build_rl_table(headers: list[str], rows: list[list[str]], styles) -> Table:
         textColor=colors.HexColor('#334155')
     )
     for row in rows:
-        data.append([Paragraph(_clean_bold(cell), body_style) for cell in row])
+        data.append([Paragraph(cell, body_style) for cell in row])
 
     # 504 pt total width (612 - 2 * 54 margins)
-    col_width = 504.0 / len(headers)
+    col_width = 504.0 / max(1, len(headers))
     t = Table(data, colWidths=[col_width] * len(headers), hAlign='LEFT')
     
     t.setStyle(TableStyle([
@@ -174,7 +206,7 @@ def _build_rl_table(headers: list[str], rows: list[list[str]], styles) -> Table:
 
 
 def parse_markdown_to_flowables(md_text: str) -> list:
-    """Parses Markdown report text into ReportLab platypus flowables."""
+    """Parses Markdown report text into ReportLab platypus flowables using mistune AST."""
     styles = getSampleStyleSheet()
     
     # Custom styles
@@ -227,56 +259,63 @@ def parse_markdown_to_flowables(md_text: str) -> list:
     )
 
     flowables = []
-    lines = md_text.split('\n')
-
-    in_table = False
-    table_headers = []
-    table_rows = []
-
-    for line in lines:
-        stripped = line.strip()
-
-        # Flush table if it ends
-        if in_table and (not stripped or not stripped.startswith('|')):
-            if table_rows:
-                flowables.append(_build_rl_table(table_headers, table_rows, styles))
+    
+    md_parser = mistune.create_markdown(renderer=None, plugins=['table'])
+    ast_nodes = md_parser(md_text)
+    
+    for node in ast_nodes:
+        ntype = node.get('type')
+        if ntype == 'heading':
+            level = node.get('attrs', {}).get('level', 1)
+            text = _render_inline(node.get('children', []))
+            if level == 1:
+                flowables.append(Paragraph(text, title_style))
                 flowables.append(Spacer(1, 10))
-            in_table = False
-            table_headers = []
-            table_rows = []
-
-        if not stripped:
-            continue
-
-        # Header parsing
-        if stripped.startswith('# '):
-            flowables.append(Paragraph(stripped[2:], title_style))
-            flowables.append(Spacer(1, 10))
-        elif stripped.startswith('## '):
-            flowables.append(Paragraph(stripped[3:], h1_style))
-        elif stripped.startswith('### '):
-            flowables.append(Paragraph(stripped[4:], h2_style))
-        # Bullet list parsing
-        elif stripped.startswith('- ') or stripped.startswith('* '):
-            flowables.append(Paragraph(f"&bull; {_clean_bold(stripped[2:])}", bullet_style))
-        # Table parsing
-        elif stripped.startswith('|'):
-            if '---' in stripped:
-                continue
-            cells = [c.strip() for c in stripped.split('|')[1:-1]]
-            if not in_table:
-                table_headers = cells
-                in_table = True
+            elif level == 2:
+                flowables.append(Paragraph(text, h1_style))
             else:
-                table_rows.append(cells)
-        # Normal paragraph parsing
-        else:
-            flowables.append(Paragraph(_clean_bold(stripped), body_style))
-
-    # Flush remaining table if file ends inside a table
-    if in_table and table_rows:
-        flowables.append(_build_rl_table(table_headers, table_rows, styles))
-
+                flowables.append(Paragraph(text, h2_style))
+                
+        elif ntype == 'paragraph':
+            text = _render_inline(node.get('children', []))
+            flowables.append(Paragraph(text, body_style))
+            
+        elif ntype == 'list':
+            ordered = node.get('attrs', {}).get('ordered', False)
+            for idx, item in enumerate(node.get('children', []), start=1):
+                item_text = _extract_text_for_list_item(item.get('children', []))
+                bullet = f"{idx}." if ordered else "&bull;"
+                flowables.append(Paragraph(f"{bullet} {item_text}", bullet_style))
+                
+        elif ntype == 'table':
+            headers = []
+            rows = []
+            for child in node.get('children', []):
+                if child.get('type') == 'table_head':
+                    for row in child.get('children', []):
+                        hr = [_extract_text_for_list_item([cell]) for cell in row.get('children', [])]
+                        headers = hr
+                elif child.get('type') == 'table_body':
+                    for row in child.get('children', []):
+                        rr = [_extract_text_for_list_item([cell]) for cell in row.get('children', [])]
+                        rows.append(rr)
+            if not headers and rows:
+                headers = [""] * len(rows[0])
+            if headers or rows:
+                flowables.append(_build_rl_table(headers, rows, styles))
+                flowables.append(Spacer(1, 10))
+                
+        elif ntype == 'block_code':
+            text = node.get('raw', '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            text = text.replace('\n', '<br/>')
+            flowables.append(Paragraph(f"<font name='Courier'>{text}</font>", body_style))
+            
+        elif ntype == 'block_quote':
+            text = _extract_text_for_list_item(node.get('children', []))
+            # Wrap blockquotes in italic with slight indent
+            bq_style = ParagraphStyle('BQ', parent=body_style, leftIndent=20, textColor=colors.HexColor('#64748b'))
+            flowables.append(Paragraph(f"<i>{text}</i>", bq_style))
+            
     return flowables
 
 
@@ -292,7 +331,7 @@ def render_report_pdf(markdown_text: str, failure_data: list[dict]) -> bytes:
         # Create a visual chart container/separator
         chart_flowables = [
             Spacer(1, 10),
-            Paragraph("<b>Diagnostic Chart — Failure Frequencies</b>", ParagraphStyle(
+            Paragraph("<b>Diagnostic Chart \u2014 Failure Frequencies</b>", ParagraphStyle(
                 'ChartTitle',
                 fontName='Helvetica-Bold',
                 fontSize=11,

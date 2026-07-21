@@ -10,26 +10,25 @@ import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
 // minRole: the minimum role required to see this item.
 // The hierarchy is: operator < planner < engineer < admin
 const nav = [
-  { to: "/app",            icon: LayoutDashboard,    label: "Home",          minRole: "operator", end: true  },
-  { to: "/app/ask",        icon: MessageSquare,      label: "Ask",           minRole: "operator" },
-  { to: "/app/copilot",    icon: Mic,                label: "Field Copilot", minRole: "operator" },
-  { to: "/app/alerts",     icon: Bell,               label: "Alerts",        minRole: "operator", badge: true },
-  { to: "/app/documents",  icon: FileStack,           label: "Documents",     minRole: "operator" },
-  { to: "/app/moc",        icon: GitPullRequestArrow, label: "Change Impact", minRole: "engineer" },
-  { to: "/app/reports",    icon: FilePieChart,       label: "Asset Reports", minRole: "engineer" },
-  { to: "/app/permits",    icon: FileSignature,      label: "Permits",       minRole: "engineer" },
-  { to: "/app/graph",      icon: GitBranch,           label: "Graph",         minRole: "engineer" },
-  { to: "/app/compliance", icon: ShieldCheck,         label: "Compliance",    minRole: "engineer" },
-  { to: "/app/interview",  icon: AudioLines,          label: "Interview",     minRole: "engineer" },
-  { to: "/app/connectors", icon: Plug,                label: "Connectors",    minRole: "admin"    },
-  { to: "/app/profile",    icon: UserRound,           label: "Profile",       minRole: "operator" },
+  { to: "/app", icon: LayoutDashboard, label: "Home", minRole: "operator", end: true },
+  { to: "/app/ask", icon: MessageSquare, label: "Ask", minRole: "operator" },
+  { to: "/app/alerts", icon: Bell, label: "Alerts", minRole: "operator", badge: true },
+  { to: "/app/documents", icon: FileStack, label: "Documents", minRole: "operator" },
+  { to: "/app/moc", icon: GitPullRequestArrow, label: "Change Impact", minRole: "engineer" },
+  { to: "/app/reports", icon: FilePieChart, label: "Asset Reports", minRole: "engineer" },
+  { to: "/app/permits", icon: FileSignature, label: "Permits", minRole: "engineer" },
+  { to: "/app/graph", icon: GitBranch, label: "Graph", minRole: "engineer" },
+  { to: "/app/compliance", icon: ShieldCheck, label: "Compliance", minRole: "engineer" },
+  { to: "/app/interview", icon: AudioLines, label: "Interview", minRole: "engineer" },
+  { to: "/app/connectors", icon: Plug, label: "Connectors", minRole: "admin" },
+  { to: "/app/profile", icon: UserRound, label: "Profile", minRole: "operator" },
 ];
 
 const ROLE_LABELS = {
-  operator: { label: "Operator",  color: "#64748b" },
-  planner:  { label: "Planner",   color: "#0284c7" },
-  engineer: { label: "Engineer",  color: "#2563eb" },
-  admin:    { label: "Admin",     color: "#7c3aed" },
+  operator: { label: "Operator", color: "#64748b" },
+  planner: { label: "Planner", color: "#0284c7" },
+  engineer: { label: "Engineer", color: "#2563eb" },
+  admin: { label: "Admin", color: "#7c3aed" },
 };
 
 export default function SideRail() {

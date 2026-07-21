@@ -1,0 +1,260 @@
+{
+  "session_id": "8edbe47e26ce",
+  "profile": {
+    "id": "ebb83fba-e1bf-4c43-bf91-20d013a4b723",
+    "full_name": "Test User",
+    "employee_id": null,
+    "job_title": "Plant Manager",
+    "department": "HSE",
+    "plant": "Tokyo",
+    "home_unit": "Unit 300",
+    "projects": [],
+    "expertise": [],
+    "updated_at": "2026-07-19T06:01:26.118244+00:00",
+    "app_role": "admin"
+  },
+  "context": {
+    "profile": {
+      "id": "ebb83fba-e1bf-4c43-bf91-20d013a4b723",
+      "full_name": "Test User",
+      "employee_id": null,
+      "job_title": "Plant Manager",
+      "department": "HSE",
+      "plant": "Tokyo",
+      "home_unit": "Unit 300",
+      "projects": [],
+      "expertise": [],
+      "updated_at": "2026-07-19T06:01:26.118244+00:00",
+      "app_role": "admin"
+    },
+    "equipment": [],
+    "person_docs": [],
+    "brief": "## Employee\n- Name: Test User (no id)\n- Role: Plant Manager, HSE\n- Plant / unit: Tokyo / Unit 300\n\n## Equipment history in the knowledge graph\n- none found for this profile; interview from the profile alone and ask them to name their key equipment"
+  },
+  "topics": [
+    {
+      "id": "t01",
+      "title": "Plant Manager's undocumented decision-making heuristics",
+      "category": "role",
+      "rationale": "Capture the unwritten rules and mental models used to prioritize conflicting demands, especially balancing production, safety, and maintenance.",
+      "seed_questions": [
+        "When you had conflicting priorities, what unwritten rules guided your decisions?",
+        "Can you walk me through a recent crisis where you had to make a call without all the data?",
+        "What early indicators do you watch that aren't on any dashboard?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t02",
+      "title": "HSE leadership and safety culture nuances",
+      "category": "role",
+      "rationale": "Understand how safety culture was actually built and sustained beyond formal policies, including buy-in tactics and informal enforcement.",
+      "seed_questions": [
+        "What safety practices did you implement that aren't in the official HSE manual?",
+        "How did you get buy-in from operators for new safety initiatives?",
+        "Are there unwritten safety norms that you fear will fade after you leave?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t03",
+      "title": "Unfinished or shelved improvement projects",
+      "category": "projects",
+      "rationale": "Identify projects that were started but not completed, their current state, obstacles, and who holds critical knowledge to restart them.",
+      "seed_questions": [
+        "Are there any improvement projects you initiated that are still in limbo? What's the current state?",
+        "What were the key obstacles, and who holds the institutional knowledge to restart them?",
+        "Which shelved project would you revive first if you had the resources?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t04",
+      "title": "Lessons learned from past HSE incidents",
+      "category": "projects",
+      "rationale": "Uncover root causes and corrective actions that were not fully captured in official reports, including early warning signs.",
+      "seed_questions": [
+        "Can you recall a significant HSE incident where the official report didn't capture the full story?",
+        "What were the early warning signs that were missed?",
+        "What informal changes were made afterward that aren't documented?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t05",
+      "title": "Critical equipment list and their hidden failure modes",
+      "category": "equipment",
+      "rationale": "Since no equipment is recorded, ask the manager to name the most critical assets in Unit 300 and share undocumented failure patterns and workarounds.",
+      "seed_questions": [
+        "Which equipment in Unit 300 keeps you up at night? What are the failure modes that aren't in the manuals?",
+        "Are there any pumps, compressors, or vessels that have recurring issues with undocumented workarounds?",
+        "What early-warning signs do you personally look for during walkthroughs?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t06",
+      "title": "Vendor and contractor relationships for key equipment",
+      "category": "equipment",
+      "rationale": "Capture who to call, vendor quirks, and support quality that isn't written in contracts or service agreements.",
+      "seed_questions": [
+        "For the critical equipment you mentioned, which vendors or contractors have the best troubleshooting knowledge?",
+        "Are there specific people we should maintain relationships with?",
+        "What are the unwritten rules for dealing with vendor support to get faster or better service?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t07",
+      "title": "Tribal knowledge: unwritten rules and gotchas in Unit 300",
+      "category": "tribal",
+      "rationale": "Document the informal knowledge that everyone on the floor knows but is never written down, preventing future incidents.",
+      "seed_questions": [
+        "What are the unwritten rules that every new operator in Unit 300 needs to know?",
+        "Can you share a 'gotcha' that caused a problem because someone didn't know the tribal knowledge?",
+        "Which piece of equipment has a 'personality' that only experienced operators understand?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t08",
+      "title": "Informal communication networks and key influencers",
+      "category": "tribal",
+      "rationale": "Map the real information flow and go-to people beyond the organizational chart, especially during emergencies.",
+      "seed_questions": [
+        "Who are the go-to people for specific issues that aren't in their job descriptions?",
+        "How does information really flow in the plant, especially during emergencies?",
+        "Who are the informal leaders that you rely on to get things done?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t09",
+      "title": "Procedural shortcuts and workarounds that are safe but undocumented",
+      "category": "procedures",
+      "rationale": "Identify where standard operating procedures are routinely bypassed with safer or more efficient informal methods.",
+      "seed_questions": [
+        "Are there any standard procedures that are routinely done differently because the official way is impractical?",
+        "How do you ensure safety when these workarounds are used?",
+        "What workarounds have you personally approved that aren't written down?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t10",
+      "title": "Emergency response procedures: gaps and real-world execution",
+      "category": "procedures",
+      "rationale": "Reveal where written emergency plans fail in practice and what ad-hoc actions were taken during real incidents.",
+      "seed_questions": [
+        "During a real emergency, what parts of the written emergency plan fell apart? What did you do instead?",
+        "Are there any emergency scenarios that aren't covered in the current plans?",
+        "What drill feedback never made it into the official revisions?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t11",
+      "title": "Successor advice: open risks and priority actions",
+      "category": "handover",
+      "rationale": "Provide the incoming manager with a candid list of hidden risks and immediate focus areas not found in formal reports.",
+      "seed_questions": [
+        "If you had to give your successor one piece of advice that isn't in any report, what would it be?",
+        "What are the top three risks you see that are not being actively managed right now?",
+        "Which relationships or political dynamics should they be aware of from day one?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t12",
+      "title": "Regulatory and compliance nuances",
+      "category": "role",
+      "rationale": "Capture informal strategies for managing audits, regulators, and compliance gaps that are handled outside official processes.",
+      "seed_questions": [
+        "How do you prepare for regulatory audits beyond the official checklist? What are the common pitfalls?",
+        "Are there any compliance issues that you've managed informally that could become problems later?",
+        "What unwritten rules do you follow when interacting with specific regulators?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t13",
+      "title": "Capital project justifications and political landscape",
+      "category": "projects",
+      "rationale": "Understand how projects were truly justified and approved, including internal politics and rejected but necessary initiatives.",
+      "seed_questions": [
+        "What were the most challenging capital projects to get approved, and how did you navigate the internal politics?",
+        "Are there any projects that were rejected but you still believe are necessary?",
+        "Who were the key allies or blockers in the approval process?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t14",
+      "title": "Maintenance strategies and reliability secrets",
+      "category": "equipment",
+      "rationale": "Uncover undocumented condition monitoring tricks, maintenance interval adjustments, and reliability insights for critical assets.",
+      "seed_questions": [
+        "For the critical equipment, what condition monitoring indicators do you rely on that aren't in the official maintenance plan?",
+        "Are there any maintenance tasks that are done more or less frequently than the manual says, and why?",
+        "What reliability 'hacks' have you learned from experience that aren't shared widely?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    },
+    {
+      "id": "t15",
+      "title": "Historical incidents and near-misses that shaped current practices",
+      "category": "tribal",
+      "rationale": "Capture stories of past incidents or near-misses that are not formally recorded but heavily influence current behavior and unwritten rules.",
+      "seed_questions": [
+        "Can you tell me about a near-miss that changed how you operate but was never officially documented?",
+        "What incident from the past do you think new people should know about to understand why we do things a certain way?",
+        "Are there any 'ghost stories' that operators tell that actually contain important lessons?"
+      ],
+      "status": "pending",
+      "coverage": 0.0,
+      "facts": []
+    }
+  ],
+  "transcript": [
+    {
+      "role": "assistant",
+      "text": "Hello Test User. Thank you for sitting down with me today. I know retirement is right around the corner, and the truth is, there's a whole lot of knowledge in your head that lives nowhere else — so before you walk out the door, I want to make sure we capture what matters most for the person stepping into your shoes.",
+      "ts": "2026-07-20T11:17:59.960511+00:00"
+    }
+  ],
+  "status": "done",
+  "followup_hints": [],
+  "skills_path": "data/interviews/exports/8edbe47e26ce/skills_unknown.md",
+  "staging_key": "staging/ddeb917b4673412d9cc5c78a279615ee/skills_unknown.md",
+  "error": null,
+  "created_at": "2026-07-20T11:17:29.503782+00:00",
+  "notes_cursor": 1
+}

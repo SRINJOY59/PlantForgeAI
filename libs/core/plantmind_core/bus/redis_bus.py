@@ -111,6 +111,20 @@ class RedisBus:
                                           **kwargs)
         return self._entries(reply)
 
+    def publish_draft_work_order(self, payload_json: str) -> str:
+        return self._r.xadd(keys.DRAFT_WORK_ORDERS_STREAM, {"payload": payload_json})
+
+    def read_draft_work_orders(self, after_id: str = "0", block_ms: int = 15000) -> list:
+        return self._read_stream(keys.DRAFT_WORK_ORDERS_STREAM, after_id, block_ms)
+
+    async def read_draft_work_orders_async(self, after_id: str = "0",
+                                           block_ms: int = 15000) -> list:
+        self._check_block(block_ms)
+        kwargs = {"block": block_ms} if block_ms else {}
+        reply = await self._async().xread({keys.DRAFT_WORK_ORDERS_STREAM: after_id},
+                                          **kwargs)
+        return self._entries(reply)
+
     def _read_stream(self, stream, after_id, block_ms) -> list:
         # block_ms > 0 waits; 0/None returns immediately. (Raw redis treats
         # BLOCK 0 as block-forever - we don't want that footgun.)
