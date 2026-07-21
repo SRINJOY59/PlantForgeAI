@@ -44,7 +44,7 @@ export default function Alerts() {
             <button key={f.id} onClick={() => setFilter(f.id)}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150"
               style={filter === f.id
-                ? { background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe" }
+                ? { background: "var(--brand-light)", color: "var(--blue)", border: "1px solid var(--brand-mid)" }
                 : { background: "var(--bg-panel)", color: "var(--muted)", border: "1px solid var(--border)" }
               }
             >

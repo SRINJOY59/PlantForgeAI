@@ -9,8 +9,8 @@ export default function CorrectionNotice({ corrections }) {
 
   return (
     <div className="mt-3 rounded-lg px-3 py-2.5"
-      style={{ background: "rgba(37,99,235,0.05)",
-               border: "1px solid rgba(37,99,235,0.2)" }}>
+      style={{ background: "rgba(122,84,160,0.05)",
+               border: "1px solid rgba(122,84,160,0.2)" }}>
       <div className="mb-1.5 flex items-center gap-1.5">
         <PencilLine size={11} style={{ color: "var(--blue)" }} />
         <span className="text-[10px] font-semibold uppercase tracking-widest"
@@ -29,7 +29,7 @@ export default function CorrectionNotice({ corrections }) {
             <span style={{ color: "var(--text-md)" }}>{c.author}</span>
             {c.text && (
               <p className="mt-0.5 border-l-2 pl-2 italic"
-                style={{ borderColor: "rgba(37,99,235,0.3)" }}>
+                style={{ borderColor: "rgba(122,84,160,0.3)" }}>
                 "{c.text}"
               </p>
             )}

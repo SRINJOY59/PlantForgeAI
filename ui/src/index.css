@@ -14,10 +14,25 @@
     --bg-subtle:  #f1f5f9;
     --border:     #e2e8f0;
     --border-md:  #cbd5e1;
-    --blue:       #2563eb;
-    --blue-light: #dbeafe;
-    --blue-mid:   #93c5fd;
-    --blue-dark:  #1d4ed8;
+
+    /* Brand violet, sampled from the PlantForge.ai mark (LIGHT.png reads
+       #78549C / #6C4890 / #8460A8). Deliberately the muted violet of the logo
+       rather than a vivid purple - the mark is line art, and a saturated
+       accent next to it looks like a different brand.
+       --brand-rgb exists so shadows and tints can be written as
+       rgba(var(--brand-rgb), a) and stay theme-aware. */
+    --brand:       #7a54a0;
+    --brand-dark:  #61407f;
+    --brand-mid:   #c3a9dc;
+    --brand-light: #f3edf9;
+    --brand-rgb:   122, 84, 160;
+
+    /* Legacy aliases. Most of the app still says var(--blue-*); pointing them
+       at the brand ramp rebrands those call sites without touching them. */
+    --blue:       var(--brand);
+    --blue-light: var(--brand-light);
+    --blue-mid:   var(--brand-mid);
+    --blue-dark:  var(--brand-dark);
     --text:       #1e293b;
     --text-md:    #334155;
     --muted:      #64748b;
@@ -36,10 +51,20 @@
     --bg-subtle:  #1c2942;
     --border:     #23304a;
     --border-md:  #334765;
-    --blue:       #4f8ef7;
-    --blue-light: #1b2f52;
-    --blue-mid:   #2f6fd0;
-    --blue-dark:  #7aa9f9;   /* hover brightens in dark instead of darkening */
+
+    /* On dark the mark is silver, not violet (DARK.png reads #9CA8B4 /
+       #C0C0CC / #D8E4E4), so the accent is lifted and softened to sit beside
+       cool steel rather than fight it. A #7a54a0 this dark would go muddy. */
+    --brand:       #a98cd0;
+    --brand-dark:  #c2a9e2;  /* hover brightens in dark instead of darkening */
+    --brand-mid:   #6e5091;
+    --brand-light: #251c36;
+    --brand-rgb:   169, 140, 208;
+
+    --blue:       var(--brand);
+    --blue-light: var(--brand-light);
+    --blue-mid:   var(--brand-mid);
+    --blue-dark:  var(--brand-dark);
     --text:       #e8edf5;
     --text-md:    #c3cede;
     --muted:      #8b9ab0;
@@ -85,7 +110,7 @@
   }
   .card:hover {
     border-color: var(--blue-mid);
-    box-shadow: 0 4px 12px rgba(37,99,235,0.08);
+    box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.08);
   }
 
   /* ── Typography ── */
@@ -101,11 +126,11 @@
     @apply btn;
     background: var(--blue);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(37,99,235,0.3);
+    box-shadow: 0 1px 3px rgba(var(--brand-rgb), 0.3);
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--blue-dark);
-    box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+    box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.25);
     transform: translateY(-1px);
   }
   .btn-ghost {
@@ -133,7 +158,7 @@
   .input::placeholder { color: var(--muted-lt); }
   .input:focus {
     border-color: var(--blue);
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.1);
   }
 
   /* ── Badges ── */
@@ -181,13 +206,13 @@
   /* ── Blue accent line ── */
   .accent-line {
     height: 1px;
-    background: linear-gradient(90deg, var(--blue) 0%, #93c5fd 50%, transparent 100%);
+    background: linear-gradient(90deg, var(--brand) 0%, var(--brand-mid) 50%, transparent 100%);
     opacity: 0.4;
   }
 
   /* ── Gradient text ── */
   .gradient-text {
-    background: linear-gradient(135deg, #1d4ed8, #2563eb, #0ea5e9);
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand), #9d7bc4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -197,8 +222,8 @@
 /* Subtle grid background */
 .bg-grid {
   background-image:
-    linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+    linear-gradient(rgba(var(--brand-rgb), 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--brand-rgb), 0.04) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 

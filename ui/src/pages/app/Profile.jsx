@@ -192,7 +192,7 @@ function Header({ profile, user }) {
   return (
     <div className="mb-6 flex items-center gap-4">
       <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl text-base font-bold"
-        style={{ background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe" }}>
+        style={{ background: "var(--brand-light)", color: "var(--blue)", border: "1px solid var(--brand-mid)" }}>
         {initials(profile, user)}
       </div>
       <div className="min-w-0">

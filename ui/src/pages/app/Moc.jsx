@@ -130,7 +130,7 @@ function EmptyState() {
   return (
     <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-xl"
-        style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}>
+        style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
         <GitPullRequestArrow size={20} style={{ color: "var(--blue)" }} />
       </div>
       <p className="max-w-xs text-xs leading-relaxed" style={{ color: "var(--muted)" }}>

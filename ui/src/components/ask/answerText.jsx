@@ -30,7 +30,7 @@ export default function AnswerText({ text, onCite, names }) {
   });
 
   return (
-    <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-p:leading-relaxed prose-li:my-0.5">
+    <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-a:text-brand-600 prose-p:leading-relaxed prose-li:my-0.5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         urlTransform={urlTransform}
@@ -45,7 +45,7 @@ export default function AnswerText({ text, onCite, names }) {
                     onCite(idPart);
                   }}
                   className="mx-0.5 inline-flex items-center rounded px-1.5 py-0.5 align-baseline font-mono text-[10px] font-bold transition-colors"
-                  style={{ background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe", textDecoration: "none" }}
+                  style={{ background: "var(--brand-light)", color: "var(--blue)", border: "1px solid var(--brand-mid)", textDecoration: "none" }}
                   title="View source document"
                 >
                   {children}
