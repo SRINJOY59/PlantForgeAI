@@ -28,7 +28,11 @@ const PRIORITY = {
 
 const ORDER_TYPE = { PM01: "PM01 · Corrective", PM02: "PM02 · Preventive" };
 
-export default function WorkOrders() {
+// The content without a page heading, so the Alerts page can host it as a tab
+// and the standalone route can wrap it in one. Alerts and work orders are two
+// halves of the same loop - what the plant is telling you, and what you are
+// going to do about it - so they read better side by side than a nav apart.
+export function WorkOrderPanel() {
   const [drafts, setDrafts] = useState([]);
   const [activeDoc, setActiveDoc] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -69,14 +73,12 @@ export default function WorkOrders() {
     (d) => (d.status ?? "pending_approval") === "pending_approval");
 
   return (
-    <div className="mx-auto flex h-full max-w-4xl flex-col px-6 py-6">
-      <div className="mb-5">
-        <h1 className="page-title">Work Orders</h1>
-        <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
-          Drafted from failure investigations. {pending.length} awaiting approval —
-          nothing reaches SAP until a planner signs off.
-        </p>
-      </div>
+    <>
+      <p className="mb-4 text-xs" style={{ color: "var(--muted)" }}>
+        Drafted from failure investigations and compliance gaps.{" "}
+        <strong style={{ color: "var(--text-md)" }}>{pending.length} awaiting approval</strong>
+        {" "}— nothing reaches SAP until a planner signs off.
+      </p>
 
       {error && (
         <div className="mb-4 rounded-xl px-4 py-3 text-sm"
@@ -96,6 +98,16 @@ export default function WorkOrders() {
         <DocumentModal docId={activeDoc.docId} filename={activeDoc.filename}
           onClose={() => setActiveDoc(null)} />
       )}
+    </>
+  );
+}
+
+/** The standalone /app/work-orders route. Same panel, with a page heading. */
+export default function WorkOrders() {
+  return (
+    <div className="mx-auto flex h-full max-w-4xl flex-col px-6 py-6">
+      <h1 className="page-title mb-1">Work Orders</h1>
+      <WorkOrderPanel />
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { AlertTriangle, ExternalLink, Globe, ShieldAlert, Wrench } from "lucide-react";
+import { AlertTriangle, ClipboardList, ExternalLink, Globe, ShieldAlert, Wrench } from "lucide-react";
+import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -17,6 +18,22 @@ const ICONS = {
   standard_revision: Globe,
   failure_pattern: Wrench,
 };
+
+// Alerts already sitting on the Redis stream were written under an older
+// prompt that opened with a stray `---` and a "## Summary" heading, and that
+// sometimes claimed the work order had "been drafted in SAP" - which was never
+// true, nothing leaves this system without a planner approving it. The prompt
+// no longer allows either, but the stream is append-only and those alerts
+// replay forever, so they are tidied on the way to the screen.
+function cleanBody(body) {
+  if (!body) return "";
+  return body
+    .replace(/^\s*-{3,}\s*/, "")               // leading horizontal rule
+    .replace(/^\s*##+\s*Summary\s*/i, "")      // redundant "Summary" heading
+    .replace(/\b(the\s+)?work order has been drafted in SAP[^.]*\.\s*/gi,
+             "A work order has been drafted for approval. ")
+    .trim();
+}
 
 export default function AlertCard({ alert, onOpenDoc }) {
   const s = SEVERITY[alert.severity] ?? SEVERITY.info;
@@ -49,8 +66,14 @@ export default function AlertCard({ alert, onOpenDoc }) {
         <div className="mt-2 font-mono text-[11px]" style={{ color: "var(--muted)" }}>📍 {alert.equipment}</div>
       )}
 
-      <div className="mt-2.5 text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert" style={{ color: "var(--muted)" }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{alert.body}</ReactMarkdown>
+      {/* The investigator writes three bold sections ending in a numbered list
+          of first checks, so the styling here is what turns that into
+          something readable on a phone in a plant: headings in full text
+          colour so they separate the sections, and list items given room so
+          the actions read as steps rather than a paragraph with digits in it. */}
+      <div className="prose prose-sm mt-2.5 max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-strong:text-[var(--text)] prose-strong:font-semibold prose-ol:my-1.5 prose-ol:pl-5 prose-ul:my-1.5 prose-li:my-1 prose-li:pl-0.5 prose-li:marker:text-[var(--muted-lt)] prose-li:marker:font-semibold"
+        style={{ color: "var(--muted)" }}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanBody(alert.body)}</ReactMarkdown>
       </div>
 
       {/* verified=false means two different things. On a plant alert the agent
@@ -62,6 +85,21 @@ export default function AlertCard({ alert, onOpenDoc }) {
           style={{ background: "#fee2e2", color: "#991b1b", border: "1px solid #fca5a5" }}>
           <AlertTriangle size={11} /> Unverified — some claims not fully grounded in evidence
         </div>
+      )}
+
+      {/* Every failure investigation also drafts a corrective work order, and
+          until now the two surfaces had no visible connection - the alert told
+          you what to check, and the thing that actually schedules the work sat
+          on another page with no sign it existed. */}
+      {alert.kind === "failure_pattern" && (
+        <Link to="/app/work-orders"
+          className="mt-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors"
+          style={{ background: "var(--bg-subtle)", color: "var(--text-md)",
+                   border: "1px solid var(--border)" }}>
+          <ClipboardList size={11} style={{ color: "var(--brand)" }} />
+          A corrective work order was drafted from this — review and approve it
+          <ExternalLink size={9} style={{ color: "var(--muted-lt)" }} />
+        </Link>
       )}
 
       {alert.citations?.length > 0 && (
