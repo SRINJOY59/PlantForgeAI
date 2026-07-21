@@ -23,7 +23,6 @@ LIMITS = {
     "moc": (10, 60),
     "permit": (10, 60),
     "reports": (10, 60),
-    "copilot": (60, 60),
 }
 
 

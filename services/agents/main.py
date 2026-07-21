@@ -14,6 +14,7 @@ image, two commands:
     uvicorn agents.main:app --port 8002              # a person asks
 """
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 
@@ -26,8 +27,8 @@ from pydantic import BaseModel
 
 from agents.reader import AgentReader
 from agents.usecases import (
-    AgentBroker, ChangeImpact, ComplianceScanner, FieldCopilotAgent,
-    InvestigatorAgent, PermitToWorkAgent, ReportGeneratorAgent,
+    AgentBroker, ChangeImpact, ComplianceScanner,
+    PermitToWorkAgent, ReportGeneratorAgent,
 )
 
 
@@ -47,15 +48,10 @@ async def lifespan(app):
     _bus = RedisBus.from_settings()
 
     # --- Build pure-provider agents (no broker dependency) ---
-    _investigator = InvestigatorAgent(_reader)
     _compliance = ComplianceScanner(_reader)
 
     # --- Assemble broker and register providers ---
-    _broker = (
-        AgentBroker()
-        .register_investigator(_investigator)
-        .register_compliance(_compliance)
-    )
+    _broker = AgentBroker().register_compliance(_compliance)
 
     yield
     _reader.close()
@@ -71,7 +67,11 @@ async def assess(proposal: ChangeProposal):
     a different assessment, and the reader deserves to know which one they have.
     """
     agent = ChangeImpact(_reader, broker=_broker)
-    result = await agent.assess(proposal, graph_version=_bus.graph_version())
+    # graph_version() is a synchronous Redis GET. Small, but on the event loop
+    # it stalls every other request sharing this worker, so it goes to a thread
+    # like every other blocking call on a request path.
+    version = await asyncio.to_thread(_bus.graph_version)
+    result = await agent.assess(proposal, graph_version=version)
     return result.model_dump(mode="json")
 
 
@@ -86,7 +86,7 @@ async def assess_stream(proposal: ChangeProposal):
     something a reviewer can watch: which evidence is being gathered, then the
     assessment as it is written, then the structured envelope at the end."""
     agent = ChangeImpact(_reader, broker=_broker)
-    version = _bus.graph_version()
+    version = await asyncio.to_thread(_bus.graph_version)
 
     async def events():
         async for kind, payload in agent.assess_stream(proposal, version):
@@ -111,7 +111,8 @@ async def draft_permit(request: PermitRequest):
     the permit authority can review and sign.
     """
     agent = PermitToWorkAgent(_reader, broker=_broker)
-    result = await agent.draft_permit(request, graph_version=_bus.graph_version())
+    version = await asyncio.to_thread(_bus.graph_version)
+    result = await agent.draft_permit(request, graph_version=version)
     return result.model_dump(mode="json")
 
 
@@ -122,7 +123,7 @@ async def draft_permit_stream(request: PermitRequest):
     structured WorkPermit arrives last as a 'done' event.
     """
     agent = PermitToWorkAgent(_reader, broker=_broker)
-    version = _bus.graph_version()
+    version = await asyncio.to_thread(_bus.graph_version)
 
     async def events():
         async for kind, payload in agent.draft_permit_stream(request, version):
@@ -142,50 +143,8 @@ async def generate_report(request: ReportRequest):
     for the given equipment tag, storing it in MinIO.
     """
     agent = ReportGeneratorAgent(_reader, broker=_broker)
-    graph_version = _bus.graph_version() if _bus else 0
+    graph_version = await asyncio.to_thread(_bus.graph_version) if _bus else 0
     return await agent.generate_report(request.tag, graph_version=graph_version)
-
-
-class StartSessionRequest(BaseModel):
-    worker_id: str
-    work_order_id: str
-
-
-class UtteranceRequest(BaseModel):
-    utterance: str
-
-
-@app.post("/copilot/session")
-async def copilot_create_session(request: StartSessionRequest):
-    """Start a voice copilot session, caching SOP steps from Neo4j into Redis.
-
-    When the broker is wired, the session's first step will be prefixed with
-    a safety briefing combining compliance flags and failure history.
-    """
-    agent = FieldCopilotAgent(_reader, _bus, broker=_broker)
-    session = await agent.create_session(
-        worker_id=request.worker_id,
-        work_order_id=request.work_order_id
-    )
-    return session.model_dump(mode="json")
-
-
-@app.post("/copilot/{session_id}/utterance")
-async def copilot_process_utterance(session_id: str, request: UtteranceRequest):
-    """Process a single voice utterance against the active session state."""
-    agent = FieldCopilotAgent(_reader, _bus, broker=_broker)
-    response = await agent.process_utterance(session_id, request.utterance)
-    return response.model_dump(mode="json")
-
-
-@app.get("/copilot/{session_id}/state")
-def copilot_get_state(session_id: str):
-    """Get the current state of a copilot session."""
-    agent = FieldCopilotAgent(_reader, _bus, broker=_broker)
-    session = agent.get_session(session_id)
-    if not session:
-        return {"status": "not_found"}
-    return session.model_dump(mode="json")
 
 
 @app.get("/health")

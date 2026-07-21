@@ -89,9 +89,10 @@ class RetrievalService:
         # run it off the event loop - otherwise every user's reads block every
         # other user's request, LLM streams included
         prepared = await asyncio.to_thread(self._prepare, question, embedding)
+        version = await asyncio.to_thread(self._graph_version)
         answer = await self._answerer.answer(
             question, prepared.context, prepared.evidence, prepared.mode,
-            self._graph_version(), prepared.corrections)
+            version, prepared.corrections)
         await asyncio.to_thread(self._name_citations, answer)
         await asyncio.to_thread(
             self._cache_put, question, embedding, answer, prepared.cited)
@@ -122,9 +123,10 @@ class RetrievalService:
             yield "token", delta
         # the finished text, not an empty envelope: grounding is read out of
         # what the answer cited, so it cannot be decided before it exists
+        version = await asyncio.to_thread(self._graph_version)
         answer = self._answerer.build_meta(
             "".join(chunks), prepared.evidence, prepared.mode,
-            self._graph_version(), prepared.corrections)
+            version, prepared.corrections)
         await asyncio.to_thread(self._name_citations, answer)
         await asyncio.to_thread(
             self._cache_put, question, embedding, answer, prepared.cited)

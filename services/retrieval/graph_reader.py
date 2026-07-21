@@ -194,6 +194,12 @@ class GraphReader:
         ids = list({d for d in doc_ids if d})
         if not ids:
             return {}
+        # The OR looks like it would defeat the index, but it does not: given a
+        # RANGE index on both Document.id and Document.surface_form, the cost
+        # planner rewrites this into a Union of two NodeIndexSeeks by itself
+        # (verified with EXPLAIN). Hand-unrolling it into UNION ALL produces the
+        # same plan, so the readable form stays. It is the indexes that matter
+        # here - without them this is a scan of every Document in the graph.
         rows = self._run(
             "MATCH (d:Document) WHERE d.id IN $ids OR d.surface_form IN $ids "
             "RETURN d.id AS id, d.surface_form AS sf, d.filename AS filename",
