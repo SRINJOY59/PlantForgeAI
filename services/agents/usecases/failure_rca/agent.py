@@ -23,7 +23,7 @@ class InvestigatorAgent(GraphAgent):
         r = self._reader
         return [tools.failure_history(r), tools.sibling_history(r),
                 tools.fix_procedures(r), tools.connected_equipment(r),
-                tools.work_orders(r)]
+                tools.work_orders(r), tools.draft_sap_work_order()]
 
     async def investigate(self, trigger) -> Alert:
         # Layer 1: every tag the agent named must trace to its evidence

@@ -13,13 +13,23 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Literal, Optional
+import redis
 
 from pydantic import BaseModel, Field
 
 from plantmind_core.telemetry import get_logger
+from plantmind_core.config import get_settings
 
 from interview.config import get_config
 from interview.context.models import WorkContext
+
+_redis_client = None
+
+def _get_redis() -> redis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.Redis.from_url(get_settings().redis_url, decode_responses=True)
+    return _redis_client
 
 log = get_logger("interview.domain.memory")
 
@@ -203,23 +213,16 @@ class SessionMemory(BaseModel):
 
     # ---- persistence (active record) ----
 
-    def _path(self):
-        return get_config().sessions_dir / f"{self.session_id}.json"
-
     def save(self):
-        path = self._path()
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(self.model_dump_json(indent=2), encoding="utf-8")
-        os.replace(tmp, path)
+        _get_redis().set(f"interview:session:{self.session_id}", self.model_dump_json(indent=2), ex=86400)
 
     @classmethod
     def load(cls, session_id: str) -> Optional["SessionMemory"]:
-        path = get_config().sessions_dir / f"{session_id}.json"
-        if not path.exists():
+        data = _get_redis().get(f"interview:session:{session_id}")
+        if not data:
             return None
         try:
-            return cls.model_validate(
-                json.loads(path.read_text(encoding="utf-8")))
+            return cls.model_validate(json.loads(data))
         except Exception as e:
             log.warning("session load failed", session=session_id,
                         error=str(e)[:200])

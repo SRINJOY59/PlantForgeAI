@@ -8,6 +8,7 @@ reingest route calls it alone)."""
 
 from datetime import date
 from pathlib import Path
+import asyncio
 
 from plantmind_core.celeryapp import WorkerApp
 from plantmind_core.llm import Tier, get_llm
@@ -26,7 +27,7 @@ MAX_TRANSCRIPT_CHARS = 60_000
 
 
 def _skills_filename(memory: SessionMemory) -> str:
-    employee = memory.profile.get("employee_id") or "unknown"
+    employee = memory.profile.get("employee_id") or memory.session_id
     return f"skills_{employee}.md"
 
 
@@ -70,7 +71,7 @@ class SkillsWriter:
         extract -> resolve -> graph). Content-hash dedup upstream makes a
         double call harmless. Returns the staging key, or None if the pipeline
         is unreachable."""
-        employee = memory.profile.get("employee_id") or "unknown"
+        employee = memory.profile.get("employee_id") or memory.session_id
         try:
             store = ObjectStore.from_settings()
             sender = WorkerApp("interview").send
@@ -107,13 +108,14 @@ class SkillsWriter:
         half = MAX_TRANSCRIPT_CHARS // 2
         chunks = [transcript[i:i + half]
                   for i in range(0, len(transcript), half)]
-        parts = []
+        tasks = []
         for chunk in chunks:
-            parts.append(await self._llm.complete(
+            tasks.append(self._llm.complete(
                 [{"role": "system", "content":
                   "Condense this interview transcript slice to its most "
                   "quotable, specific moments. Keep exact numbers, tags and "
                   "names. Plain text."},
                  {"role": "user", "content": chunk}],
                 tier=Tier.CHEAP, max_tokens=1024))
+        parts = await asyncio.gather(*tasks)
         return "\n".join(parts)
