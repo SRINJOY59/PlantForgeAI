@@ -290,16 +290,6 @@ function parseSse(frame) {
   }
 }
 
-export async function startCopilotSession({ worker_id, work_order_id }) {
-  const res = await fetchWithAuth(`${BASE}/agents/copilot/session`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify({ worker_id, work_order_id }),
-  });
-  if (!res.ok) throw new Error(`copilot session failed: ${res.status}`);
-  return res.json();
-}
-
 export function subscribeDraftWorkOrders(onWorkOrder, after = "0") {
   const control = new AbortController();
   let cursor = after;
