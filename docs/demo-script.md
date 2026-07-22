@@ -1,165 +1,221 @@
 # PlantForge.ai — demo script
 
-**Runtime:** ~4:20 · **Narration:** ~650 words at a calm 150 wpm
+**Problem Statement 8** · AI for Industrial Knowledge Intelligence: Unified Asset
+& Operations Brain
+**Runtime:** ~7:15 · **Narration:** ~1,050 words at 150 wpm
 
 Record the screen **silent**, generate the voice-over from the NARRATION blocks,
-then lay the video under the audio. Cutting video to fit audio is far easier
-than the reverse.
+then cut the video under the audio. Fitting picture to a fixed audio track is far
+easier than syncing narration to clips already timed.
 
 ---
 
 ## Pre-flight
 
-Do these before you hit record — each one is visible on camera if you skip it.
-
-- [ ] **Regenerate the alerts.** The ones on the stream now were written under
-      the old prompt: they open with a stray `---` and claim *"the SAP work
-      order has been drafted"*, which is false. New investigations produce the
-      three-section format ending in a numbered checklist. Clear
-      `agents:alerted` and re-trigger so the feed shows the good format.
-- [ ] **Decide the standards story.** The watcher is correctly silent — it has
-      recorded its baselines, and real standards move a few times a decade. You
-      cannot make one fire on cue unless a baseline is tampered first.
-- [ ] **Browser at 1920×1080, 100% zoom**, bookmarks bar hidden, one tab.
-- [ ] **Log in as an engineer** — operator hides half the nav.
-- [ ] **Pre-warm every page once.** First load of Graph Explorer is ~850 ms and
-      the answer cache is cold; clicking through once beforehand makes the
+- [ ] **Log in as an admin.** Admin is the only role that reveals the whole
+      navigation, including Connectors — the walkthrough depends on it.
+- [ ] **Regenerate the alerts.** Those currently on the feed were written under an
+      older prompt: they open with a stray rule and claim a work order was
+      "drafted in SAP", which is untrue. New investigations produce three clean
+      sections ending in a numbered checklist.
+- [ ] **Pre-warm every page once** — first load of Graph Explorer is ~850 ms and
+      the answer cache starts cold. Clicking through beforehand makes the
       recording feel instant.
-- [ ] **Have the Ask question typed and ready** to paste, not typed live.
+- [ ] **Have the Ask question on the clipboard**, not typed live.
+- [ ] Browser at 1920×1080, 100% zoom, bookmarks hidden, single tab.
 
 ### For the voice tool
 
-- Feed it the NARRATION text only — no markdown, no headings, no brackets.
-- Equipment tags read badly as literals. Write them phonetically in the input:
-  `P-101A` → "P one oh one A", `K-301` → "K three oh one",
-  `API-510` → "A P I five ten", `PM02` → "P M oh two".
-- Put a full stop before every pause you want. TTS ignores line breaks.
+Feed it the NARRATION text only — no markdown. Equipment tags read badly as
+literals, so spell them phonetically in the input: `P-101A` → "P one oh one A",
+`K-301` → "K three oh one", `OISD` → "O I S D", `P&ID` → "P and I D".
 
 ---
 
-## Scene 1 — The problem (0:00–0:25)
+## Scene 1 — The problem, and the statement (0:00–0:50)
 
-**SCREEN:** Landing page. Slow scroll to the stats band, then click **Launch**
-into the Dashboard. Let the role badge and the KPI row settle.
+**SCREEN:** Landing page. Slow scroll across the statistics band, hold on it.
 
 > **NARRATION**
-> A process plant knows almost everything about itself. The problem is that the
-> knowledge is scattered across work orders, P and I Ds, inspection records,
-> vendor manuals and twenty years of email. So the same pump fails the same way
-> for the fourth time, and nobody connects it, because no single person has read
-> all four documents. PlantForge reads them all, and keeps the connections.
+> A 2024 McKinsey survey found that professionals in asset-intensive industries
+> spend thirty-five percent of their working hours searching for information that
+> already exists somewhere in their own organisation. In Indian heavy industry, a
+> large plant runs on seven to twelve disconnected document systems — drawings in
+> one, work orders in another, procedures in a third, inspection records in a
+> fourth, and regulatory correspondence scattered across email. That
+> fragmentation drives an estimated eighteen to twenty-two percent of unplanned
+> downtime. And within the next decade, a quarter of India's experienced
+> engineers retire and take decades of undocumented knowledge with them.
+> That is Problem Statement Eight. We chose it because it is not a document
+> management problem. It is a safety problem, a compliance problem and a
+> reliability problem wearing a filing cabinet as a disguise. This is PlantForge.
 
 ---
 
-## Scene 2 — Ask, with citations (0:25–1:15)
+## Scene 2 — The unified brain (0:50–1:40)
 
-**SCREEN:** Ask. Paste: *"Why does P-101A keep losing its mechanical seal?"*
-Let the answer stream. **Then click a citation chip** and let the document
-modal open on the real SOP. Pause two seconds on it. Close.
+**SCREEN:** Sign in as admin → Dashboard. Let the KPI row and charts settle. Hover
+the admin role badge. Then sweep the full left navigation slowly, top to bottom.
 
 > **NARRATION**
-> Ask it a question and you get an answer built from the plant's own documents.
-> Every claim carries a citation, and a citation is not a footnote — it opens
-> the source. This is the actual standard operating procedure, pulled from
-> storage, at the page the answer leaned on. If the system cannot ground a
-> statement in a document you own, it says so rather than sounding confident.
-> That distinction is the whole product. An engineer will not act on an answer
-> they cannot check.
+> We are signed in as an administrator, so every capability is visible. The
+> platform ingests engineering drawings, maintenance records, procedures,
+> inspection reports and email archives, and turns them into one connected
+> knowledge graph — currently a little over two thousand entities linked across
+> forty-two documents. This dashboard is not a mock-up. Every number here is read
+> live from that graph and from the running pipeline: alerts the agents raised,
+> where the ingestion queue stands, and what the plant is exposed to right now.
+> What you see in the sidebar is one brain, addressed by different jobs — asking
+> it a question, watching what it warns you about, planning a change, proving
+> compliance, and capturing what is still only in someone's head.
 
 ---
 
-## Scene 3 — It warns you first (1:15–2:05)
+## Scene 3 — Ask anything, and check the answer (1:40–2:45)
 
-**SCREEN:** Alerts. Land on the **P-101A seal-leak** alert. Scroll slowly
-through the three sections so the numbered first-checks list is on screen.
-Hover the source chips.
+**SCREEN:** Ask → paste *"Why does P-101A keep losing its mechanical seal?"* Let
+it stream. **Click a citation chip** — hold on the opened source document for
+three full seconds. Close.
 
 > **NARRATION**
-> Nobody asked for this one. When a new failure lands in the graph, an agent
-> investigates on its own — the equipment's history, its sibling equipment, the
-> procedures that fixed it before, and what it is connected to. Here it found
-> that P one oh one A is not failing because of a bad seal. It is failing
-> because of suction starvation, the same signature its sibling pump shows, and
-> a design review recommended a year ago was never actioned. That is a
-> connection across four separate documents that no one person had made.
+> The first job is the one everybody wants: ask the plant a question in plain
+> language and get a real answer. This is retrieval over the whole corpus at
+> once — work orders, procedures and incident reports that no single search box
+> spans today.
+> But the answer is not the interesting part. This is. Every claim carries a
+> citation, and a citation is not a footnote — it opens the source. That is the
+> actual standard operating procedure the answer relied on, retrieved from
+> storage, exactly as it was filed. The system also reports its own confidence,
+> based on how completely the answer traced back to evidence. If it cannot ground
+> a statement in a document you own, it says so instead of sounding certain.
+> No engineer signs off on an answer they cannot check, so we made every answer
+> checkable.
 
 ---
 
-## Scene 4 — From warning to action (2:05–2:50)
+## Scene 4 — The graph underneath (2:45–3:20)
 
-**SCREEN:** Click **A corrective work order was drafted from this** on the alert
-card → Work Orders tab. Point at the priority badge, then the fact chips
-(affected equipment, prior work orders, procedures), then the grounded banner.
-Click **Approve**. Show the approved state.
+**SCREEN:** Graph Explorer. One slow pan across the network. Hover a node or two
+to surface labels. Do not click repeatedly.
+
+> **NARRATION**
+> Underneath is why this answers questions a search engine cannot. Documents were
+> not just indexed — they were read, and the things inside them extracted as
+> entities: equipment tags, failure modes, procedures, work orders, regulatory
+> clauses and the people involved. Then they were linked. This pump is connected
+> to that vessel, governed by that standard, repaired under that procedure,
+> mentioned in those four documents. When a question needs a connection that
+> spans three documents and two decades, it is already here, waiting.
+
+---
+
+## Scene 5 — Failure intelligence, unprompted (3:20–4:20)
+
+**SCREEN:** Alerts. Open the **P-101A seal-leak** alert. Scroll slowly so the three
+sections and the numbered first-checks list are all shown. Hover the source chips.
+
+> **NARRATION**
+> Nobody asked for this one. When new failure data lands, an agent investigates on
+> its own — the asset's own history, its sibling equipment, the procedures that
+> fixed it before, and everything it is physically connected to.
+> Here it concluded that P one oh one A is not failing because of a defective
+> seal. It is failing from suction starvation — the same signature its sibling
+> pump shows — and a design review recommended a year ago was never actioned. It
+> then lists the specific checks to make before that pump goes back into service.
+> That conclusion required connecting four separate documents filed by four
+> different people in four different systems. No individual had read all four.
+> This is the lessons-learned problem the statement describes, solved
+> continuously instead of during the post-incident review.
+
+---
+
+## Scene 6 — From a warning to scheduled work (4:20–5:05)
+
+**SCREEN:** Click **A corrective work order was drafted from this** → Work Orders.
+Point out the priority badge, then the harvested fact chips, then the grounded
+banner. Click **Approve**, show the approved state.
 
 > **NARRATION**
 > A warning that stops at a warning is just noise, so the same investigation
-> drafts the corrective work order. Look at how it is built. The equipment, the
-> prior work orders and the procedures are lifted straight out of the graph —
-> the model cannot invent into those lists. Only the two written paragraphs come
-> from the model, and they are checked against the evidence before you see them.
-> The priority is a rule, not an opinion. And nothing here is automatic. It sits
-> as a draft until a planner approves it, because committing a technician's
-> shift is a person's decision.
+> drafts the corrective work order. Look at how it is assembled. The affected
+> equipment, the prior work orders and the procedures are lifted directly out of
+> the graph — the model is not permitted to write into those lists. Only the two
+> narrative paragraphs come from the model, and they are checked against the
+> evidence before anyone sees them. The priority is calculated from recurrence
+> and regulatory exposure, not chosen by an AI.
+> And nothing here is automatic. It stays a draft until a planner approves it,
+> because committing a technician's shift is a person's decision, not a model's.
 
 ---
 
-## Scene 5 — Compliance you can prove (2:50–3:30)
+## Scene 7 — Compliance you can prove (5:05–5:50)
 
-**SCREEN:** Compliance. Let the counts land. Expand an **overdue** item →
-**View evidence** (document opens) → close → **Schedule inspection**. Show the
-confirmation, then flick back to Work Orders to show the new PM02 draft.
+**SCREEN:** Compliance. Let the counts land. Expand an **overdue** item → **View
+evidence** (document opens) → close → **Schedule inspection**. Then flick to Work
+Orders to show the new preventive draft.
 
 > **NARRATION**
-> Statutory obligations come from the same graph. Seven inspections overdue,
-> against real standards, on real assets. View evidence opens the document the
-> obligation was read from. And scheduling one does not quietly book anything —
-> it drafts a preventive work order that lands in the same approval queue as
-> everything else. Compliance does not get a side door into the maintenance
-> schedule.
+> Regulatory obligations come out of the same graph. Seven statutory inspections
+> currently overdue, against real standards — O I S D and pressure-vessel codes —
+> mapped onto the specific assets they govern. View evidence opens the document
+> the obligation was read from, which is exactly what an auditor asks for.
+> Scheduling one does not quietly book anything. It drafts a preventive work
+> order into the same approval queue as everything else, because compliance does
+> not get a side door into the maintenance schedule.
 
 ---
 
-## Scene 6 — Change impact (3:30–4:05)
+## Scene 8 — Before you change anything (5:50–6:25)
 
-**SCREEN:** Change Impact. Use the **V-203** example. Let the evidence steps
-tick through live — that streaming is the point. Then the assessment.
+**SCREEN:** Change Impact. Use the **V-203** example. Let the evidence steps tick
+through live, then the assessment.
 
 > **NARRATION**
-> And before a change is made, you can ask what it touches. Watch the left side:
-> that is the agent walking the plant's real topology, one query at a time —
+> Before a modification is made, you can ask what it touches. Watch the left
+> side — that is the agent walking the plant's real topology, one query at a time:
 > connections, failure history, governing clauses, and every document that would
-> have to be revised. What comes back is not an opinion on whether to proceed.
-> It is the evidence a competent person needs in order to decide.
+> need revising. What comes back is not a verdict on whether to proceed. It is the
+> evidence a competent person needs in order to decide, assembled in seconds
+> instead of over a fortnight.
 
 ---
 
-## Scene 7 — Close (4:05–4:20)
+## Scene 9 — Catching the knowledge before it walks out (6:25–7:15)
 
-**SCREEN:** Back to Dashboard. Hold still.
+**SCREEN:** Interview. Start a session, ask one or two questions, show the live
+transcript. Then show the generated handover document with its structure.
 
 > **NARRATION**
-> No verdicts. No auto-approvals. Every answer traced to a document, every fact
-> harvested rather than asserted, and a human signature on anything that touches
-> live plant. That is PlantForge.
+> Which leaves the hardest part of the statement — the quarter of India's
+> experienced engineers retiring within the decade.
+> You cannot solve that by asking someone to write documentation. So the system
+> interviews them. It reads the graph first, so it already knows which assets this
+> person worked on and what has historically failed on them, and it asks about
+> those specifically — the judgement that never reached a document. Why this pump
+> gets a different seal. What the vibration actually means before the alarm.
+> What comes out is a structured handover document, and it goes straight back
+> through the same ingestion pipeline as any drawing or work order. So the moment
+> the conversation ends, that knowledge is answerable in Ask, citable in an
+> assessment, and available to whoever replaces them.
+> Thirty-five percent of the working week, seven to twelve disconnected systems,
+> and a retirement cliff — one graph, one brain, every answer traceable to the
+> document it came from. That is PlantForge.
 
 ---
 
-## If you need a longer cut
+## If you need a shorter cut
 
-Drop these in after Scene 6, 30–40 seconds each:
+Drop **Scene 8 (Change Impact)** first, then **Scene 4 (Graph)** — that lands
+around 5:30 and keeps the problem statement, the citations, the failure
+intelligence, compliance and the retirement cliff.
 
-- **Permits** — draft a permit to work; isolation points and hazards come off
-  the graph, not a template.
-- **Interview** — capture a retiring engineer's knowledge into the graph. The
-  strongest story in the product if the audience is asset-management.
-- **Graph Explorer** — one slow pan. Visually impressive, but the heaviest page;
-  do not click around on camera.
-- **Documents** — drag a file in and show it entering the pipeline.
+Do **not** drop Scene 3's citation click or Scene 9. Those are the two moments
+that separate this from a chatbot over a document folder.
 
-## Lines worth keeping if you cut for time
+## Lines worth protecting
 
-- *"No single person has read all four documents."*
+- *"A safety problem, a compliance problem and a reliability problem wearing a filing cabinet as a disguise."*
 - *"A citation is not a footnote — it opens the source."*
-- *"The model cannot invent into those lists."*
-- *"It sits as a draft until a planner approves it."*
+- *"No individual had read all four."*
+- *"The model is not permitted to write into those lists."*
+- *"You cannot solve that by asking someone to write documentation. So the system interviews them."*
