@@ -165,8 +165,8 @@ function Turn({ turn, active, onFocus, onCite }) {
       onClick={onFocus}
       style={{
         background: "var(--bg-panel)",
-        border: active ? "1px solid #bfdbfe" : "1px solid var(--border)",
-        boxShadow: active ? "0 0 0 3px rgba(37,99,235,0.06), 0 2px 8px rgba(0,0,0,0.04)" : "0 1px 3px rgba(0,0,0,0.04)",
+        border: active ? "1px solid var(--brand-mid)" : "1px solid var(--border)",
+        boxShadow: active ? "0 0 0 3px rgba(122,84,160,0.06), 0 2px 8px rgba(0,0,0,0.04)" : "0 1px 3px rgba(0,0,0,0.04)",
         cursor: active ? "default" : "pointer",
       }}
     >
@@ -175,7 +175,7 @@ function Turn({ turn, active, onFocus, onCite }) {
         <div className="flex items-start gap-3">
           <div
             className="mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full text-[11px] font-bold"
-            style={{ background: "#dbeafe", color: "var(--blue)" }}
+            style={{ background: "var(--brand-light)", color: "var(--blue)" }}
           >
             Q
           </div>
@@ -263,7 +263,7 @@ function Welcome({ onPick }) {
     <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 py-12 text-center">
       <div
         className="mb-6 grid h-16 w-16 place-items-center rounded-2xl"
-        style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}
+        style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}
       >
         <Sparkles size={28} style={{ color: "var(--blue)" }} />
       </div>
@@ -281,7 +281,7 @@ function Welcome({ onPick }) {
           <button key={s.text} onClick={() => onPick(s.text)}
             className="group text-left rounded-xl px-4 py-4 transition-all duration-150"
             style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.08)"; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(122,84,160,0.08)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; }}
           >
             <span className="mr-2 text-base">{s.icon}</span>

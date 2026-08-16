@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
-import { Bell, BellOff, AlertTriangle, Globe, ShieldAlert, Factory } from "lucide-react";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { Bell, BellOff, AlertTriangle, Globe, ShieldAlert, Factory, ClipboardList } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import AlertCard, { WEB_KINDS } from "../../components/AlertCard";
 import { DocumentModal } from "../../components/DocumentViewer";
+
+// Lazy, even though it sits on an eagerly-loaded page: the work-order panel
+// pulls in react-markdown and the document viewer, and an operator who never
+// opens the tab should not pay for them on first paint.
+const WorkOrderPanel = lazy(() =>
+  import("./WorkOrders").then((m) => ({ default: m.WorkOrderPanel })));
 
 const FILTERS = [
   { id: "all",               label: "All",        icon: Bell },
@@ -13,6 +19,7 @@ const FILTERS = [
 
 export default function Alerts() {
   const { alerts, connected, markAllRead } = useAlerts();
+  const [tab, setTab] = useState("alerts");
   const [filter, setFilter] = useState("all");
   const [activeDoc, setActiveDoc] = useState(null);   // { docId, filename }
   useEffect(() => { markAllRead(); }, [markAllRead]);
@@ -39,20 +46,56 @@ export default function Alerts() {
           <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>Agents watch every failure and compliance event in real time</p>
         </div>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          {FILTERS.map(f => (
-            <button key={f.id} onClick={() => setFilter(f.id)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150"
-              style={filter === f.id
-                ? { background: "#dbeafe", color: "var(--blue)", border: "1px solid #bfdbfe" }
-                : { background: "var(--bg-panel)", color: "var(--muted)", border: "1px solid var(--border)" }
-              }
-            >
-              <f.icon size={12} /> {f.label}
-            </button>
-          ))}
-        </div>
+        {tab === "alerts" && (
+          <div className="ml-auto flex items-center gap-1.5">
+            {FILTERS.map(f => (
+              <button key={f.id} onClick={() => setFilter(f.id)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150"
+                style={filter === f.id
+                  ? { background: "var(--brand-light)", color: "var(--blue)", border: "1px solid var(--brand-mid)" }
+                  : { background: "var(--bg-panel)", color: "var(--muted)", border: "1px solid var(--border)" }
+                }
+              >
+                <f.icon size={12} /> {f.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* What the plant is telling you, and what you are going to do about it */}
+      <div className="mb-4 flex items-center gap-1" style={{ borderBottom: "1px solid var(--border)" }}>
+        {[
+          { id: "alerts", label: "Alerts", icon: Bell, n: alerts.length },
+          { id: "work_orders", label: "Work Orders", icon: ClipboardList },
+        ].map((t) => {
+          const on = tab === t.id;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className="-mb-px flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors"
+              style={{ color: on ? "var(--brand)" : "var(--muted)",
+                       borderBottom: `2px solid ${on ? "var(--brand)" : "transparent"}` }}>
+              <t.icon size={13} /> {t.label}
+              {t.n > 0 && (
+                <span className="rounded-full px-1.5 text-[10px] font-bold"
+                  style={{ background: on ? "var(--brand-light)" : "var(--bg-subtle)",
+                           color: on ? "var(--brand-dark)" : "var(--muted)" }}>
+                  {t.n}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "work_orders" ? (
+        <Suspense fallback={
+          <p className="py-8 text-center text-sm" style={{ color: "var(--muted)" }}>Loading…</p>
+        }>
+          <WorkOrderPanel />
+        </Suspense>
+      ) : (
+      <>
 
       {alerts.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-4 py-3 text-xs"
@@ -101,6 +144,8 @@ export default function Alerts() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {activeDoc && (
         <DocumentModal docId={activeDoc.docId} filename={activeDoc.filename}

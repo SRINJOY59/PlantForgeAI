@@ -10,30 +10,28 @@ import { fetchDocumentUrl } from "../lib/api";
 // evidence panel and the MOC assessment both open sources the same way.
 export function useDocumentBlob(docId) {
   const [url, setUrl] = useState(null);
+  const [name, setName] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!docId) return;
-    let revoked = false;
-    let objectUrl = null;
+    let cancelled = false;
     setUrl(null);
+    setName(null);
     setError(null);
 
     fetchDocumentUrl(docId)
-      .then((u) => {
-        if (revoked) return URL.revokeObjectURL(u);
-        objectUrl = u;
+      .then(({ url: u, filename }) => {
+        if (cancelled) return;
         setUrl(u);
+        setName(filename);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => { if (!cancelled) setError(e.message); });
 
-    return () => {
-      revoked = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
+    return () => { cancelled = true; };
   }, [docId]);
 
-  return { url, error };
+  return { url, error, filename: name };
 }
 
 // Markdown and the other text formats are served as text/plain, which an
@@ -57,8 +55,12 @@ function useBlobText(url, enabled) {
 
 // The panel body: header (name), the rendered document, an open-in-tab link.
 export function DocumentViewer({ docId, filename, onClose }) {
-  const { url, error } = useDocumentBlob(docId);
-  const label = filename || docId;
+  const { url, error, filename: resolved } = useDocumentBlob(docId);
+  // Prefer the name the citation carried, fall back to the one storage knows,
+  // and only then to the hash. This is not just cosmetic: the render mode is
+  // chosen by extension below, so a doc_id with no ".md" on it sent markdown
+  // to the iframe, which shows raw source instead of a rendered document.
+  const label = filename || resolved || docId;
   const isMarkdown = MARKDOWN.test(label);
   const isText = isMarkdown || PLAINTEXT.test(label);
   const text = useBlobText(url, isText);
@@ -83,7 +85,7 @@ export function DocumentViewer({ docId, filename, onClose }) {
           Loading source…
         </div>
       ) : isMarkdown ? (
-        <div className="prose prose-sm min-h-0 max-w-none flex-1 overflow-y-auto p-5 prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-td:border prose-th:border"
+        <div className="prose prose-sm min-h-0 max-w-none flex-1 overflow-y-auto p-5 dark:prose-invert prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-td:border prose-th:border"
           style={{ color: "var(--text-md)" }}>
           {/* default renderer escapes raw HTML, so an uploaded doc can't inject
               script into the app - the safe way to show an untrusted source */}

@@ -16,6 +16,19 @@ const STEP_LABEL = {
   get_work_orders: "Work orders",
 };
 
+// /moc/assess/stream is role-gated (engineer) and rate-limited, so "couldn't
+// reach the backend" is the wrong story for most of its failures - a 403 sent
+// an engineer hunting a dead service when the real answer is their role.
+// api.js throws Error(`assessment failed: ${status}`), so the code is in there.
+function explainFailure(e) {
+  const status = Number(String(e?.message ?? "").match(/\b(\d{3})\b/)?.[1]);
+  if (status === 401) return "Your session expired. Sign in again.";
+  if (status === 403) return "Change Impact requires the engineer role, and this account does not have it.";
+  if (status === 429) return "Too many assessments in the last minute. Wait a moment and retry.";
+  if (status >= 500) return `The assessment service failed (${status}). Check the agents service logs.`;
+  return "Couldn't reach the assessment service. Is the backend running?";
+}
+
 export default function Moc() {
   const [busy, setBusy] = useState(false);
   const [steps, setSteps] = useState([]);        // tool names, in arrival order
@@ -32,9 +45,18 @@ export default function Moc() {
         onStep: (tool) => setSteps((s) => (s.includes(tool) ? s : [...s, tool])),
         onToken: (t) => setStreamBody((b) => b + t),
       });
+      // A 200 that never delivers a 'done' frame is a real failure mode - the
+      // agent can die after the headers are already out. Without this branch
+      // the page silently falls back to the empty state, which reads as "the
+      // button did nothing" rather than "the assessment broke".
+      if (!done) {
+        setError("The assessment ended before it returned a result. The agents "
+                 + "service likely failed mid-stream — check its logs.");
+        return;
+      }
       setAssessment(done);
-    } catch {
-      setError("Couldn't reach the assessment service. Is the backend running?");
+    } catch (e) {
+      setError(explainFailure(e));
     } finally {
       setBusy(false);
     }
@@ -130,7 +152,7 @@ function EmptyState() {
   return (
     <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-xl"
-        style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}>
+        style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
         <GitPullRequestArrow size={20} style={{ color: "var(--blue)" }} />
       </div>
       <p className="max-w-xs text-xs leading-relaxed" style={{ color: "var(--muted)" }}>

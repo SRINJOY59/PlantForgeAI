@@ -17,6 +17,8 @@ from plantmind_core.schemas.contracts import (
     Source,
     Turn,
     WebSource,
+    WorkOrderDraft,
+    WorkOrderDraftProse,
     WorkPermit,
 )
 
@@ -25,5 +27,5 @@ __all__ = [
     "ChangeProposal", "Citation", "CorrectionNote",
     "EdgeType", "GraphDelta", "ImpactAssessment", "NodeType", "PermitRequest",
     "Provenance", "QueryMode", "Source", "Turn", "WebSource",
-    "WorkPermit",
+    "WorkOrderDraft", "WorkOrderDraftProse", "WorkPermit",
 ]

@@ -68,9 +68,20 @@ class Reconciler:
             f"- {l}" + ("  (looks like a mechanism/cause)"
                         if looks_like_mechanism(l) else "")
             for l in labels)
-        plan = await self._llm.structured(
-            [{"role": "user", "content": PROMPT.format(tag=tag, labels=hints)}],
-            Reconciliation, tier=Tier.CHEAP)
+        try:
+            plan = await self._llm.structured(
+                [{"role": "user", "content": PROMPT.format(tag=tag, labels=hints)}],
+                Reconciliation, tier=Tier.CHEAP)
+        except Exception as e:
+            # An empty plan is the correct failure mode. Reconciliation only
+            # ever merges labels that are already there - declining to merge
+            # leaves this equipment's failures exactly as extracted, which is
+            # the state the graph was in a moment ago. Raising instead would
+            # abort the whole denoise pass over one unlucky model response,
+            # and take every other equipment's reconciliation down with it.
+            log.warning("reconciliation unavailable, leaving labels as-is",
+                        tag=tag, labels=len(labels), error=str(e)[:200])
+            return Reconciliation(groups=[], causal=[])
         return validate(plan, labels)
 
 

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, Leaf, ChevronDown, Moon, Sun } from "lucide-react";
+import { LogOut, ChevronDown, Moon, Sun } from "lucide-react";
+import Logo from "../Logo";
 import { useAuth } from "../../auth/AuthProvider";
 import { useProfile } from "../../state/ProfileContext";
 import { displayName, initials } from "../../lib/profile";
@@ -40,17 +41,12 @@ export default function TopBar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-2.5 mr-2 select-none">
-        <div
-          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg"
-          style={{ background: "var(--blue)", boxShadow: "0 2px 8px rgba(37,99,235,0.25)" }}
-        >
-          <Leaf size={14} className="text-white" />
-        </div>
+        <Logo size={28} />
         <span
           className="hidden sm:block text-sm font-bold"
           style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: "var(--text)" }}
         >
-          PlantMind
+          PlantForge<span style={{ color: "var(--brand)" }}>.ai</span>
         </span>
       </div>
 
@@ -108,9 +104,9 @@ export default function TopBar() {
         <div
           className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-[10px] font-bold uppercase"
           style={{
-            background: "#dbeafe",
+            background: "var(--brand-light)",
             color: "var(--blue)",
-            border: "1px solid #bfdbfe",
+            border: "1px solid var(--brand-mid)",
           }}
         >
           {initials(profile, user)}

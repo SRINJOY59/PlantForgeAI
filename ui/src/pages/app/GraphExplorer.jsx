@@ -182,7 +182,7 @@ export default function GraphExplorer() {
 
           <div className="flex items-center gap-1">
             <button onClick={() => setFilterType("all")} className="rounded-lg px-2.5 py-1 text-xs font-medium transition-all"
-              style={filterType === "all" ? { background: "#dbeafe", color: "var(--blue)" } : { color: "var(--muted)" }}>
+              style={filterType === "all" ? { background: "var(--brand-light)", color: "var(--blue)" } : { color: "var(--muted)" }}>
               All
             </button>
             {Object.entries(NODE_TYPES).map(([type, cfg]) => (
@@ -209,7 +209,7 @@ export default function GraphExplorer() {
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3"
               style={{ background: "rgba(248,250,252,0.85)", backdropFilter: "blur(4px)" }}>
               <div className="grid h-14 w-14 place-items-center rounded-2xl"
-                style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}>
+                style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
                 <RefreshCw size={24} className="animate-spin" style={{ color: "var(--blue)" }} />
               </div>
               <p className="text-xs" style={{ color: "var(--muted)" }}>Laying out knowledge graph…</p>
@@ -302,7 +302,7 @@ export default function GraphExplorer() {
                       <button key={i} onClick={() => setSelected(other)}
                         className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-all"
                         style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}
-                        onMouseEnter={el => { el.currentTarget.style.background = "#eff6ff"; el.currentTarget.style.borderColor = "#bfdbfe"; }}
+                        onMouseEnter={el => { el.currentTarget.style.background = "var(--brand-light)"; el.currentTarget.style.borderColor = "var(--brand-mid)"; }}
                         onMouseLeave={el => { el.currentTarget.style.background = "var(--bg-surface)"; el.currentTarget.style.borderColor = "var(--border)"; }}
                       >
                         <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: otherCfg?.color ?? "#94a3b8" }} />

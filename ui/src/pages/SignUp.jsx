@@ -63,7 +63,7 @@ export default function SignUp() {
         foot={<Link to="/login" style={{ color: "var(--blue)" }}>Back to sign in</Link>}>
         <div className="flex flex-col items-center py-4 text-center">
           <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl"
-            style={{ background: "#dbeafe", border: "1px solid #bfdbfe" }}>
+            style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
             <MailCheck size={20} style={{ color: "var(--blue)" }} />
           </div>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-md)" }}>

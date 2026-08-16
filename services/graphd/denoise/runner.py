@@ -41,34 +41,51 @@ class DenoiseRunner:
                 log.info("pruned document-id node", surface=node["surface"])
 
     async def _reconcile_failures(self, stats):
+        # Per-equipment isolation. Denoise is a maintenance pass over the whole
+        # graph, so one unlucky row must not cost the other hundred theirs -
+        # and because the celery task retries the WHOLE pass, a row that fails
+        # deterministically would otherwise burn every retry and end up
+        # "failed permanently" having reconciled nothing at all.
         for row in self._graph.equipment_with_failures():
-            labels = [f["label"] for f in row["failures"]]
-            if len(labels) < 2:
+            try:
+                await self._reconcile_one(row, stats)
+            except Exception as e:
+                stats["skipped"] = stats.get("skipped", 0) + 1
+                log.warning("equipment skipped during reconciliation",
+                            tag=row.get("tag"), error=str(e)[:200])
+
+    async def _reconcile_one(self, row, stats):
+        labels = [f["label"] for f in row["failures"]]
+        if len(labels) < 2:
+            return
+        stats["equipment"] += 1
+        by_label = {f["label"].upper(): f["id"] for f in row["failures"]}
+        plan = await self._reconciler.reconcile(row["tag"], labels)
+
+        # keep a map so causal links resolve to the surviving canonical id
+        canonical_of = {}
+        for group in plan.groups:
+            cid = by_label.get(group.canonical.upper())
+            if not cid:
+                # validate() should have dropped this, but a canonical with no
+                # id would KeyError mid-pass and cost the rest of the equipment
                 continue
-            stats["equipment"] += 1
-            by_label = {f["label"].upper(): f["id"] for f in row["failures"]}
-            plan = await self._reconciler.reconcile(row["tag"], labels)
+            for v in group.variants:
+                canonical_of[v.upper()] = cid
+            canonical_of[group.canonical.upper()] = cid
+            vids = [by_label[v.upper()] for v in group.variants
+                    if v.upper() in by_label]
+            if vids:      # nothing to merge for a solo canonical
+                stats["merged"] += self._graph.merge_failure_modes(cid, vids)
 
-            # keep a map so causal links resolve to the surviving canonical id
-            canonical_of = {}
-            for group in plan.groups:
-                cid = by_label[group.canonical.upper()]
-                for v in group.variants:
-                    canonical_of[v.upper()] = cid
-                canonical_of[group.canonical.upper()] = cid
-                vids = [by_label[v.upper()] for v in group.variants
-                        if v.upper() in by_label]
-                if vids:      # nothing to merge for a solo canonical
-                    stats["merged"] += self._graph.merge_failure_modes(cid, vids)
-
-            for link in plan.causal:
-                cause_id = canonical_of.get(link.cause.upper(),
-                                            by_label.get(link.cause.upper()))
-                effect_id = canonical_of.get(link.effect.upper(),
-                                             by_label.get(link.effect.upper()))
-                if cause_id and effect_id and cause_id != effect_id:
-                    stats["causal_added"] += self._graph.add_causal_link(
-                        cause_id, effect_id)
+        for link in plan.causal:
+            cause_id = canonical_of.get(link.cause.upper(),
+                                        by_label.get(link.cause.upper()))
+            effect_id = canonical_of.get(link.effect.upper(),
+                                         by_label.get(link.effect.upper()))
+            if cause_id and effect_id and cause_id != effect_id:
+                stats["causal_added"] += self._graph.add_causal_link(
+                    cause_id, effect_id)
 
 
 def main():

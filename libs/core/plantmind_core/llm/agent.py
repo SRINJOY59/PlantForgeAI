@@ -8,7 +8,7 @@ import json
 from dataclasses import dataclass
 from typing import Callable
 
-from plantmind_core.llm.client import Tier, get_llm
+from plantmind_core.llm.client import Tier, get_llm, sanitize_text
 from plantmind_core.telemetry import get_logger
 
 log = get_logger("llm.agent")
@@ -53,8 +53,12 @@ class ToolAgent:
             calls = getattr(msg, "tool_calls", None)
 
             if not calls:
-                return AgentResult(answer=msg.content or "", steps=step,
-                                   trace=trace)
+                # sanitize, not msg.content: when the provider fails to parse a
+                # DeepSeek-style tool call it lands here as literal markup with
+                # no tool_calls attached, which is exactly the path that put
+                # "<｜｜DSML｜｜invoke name=..." into a work permit
+                return AgentResult(answer=sanitize_text(msg.content or ""),
+                                   steps=step, trace=trace)
 
             messages.append({"role": "assistant", "content": msg.content or "",
                              "tool_calls": [_call_dict(c) for c in calls]})
@@ -104,8 +108,10 @@ class ToolAgent:
         async for delta in self._llm.stream(messages, tier=self._tier):
             parts.append(delta)
             yield "token", delta
-        yield "result", AgentResult(answer="".join(parts), steps=used,
-                                    trace=trace)
+        # the deltas already reached the UI, but the artifact built from this
+        # is what gets stored, cited and signed - so it is sanitized here
+        yield "result", AgentResult(answer=sanitize_text("".join(parts)),
+                                    steps=used, trace=trace)
 
     async def _dispatch(self, call, trace) -> dict:
         name = call.function.name
