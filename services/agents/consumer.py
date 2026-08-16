@@ -16,7 +16,8 @@ from plantmind_core.telemetry import get_logger
 
 from agents.reader import AgentReader
 from agents.usecases import (ComplianceScanner, InvestigatorAgent,
-                             StandardsWatcher, WebRevisionSource)
+                             StandardsWatcher, WebRevisionSource,
+                             WorkOrderDrafter)
 from agents.watchers import FailureWatcher
 
 log = get_logger("agents.consumer")
@@ -32,11 +33,12 @@ class AgentsRuntime:
     def __init__(self, bus, reader, investigator=None, cache=None,
                  embedder=None, compliance_interval=COMPLIANCE_INTERVAL_S,
                  standards=None, standards_interval=STANDARDS_INTERVAL_S,
-                 block_ms=15000):
+                 block_ms=15000, drafter=None):
         self._bus = bus
         self._reader = reader          # kept: _emit names alert citations
         self._failures = FailureWatcher(reader)
         self._investigator = investigator or InvestigatorAgent(reader)
+        self._drafter = drafter or WorkOrderDrafter()
         self._compliance = ComplianceScanner(reader)
         # optional: a plant on an air-gapped network has no web to watch, and
         # the rest of the runtime must not care
@@ -97,11 +99,29 @@ class AgentsRuntime:
             asyncio.run(self._handle_trigger(trigger))
 
     async def _handle_trigger(self, trigger):
-        alert = await self._investigator.investigate(trigger)
+        alert, reasoned = await self._investigator.investigate_reasoned(trigger)
+        self._reader.name_citations(alert.citations)
         self._bus.publish_alert(alert.model_dump_json())
         log.info("alert raised", kind=alert.kind, severity=alert.severity,
                  title=alert.title)
+        await self._draft_work_order(trigger, reasoned, alert.graph_version)
         await self._speculate(trigger, alert)
+
+    async def _draft_work_order(self, trigger, reasoned, graph_version):
+        """The corrective action the investigation implies, as a draft for a
+        planner to approve - never as something the agent commits itself.
+
+        Isolated behind its own try because the alert has already been
+        published by this point. A drafting failure must not take down the
+        warning; the warning is the part nobody can afford to lose.
+        """
+        try:
+            draft = await self._drafter.draft(trigger, reasoned, graph_version)
+            self._reader.name_citations(draft.citations)
+            self._bus.publish_draft_work_order(draft.model_dump_json())
+        except Exception as e:
+            log.warning("work order drafting failed", tag=trigger.tag,
+                        error=str(e)[:200])
 
     async def _speculate(self, trigger, alert):
         """The optimisation: the investigation we just ran to make the alert

@@ -143,6 +143,25 @@ class AgentReader:
             "[d IN collect(DISTINCT g.doc_id) WHERE d IS NOT NULL] AS docs "
             "ORDER BY affected DESC")
 
+    def inspection_schedule(self) -> list:
+        """Every statutory obligation with a due date, overdue or not.
+
+        overdue_inspections() answers 'what should alarm right now'; this
+        answers 'what is the compliance position', which is a different
+        question and the one a page has to render. Status is deliberately not
+        computed here - 'due soon' is a policy window, and policy does not
+        belong in a Cypher string.
+        """
+        return self._run(
+            "MATCH (e:Entity)-[g:GOVERNED_BY]->(r:RegulationClause) "
+            "WHERE g.next_due IS NOT NULL AND g.next_due <> '' "
+            "RETURN e.surface_form AS equipment, "
+            "r.surface_form AS standard, "
+            "g.inspection_type AS inspection_type, "
+            "g.next_due AS next_due, g.date AS last_inspection, "
+            "g.revision AS revision, g.doc_id AS doc_id, g.page AS page "
+            "ORDER BY g.next_due")
+
     def overdue_inspections(self, today: str) -> list:
         return self._run(
             "MATCH (e:Entity)-[g:GOVERNED_BY]->(r:RegulationClause) "

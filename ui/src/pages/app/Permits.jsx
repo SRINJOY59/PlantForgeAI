@@ -1,6 +1,20 @@
 import { useState } from "react";
 import { FileSignature, ShieldAlert, Check, Loader2, Key, HelpCircle, HardHat, ClipboardCheck } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { draftPermitStream } from "../../lib/api";
+
+// /permit/draft/stream is engineer-gated and rate-limited, so "is the backend
+// running?" is the wrong story for its two most likely failures. api.js throws
+// Error(`... failed: ${status}`), so the status code is recoverable from there.
+function explainFailure(e) {
+  const status = Number(String(e?.message ?? "").match(/\b(\d{3})\b/)?.[1]);
+  if (status === 401) return "Your session expired. Sign in again.";
+  if (status === 403) return "Drafting a permit requires the engineer role, and this account does not have it.";
+  if (status === 429) return "Too many permit drafts in the last minute. Wait a moment and retry.";
+  if (status >= 500) return `The permit service failed (${status}). Check the agents service logs.`;
+  return "Failed to draft safety permit. Is the backend running?";
+}
 
 const STEP_LABEL = {
   get_connected_equipment: "Process connections (LOTO)",
@@ -44,9 +58,17 @@ export default function Permits() {
           onToken: (token) => setStreamBody((body) => body + token),
         }
       );
+      // A 200 whose stream never delivers a 'done' frame leaves data null.
+      // Without this the page falls back to the empty state and looks like the
+      // button did nothing, rather than like the draft failed.
+      if (!data) {
+        setError("The draft ended before it returned a permit. The agents "
+                 + "service likely failed mid-stream — check its logs.");
+        return;
+      }
       setPermit(data);
     } catch (err) {
-      setError("Failed to draft safety permit. Is the backend running?");
+      setError(explainFailure(err));
     } finally {
       setBusy(false);
     }
@@ -83,7 +105,7 @@ export default function Permits() {
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}
                   disabled={busy}
-                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-brand-500"
                   style={{ background: "var(--bg-panel)", borderColor: "var(--border)", color: "var(--text-main)" }}
                 />
               </div>
@@ -99,7 +121,7 @@ export default function Permits() {
                   onChange={(e) => setWorkDescription(e.target.value)}
                   disabled={busy}
                   rows={3}
-                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-brand-500 resize-none"
                   style={{ background: "var(--bg-panel)", borderColor: "var(--border)", color: "var(--text-main)" }}
                 />
               </div>
@@ -114,7 +136,7 @@ export default function Permits() {
                   value={requestedBy}
                   onChange={(e) => setRequestedBy(e.target.value)}
                   disabled={busy}
-                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-brand-500"
                   style={{ background: "var(--bg-panel)", borderColor: "var(--border)", color: "var(--text-main)" }}
                 />
               </div>
@@ -240,9 +262,15 @@ function PermitCard({ permit }) {
         <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b" style={{ color: "var(--muted)", borderColor: "var(--border)" }}>
           Safety Analysis & Pre-Job Instruction
         </h3>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "var(--text-md)" }}>
-          {permit.body}
-        </p>
+        {/* body is the agent's written safety narrative - markdown, with
+            headings, lists and often a table. It was being printed raw inside
+            a <p>, so the reader saw the ## and | characters instead of the
+            document. dark:prose-invert is required, not cosmetic: typography
+            colours .prose descendants and beats the wrapper's colour. */}
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-li:my-0.5 prose-td:border prose-th:border prose-td:px-2 prose-th:px-2 prose-table:text-[13px]"
+          style={{ color: "var(--text-md)" }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{permit.body}</ReactMarkdown>
+        </div>
       </div>
 
       {/* LOTO Isolation Points */}
@@ -340,7 +368,7 @@ function PermitCard({ permit }) {
               <ul className="space-y-1.5">
                 {permit.governing_clauses.map((cl, i) => (
                   <li key={i} className="text-xs flex items-start gap-2" style={{ color: "var(--text-md)" }}>
-                    <span className="text-blue-500 font-bold">•</span>
+                    <span className="text-brand-500 font-bold">•</span>
                     {cl}
                   </li>
                 ))}
@@ -356,7 +384,7 @@ function PermitCard({ permit }) {
 function EmptyState() {
   return (
     <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-xl" style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}>
+      <div className="grid h-12 w-12 place-items-center rounded-xl" style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}>
         <FileSignature size={20} style={{ color: "var(--blue)" }} />
       </div>
       <p className="max-w-xs text-xs leading-relaxed" style={{ color: "var(--muted)" }}>

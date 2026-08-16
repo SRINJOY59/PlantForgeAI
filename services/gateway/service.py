@@ -59,14 +59,19 @@ class GatewayService:
         return self._store.find_document(doc_id)
 
     def document_url(self, doc_id: str) -> str | None:
-        """Returns a presigned MinIO URL for the document, rewriting the 
-        internal docker hostname so the browser can reach it."""
-        url = self._store.presigned_url(doc_id)
-        if url:
-            # Re-write minio:9000 (docker internal) to localhost:9000 (browser facing)
-            # In a production environment this would rewrite to the public MinIO domain.
-            return url.replace("http://minio:9000", "http://localhost:9000")
-        return None
+        """A presigned MinIO URL the browser can fetch directly.
+
+        No hostname rewriting here. This used to swap minio:9000 for
+        localhost:9000 *after* signing, which invalidated the signature: SigV4
+        covers the Host header, so MinIO recomputed against the host the
+        browser actually sent, disagreed, and returned SignatureDoesNotMatch.
+        The URL is now signed for MINIO_PUBLIC_ENDPOINT up front.
+        """
+        return self._store.presigned_url(doc_id)
+
+    def document_name(self, doc_id: str) -> str | None:
+        """The readable filename behind a doc_id, taken off the object key."""
+        return self._store.document_filename(doc_id)
 
     def metrics(self) -> dict:
         return {"graph_version": self._bus.graph_version(),
@@ -80,6 +85,14 @@ class GatewayService:
 
     async def read_draft_work_orders_async(self, after: str, block_ms: int):
         return await self._bus.read_draft_work_orders_async(after, block_ms=block_ms)
+
+    def work_order_decisions(self) -> dict:
+        return self._bus.work_order_decisions()
+
+    def decide_work_order(self, draft_id: str, decision: str, who: str):
+        self._bus.set_work_order_decision(draft_id, decision, who)
+        log.info("work order decision", draft=draft_id, decision=decision,
+                 by=who)
 
     def rate_check(self, bucket: str, limit: int, window_s: int):
         return self._bus.rate_check(bucket, limit, window_s)

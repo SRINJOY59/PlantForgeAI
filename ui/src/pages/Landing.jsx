@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Activity, ArrowRight, Boxes, GitBranch, ShieldCheck, Leaf,
+  Activity, ArrowRight, Boxes, GitBranch, ShieldCheck,
   Search, Clock, FileCheck, ChevronRight, FileSearch, Zap
 } from "lucide-react";
+import Logo from "../components/Logo";
 
 const features = [
   { 
@@ -95,11 +96,11 @@ export default function Landing() {
   const [activeUseCase, setActiveUseCase] = useState(useCases[0].id);
 
   return (
-    <div className="min-h-screen bg-slate-50 overflow-x-hidden selection:bg-blue-500/30 font-sans">
+    <div className="min-h-screen bg-slate-50 overflow-x-hidden selection:bg-brand-500/30 font-sans">
       
       {/* Absolute Mesh Gradient Background */}
       <div className="absolute top-0 left-0 right-0 h-[800px] w-full overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[70%] rounded-full bg-blue-300/30 blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[70%] rounded-full bg-brand-300/30 blur-[120px]" />
         <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] rounded-full bg-indigo-300/20 blur-[100px]" />
         <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] rounded-full bg-violet-300/20 blur-[140px]" />
         {/* Subtle grid pattern overlay */}
@@ -110,11 +111,9 @@ export default function Landing() {
       <header className="sticky top-4 z-50 mx-auto max-w-6xl px-6 transition-all">
         <div className="flex h-14 items-center justify-between rounded-full border border-white/40 bg-white/60 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-xl">
           <div className="flex items-center gap-2.5">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600 shadow-[0_2px_10px_rgba(37,99,235,0.3)]">
-              <Leaf size={16} className="text-white" />
-            </div>
+            <Logo size={30} />
             <span className="text-[17px] font-bold tracking-tight text-slate-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              PlantMind
+              PlantForge<span className="text-brand-600">.ai</span>
             </span>
           </div>
           <nav className="flex items-center gap-2 sm:gap-4">
@@ -130,23 +129,23 @@ export default function Landing() {
 
       {/* Hero Section */}
       <section className="relative mx-auto max-w-5xl px-6 pt-20 pb-12 text-center sm:pt-28 sm:pb-16">
-        <div className="mb-6 inline-flex cursor-default items-center gap-2 rounded-full border border-blue-200/50 bg-white/50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-blue-700 shadow-sm backdrop-blur-md transition-transform hover:scale-105">
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+        <div className="mb-6 inline-flex cursor-default items-center gap-2 rounded-full border border-brand-200/50 bg-white/50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-700 shadow-sm backdrop-blur-md transition-transform hover:scale-105">
+          <span className="h-1.5 w-1.5 rounded-full bg-brand-600 animate-pulse" />
           Industrial Intelligence V2
         </div>
 
         <h1 className="text-balance text-4xl font-extrabold leading-[1.1] tracking-tighter text-slate-900 sm:text-5xl lg:text-[3.5rem] mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
           Every asset in your plant,<br className="hidden sm:block" />
-          <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-600 bg-clip-text text-transparent"> given a memory.</span>
+          <span className="bg-gradient-to-r from-brand-600 via-indigo-500 to-violet-600 bg-clip-text text-transparent"> given a memory.</span>
         </h1>
 
         <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 font-medium">
-          PlantMind unifies the documents scattered across your plant into one knowledge graph —
+          PlantForge.ai unifies the documents scattered across your plant into one knowledge graph —
           answering questions with precise citations and warning you before failures repeat.
         </p>
 
         <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link to="/app" className="group flex items-center justify-center gap-2 rounded-full bg-blue-600 px-8 py-4 text-base font-bold text-white shadow-[0_4px_14px_rgba(37,99,235,0.39)] transition-all hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-1 w-full sm:w-auto">
+          <Link to="/app" className="group flex items-center justify-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-base font-bold text-white shadow-[0_4px_14px_rgba(122,84,160,0.39)] transition-all hover:bg-brand-700 hover:shadow-[0_6px_20px_rgba(122,84,160,0.23)] hover:-translate-y-1 w-full sm:w-auto">
             Open the brain <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
           </Link>
           <Link to="/signup" className="flex items-center justify-center rounded-full border-2 border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-900 transition-all hover:border-slate-300 hover:bg-slate-50 hover:-translate-y-1 w-full sm:w-auto">
@@ -213,7 +212,7 @@ export default function Landing() {
       <section className="relative overflow-hidden bg-slate-900 py-32 text-white">
         {/* Dark Mode Mesh Gradient */}
         <div className="absolute inset-0 pointer-events-none opacity-40">
-          <div className="absolute top-0 right-1/4 h-[500px] w-[500px] rounded-full bg-blue-600/30 blur-[120px] mix-blend-screen" />
+          <div className="absolute top-0 right-1/4 h-[500px] w-[500px] rounded-full bg-brand-600/30 blur-[120px] mix-blend-screen" />
           <div className="absolute bottom-0 left-1/4 h-[600px] w-[600px] rounded-full bg-purple-600/20 blur-[150px] mix-blend-screen" />
         </div>
 
@@ -300,7 +299,7 @@ export default function Landing() {
           {stats.map(({ value, label }) => (
             <div key={label} className="group text-center">
               <div
-                className="mb-3 text-4xl font-black tracking-tighter text-blue-600 transition-transform duration-500 group-hover:scale-110 group-hover:text-blue-700"
+                className="mb-3 text-4xl font-black tracking-tighter text-brand-600 transition-transform duration-500 group-hover:scale-110 group-hover:text-brand-700"
                 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
               >
                 {value}
@@ -317,10 +316,8 @@ export default function Landing() {
       <footer className="border-t border-slate-200 bg-slate-50 py-12">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
           <div className="flex items-center gap-3 text-sm font-bold text-slate-400">
-            <div className="grid h-6 w-6 place-items-center rounded bg-slate-200">
-              <Leaf size={12} className="text-slate-500" />
-            </div>
-            PlantMind — Built for industrial engineering.
+            <Logo size={22} className="opacity-60" />
+            PlantForge.ai — Built for industrial engineering.
           </div>
           <div className="rounded-full bg-white px-4 py-1.5 text-xs font-bold tracking-widest text-slate-400 shadow-sm ring-1 ring-slate-200">
             V2.0 PATHRAG

@@ -37,6 +37,17 @@ class Settings(BaseSettings):
     # disables auth so local dev / demos still run open.
     supabase_jwt_secret: str = ""
     minio_endpoint: str = "http://minio:9000"
+    # The host a browser reaches MinIO on. Presigned URLs must be SIGNED with
+    # this, not rewritten to it afterwards - SigV4 covers the Host header, so a
+    # post-signing string replace produces SignatureDoesNotMatch. Set this to
+    # the public MinIO domain in production.
+    minio_public_endpoint: str = "http://localhost:9000"
+    # Pinned, not discovered. minio-py resolves an unknown region by calling
+    # GET /<bucket>?location= against the endpoint - which the signing client
+    # cannot do, because its endpoint is the browser's hostname and is not
+    # reachable from inside the compose network. Both clients must agree on
+    # this, since the region is part of the SigV4 signature.
+    minio_region: str = "us-east-1"
     minio_user: str = "plantmind"
     minio_password: str = "change_me"
 

@@ -9,6 +9,10 @@ GRAPH_VERSION = "graph:version"          # INCR on every committed batch
 DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
 ALERT_STREAM = "alerts"                  # agents publish, UI/gateway tail
 DRAFT_WORK_ORDERS_STREAM = "work_orders:drafts"
+# <stream entry id> -> {decision, by, at}. Beside the stream, not in it: the
+# draft is immutable (it is what the agent produced at one graph version), the
+# planner's decision is a later fact about it.
+WORK_ORDER_DECISIONS = "work_orders:decisions"
 CURSOR_PREFIX = "cursor:"                # cursor:<name> = a consumer's position
 ALERTED_SET = "agents:alerted"           # fingerprints of alerts already raised
 ANSWER_CACHE = "answercache:entries"     # id -> cached (question, answer, deps)

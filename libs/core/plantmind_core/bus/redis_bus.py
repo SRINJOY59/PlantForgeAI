@@ -3,6 +3,9 @@ graph version counter and the delta stream — lives behind this class.
 Services talk to the bus in domain terms; raw redis commands and key names
 stay in here and keys.py."""
 
+import json
+import time
+
 import redis
 
 from plantmind_core import keys
@@ -124,6 +127,27 @@ class RedisBus:
         reply = await self._async().xread({keys.DRAFT_WORK_ORDERS_STREAM: after_id},
                                           **kwargs)
         return self._entries(reply)
+
+    # --- work-order decisions -------------------------------------------
+    # Kept in a hash beside the stream rather than inside it: a stream entry
+    # is immutable, and the draft genuinely is - it is what the agent produced
+    # at a given graph version. Who approved it is a later, separate fact, so
+    # it is recorded separately and merged when the drafts are read back.
+
+    def set_work_order_decision(self, draft_id: str, decision: str, who: str):
+        self._r.hset(keys.WORK_ORDER_DECISIONS, draft_id,
+                     json.dumps({"decision": decision, "by": who,
+                                 "at": time.time()}))
+
+    def work_order_decisions(self) -> dict:
+        raw = self._r.hgetall(keys.WORK_ORDER_DECISIONS) or {}
+        out = {}
+        for k, v in raw.items():
+            try:
+                out[k] = json.loads(v)
+            except (ValueError, TypeError):
+                continue
+        return out
 
     def _read_stream(self, stream, after_id, block_ms) -> list:
         # block_ms > 0 waits; 0/None returns immediately. (Raw redis treats

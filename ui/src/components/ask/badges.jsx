@@ -1,6 +1,6 @@
 const MODE_CONFIG = {
   vector: { label: "Vector",  bg: "#ede9fe", color: "#5b21b6" },
-  local:  { label: "Local",   bg: "#dbeafe", color: "#1d4ed8" },
+  local:  { label: "Local",   bg: "var(--brand-light)", color: "var(--brand-dark)" },
   path:   { label: "PathRAG", bg: "#dcfce7", color: "#166534" },
 };
 const CONF_CONFIG = {

@@ -22,6 +22,22 @@ class StubInvestigator:
                                  f"{trigger.count}",
                      graph_version=trigger.graph_version)
 
+    async def investigate_reasoned(self, trigger):
+        """The consumer drafts a work order off the investigation trace, so the
+        double has to hand back a trace as well as the alert. Empty here: these
+        tests are about the alert path, and a drafter with nothing to harvest
+        still produces a valid (if bare) draft."""
+        return await self.investigate(trigger), _Reasoned()
+
+
+class _Reasoned:
+    """Stands in for agents.usecases.base.Reasoned - only the fields the
+    work-order drafter reads."""
+    answer = "investigated"
+    trace = []
+    docs = []
+    grounding = None
+
 
 def seal_leak_reader():
     r = FakeAgentReader()

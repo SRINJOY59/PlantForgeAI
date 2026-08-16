@@ -29,7 +29,13 @@ export default function AssessmentCard({ assessment: a, onOpenDoc }) {
           style={{ color: "var(--muted)" }}>
           Assessment
         </h3>
-        <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-li:my-0.5"
+        {/* dark:prose-invert is load-bearing, not cosmetic: @tailwindcss/
+            typography sets its own colours on the descendants of .prose, which
+            beat the colour set on this wrapper. Without it the assessment
+            renders near-black on a dark panel. Table borders are explicit for
+            the same reason - assessments come back with markdown tables, and
+            prose ships them borderless. */}
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[var(--text)] prose-p:leading-relaxed prose-li:my-0.5 prose-td:border prose-th:border prose-td:px-2 prose-th:px-2 prose-table:text-[13px]"
           style={{ color: "var(--text-md)" }}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{a.body}</ReactMarkdown>
         </div>
@@ -54,7 +60,7 @@ function Sources({ citations, onOpenDoc }) {
           <button key={i} type="button" onClick={() => onOpenDoc?.(c.doc_id, c.filename)}
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] transition-colors"
             style={{ background: "var(--bg-subtle)", color: "var(--text-md)", border: "1px solid var(--border)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.background = "#eff6ff"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.background = "var(--brand-light)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg-subtle)"; }}
             title={c.doc_id}>
             <FileText size={11} style={{ color: "var(--blue)" }} />
