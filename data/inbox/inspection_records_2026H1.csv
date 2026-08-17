@@ -1,0 +1,6 @@
+record_id,date,equipment_tag,inspection_type,standard,result,next_due,remarks
+INS-507,2026-02-02,LT-104,Calibration,OISD-STD-152,PASS,2027-02-02,Five-point calibration; as-found within tolerance
+INS-508,2026-03-11,P-101B,Condition monitoring,OISD-STD-119,PASS,2026-12-11,Vibration signature normal after January seal change
+INS-509,2026-04-08,K-301,Alignment check,OEM,PASS,2027-04-08,Laser alignment within OEM limits after WO-2226 rework
+INS-510,2026-05-14,P-102,Condition monitoring,OISD-STD-119,OBSERVATION,2026-11-14,DE bearing noise recurring; replacement recommended at next opportunity
+INS-511,2026-06-05,T-101,Internal visual,OISD-STD-129,PASS,2028-06-05,Shell internals clean; LT-104 stub inspected clear

@@ -2,8 +2,7 @@
 
 Cheap, reliable Cypher - never an LLM for a yes/no this crisp. What a trigger
 MEANS is the job of a use-case; this only decides that there is something to
-mean. The scanners that emit a finished artifact rather than a trigger live in
-usecases/ instead.
+mean.
 """
 
 import re

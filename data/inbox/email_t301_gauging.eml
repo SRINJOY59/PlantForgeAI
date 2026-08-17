@@ -1,0 +1,25 @@
+From: Mary George <mary.george@unit100plant.example>
+To: Ops Team <ops-team@unit100plant.example>
+Subject: T-301 gauging discipline - dip vs LT-304 differences trending down
+Date: Tue, 07 Jul 2026 14:22:10 +0530
+Message-ID: <20260707142210.GG7702@unit100plant.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Team,
+
+Quick follow-up on the T-301 gauging routine. Since the recalibration
+under WO-4012 and the weekly dips, the dip-vs-LT-304 difference has
+stayed under 20 mm for eight straight weeks - well inside the 50 mm
+action limit in SOP-U300-02.
+
+Keep taking the closing dip after every receipt though. The IR-2025-032
+event on T-101 started exactly this way: a transmitter that looked fine
+because nobody cross-checked it while it was quietly stuck.
+
+One observation: the dip hatch gasket is worn and the hatch doesn't seat
+cleanly - I'll raise a low-priority work order so it gets picked up with
+the next T-301 visit rather than becoming a vapour leak finding in an
+audit.
+
+Mary

@@ -65,7 +65,7 @@ class Answerer:
         # visible answer, and a truncated answer reads as a wrong answer
         text = await self._llm.complete(
             [{"role": "user", "content": self._prompt(context, question)}],
-            tier=Tier.MID, max_tokens=3000)
+            tier=Tier.MID, max_tokens=1024)
         return self._build(text, evidence, mode, graph_version, corrections)
 
     async def stream(self, question: str, context: str):
@@ -75,7 +75,7 @@ class Answerer:
         model output, so the caller can send them at the end."""
         async for delta in self._llm.stream(
                 [{"role": "user", "content": self._prompt(context, question)}],
-                tier=Tier.MID, max_tokens=3000):
+                tier=Tier.MID, max_tokens=1024):
             yield delta
 
     def build_meta(self, text: str, evidence: list, mode, graph_version: int,

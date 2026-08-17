@@ -1,0 +1,11 @@
+wo_id,date,equipment_tag,failure_code,description,action_taken,technician,downtime_hours
+WO-2301,2026-01-09,E-201,FOULING,Shell-side dP rising; approach temperature up 8C over baseline,Isolated and water-washed bundle; restored duty,V. Iyer,10
+WO-2302,2026-01-15,P-201,BEARING-NOISE,Audible bearing noise on drive end during changeover,Replaced DE bearing; regreased,R. Sharma,5
+WO-2303,2026-01-22,R-210,DP-HIGH,Reactor bed differential pressure climbing toward alarm,Reduced throughput; planned catalyst screening,A. Khan,0
+WO-2304,2026-02-03,PSV-301,LIFT-EARLY,PSV lifting below set during pressure excursion,Removed for bench test; reset simmer,S. Patel,4
+WO-2305,2026-02-18,P-101A,SEAL-LEAK,Gland weeping again third event since January seal change,Replaced seal; suction pressure logged at 0.5 barg,R. Sharma,8
+WO-2306,2026-03-02,K-301,VIBRATION,Bearing housing vibration alarm recurred after two months,Rechecked alignment; found soft foot on outboard pedestal,S. Patel,16
+WO-2307,2026-03-19,F-201,TUBE-BULGE,Firebox tube bulge observed near burner 3 during inspection,Flagged for replacement at turnaround; derated firing,V. Iyer,0
+WO-2308,2026-04-07,V-301,LEVEL-SWING,Flare KO drum level swinging; suspect LT drift,Recalibrated LT-301; verified against gauge glass,A. Khan,3
+WO-2309,2026-04-25,E-204,FOULING,Outlet temperature above normal again; fouling recurring,Bundle cleaned; recommended antifoulant review,V. Iyer,12
+WO-2310,2026-05-11,C-220,FOAMING,Absorber carryover during feed upset,Reduced circulation; dosed antifoam,R. Sharma,2
