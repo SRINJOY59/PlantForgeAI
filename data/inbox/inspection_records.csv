@@ -1,0 +1,7 @@
+record_id,date,equipment_tag,inspection_type,standard,result,next_due,remarks
+INS-501,2024-02-10,V-203,Hydrostatic test,OISD-STD-128,PASS,2026-02-10,Design pressure 12.0 barg; tested at 15.6 barg
+INS-502,2024-02-12,E-204,Tube thickness survey,OISD-STD-128,PASS,2026-02-12,Min wall 3.1 mm against 2.8 mm retirement
+INS-503,2025-01-20,PSV-204,Pop test,IBR/OISD-STD-132,PASS,2026-01-20,Set pressure 10.0 barg confirmed
+INS-504,2025-03-15,P-101A,Condition monitoring,OISD-STD-119,OBSERVATION,2025-09-15,Recurring seal failures noted; suction design review recommended
+INS-505,2025-06-08,K-301,Performance test,OEM,PASS,2026-06-08,Intercooler approach temperature trending up; monitor
+INS-506,2025-11-30,T-101,External visual,OISD-STD-129,PASS,2027-11-30,Coating touch-up done on shell course 2

@@ -73,12 +73,12 @@ class RetrievalService:
                    bus=RedisBus.from_settings(),
                    cache=AnswerCache.from_settings())
 
-    async def ask(self, question: str, history: list | None = None) -> Answer:
+    async def ask(self, question: str, history: list | None = None, alert_context: str | None = None) -> Answer:
         question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
-        # the cache lookup is a brute-force cosine scan (CPU) plus a Redis read,
-        # and it runs on every request - off the loop so it can't stall others
-        cached = await asyncio.to_thread(self._cache_get, embedding)
+        
+        # Bypass cache on alert-scoped chat
+        cached = None if alert_context else await asyncio.to_thread(self._cache_get, embedding)
         if cached:
             # name here too: entries cached before filenames existed, and every
             # future cache-format change, would otherwise surface as raw hashes
@@ -89,16 +89,21 @@ class RetrievalService:
         # run it off the event loop - otherwise every user's reads block every
         # other user's request, LLM streams included
         prepared = await asyncio.to_thread(self._prepare, question, embedding)
+        
+        context_to_use = prepared.context
+        if alert_context:
+            context_to_use = f"CURRENT ALERT CONTEXT:\n{alert_context}\n\n" + context_to_use
+
         version = await asyncio.to_thread(self._graph_version)
         answer = await self._answerer.answer(
-            question, prepared.context, prepared.evidence, prepared.mode,
+            question, context_to_use, prepared.evidence, prepared.mode,
             version, prepared.corrections)
         await asyncio.to_thread(self._name_citations, answer)
         await asyncio.to_thread(
             self._cache_put, question, embedding, answer, prepared.cited)
         return answer
 
-    async def ask_stream(self, question: str, history: list | None = None):
+    async def ask_stream(self, question: str, history: list | None = None, alert_context: str | None = None):
         """Yields ('token', text) deltas while generating, then a final
         ('done', Answer). A cache hit streams the cached text so the client
         path is identical."""
@@ -106,9 +111,9 @@ class RetrievalService:
         # question, never the words the user typed into a thread
         question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
-        # the cache lookup is a brute-force cosine scan (CPU) plus a Redis read,
-        # and it runs on every request - off the loop so it can't stall others
-        cached = await asyncio.to_thread(self._cache_get, embedding)
+        
+        # Bypass cache on alert-scoped chat
+        cached = None if alert_context else await asyncio.to_thread(self._cache_get, embedding)
         if cached:
             await asyncio.to_thread(self._name_citations, cached)
             yield "token", cached.text
@@ -117,8 +122,13 @@ class RetrievalService:
 
         # off the event loop: the sync Neo4j reads must not stall other users
         prepared = await asyncio.to_thread(self._prepare, question, embedding)
+        
+        context_to_use = prepared.context
+        if alert_context:
+            context_to_use = f"CURRENT ALERT CONTEXT:\n{alert_context}\n\n" + context_to_use
+
         chunks = []
-        async for delta in self._answerer.stream(question, prepared.context):
+        async for delta in self._answerer.stream(question, context_to_use):
             chunks.append(delta)
             yield "token", delta
         # the finished text, not an empty envelope: grounding is read out of

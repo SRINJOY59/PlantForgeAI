@@ -23,6 +23,7 @@ const Interview = React.lazy(() => import("./pages/app/Interview"));
 const Reports = React.lazy(() => import("./pages/app/Reports"));
 const Permits = React.lazy(() => import("./pages/app/Permits"));
 const WorkOrders = React.lazy(() => import("./pages/app/WorkOrders"));
+const Simulation = React.lazy(() => import("./pages/app/Simulation"));
 
 const Suspended = ({ children }) => (
   <Suspense fallback={<div className="flex h-full items-center justify-center p-8 text-slate-500">Loading...</div>}>
@@ -54,6 +55,9 @@ export default function App() {
         {/* engineer+ */}
         <Route path="moc" element={
           <RoleRoute minRole="engineer"><Suspended><Moc /></Suspended></RoleRoute>
+        } />
+        <Route path="simulation" element={
+          <RoleRoute minRole="engineer"><Suspended><Simulation /></Suspended></RoleRoute>
         } />
         <Route path="graph" element={
           <RoleRoute minRole="engineer"><Suspended><GraphExplorer /></Suspended></RoleRoute>

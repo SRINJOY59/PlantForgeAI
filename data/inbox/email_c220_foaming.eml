@@ -1,0 +1,28 @@
+From: Kavya Reddy <kavya.reddy@unit100plant.example>
+To: Process Engineering <process-eng@unit100plant.example>
+Cc: Ops Team <ops-team@unit100plant.example>
+Subject: C-220 DP creeping again at max rates - solvent lab results attached
+Date: Thu, 02 Jul 2026 16:33:20 +0530
+Message-ID: <20260702163320.GD4471@unit100plant.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Hi PE,
+
+C-220 differential pressure is sitting at 165-175 mbar at full rates this
+week, against the usual 140-150. Same signature as last September's
+foaming event (IR-2025-058) but slower. Antifoam consumption is roughly
+double the June average - logged under WO-3058.
+
+Lab says solvent surface tension is down and suspects heavy hydrocarbon
+accumulation. Can we discuss a partial solvent replacement before the DP
+pre-alarm at 180 becomes a nightly event? V-210 boot draining is on
+schedule and LT-212 is freshly calibrated (INS-606), so this looks like
+genuine solvent degradation, not carryover this time.
+
+Regards,
+Kavya
+
+On Wed, 01 Jul 2026 Process Engineering wrote:
+> Please keep antifoam below 12 L/day pending review - excessive dosing
+> masks the trend data we need.

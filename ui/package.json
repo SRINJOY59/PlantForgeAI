@@ -14,6 +14,7 @@
     "@supabase/supabase-js": "^2.45.0",
     "d3": "^7.9.0",
     "lucide-react": "^0.445.0",
+    "plotly.js-basic-dist-min": "^3.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",

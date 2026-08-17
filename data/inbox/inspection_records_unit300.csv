@@ -1,0 +1,5 @@
+record_id,date,equipment_tag,inspection_type,standard,result,next_due,remarks
+INS-701,2026-02-27,T-301,External visual,OISD-STD-129,PASS,2028-02-27,Floating roof seals serviceable; drain flow verified
+INS-702,2026-03-19,P-301,Condition monitoring,OISD-STD-119,PASS,2026-09-19,Vibration normal; thermal image on file after WO-4033
+INS-703,2026-04-30,LT-304,Calibration,OISD-STD-152,PASS,2027-04-30,Weekly manual dip cross-check continues per WO-4012
+INS-704,2026-06-17,T-301,Roof drain function test,OISD-STD-129,PASS,2027-06-17,Full-bore flow confirmed after WO-4019 valve change

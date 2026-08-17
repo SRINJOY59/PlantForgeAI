@@ -32,6 +32,7 @@ class AskRequest(BaseModel):
     question: str
     # the client sends its own thread back; nothing is stored here
     history: list[Turn] = []
+    alert_context: str | None = None
 
 
 def _sse(event: str, data: dict) -> str:
@@ -40,7 +41,7 @@ def _sse(event: str, data: dict) -> str:
 
 @app.post("/ask")
 async def ask(request: AskRequest):
-    answer = await _service.ask(request.question, request.history)
+    answer = await _service.ask(request.question, request.history, request.alert_context)
     return answer.model_dump(mode="json")
 
 
@@ -48,7 +49,8 @@ async def ask(request: AskRequest):
 async def ask_stream(request: AskRequest):
     async def events():
         async for kind, payload in _service.ask_stream(request.question,
-                                                       request.history):
+                                                       request.history,
+                                                       request.alert_context):
             if kind == "token":
                 yield _sse("token", {"text": payload})
             else:

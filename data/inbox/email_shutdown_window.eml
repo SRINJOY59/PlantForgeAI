@@ -1,0 +1,27 @@
+From: Vikram Iyer <vikram.iyer@unit100plant.example>
+To: Ops Team <ops-team@unit100plant.example>
+Cc: Ravi Sharma <ravi.sharma@unit100plant.example>, Suresh Patel <suresh.patel@unit100plant.example>
+Subject: August shutdown window - Unit 100 job list freeze Friday
+Date: Wed, 01 Jul 2026 11:20:05 +0530
+Message-ID: <20260701112005.GC1290@unit100plant.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+All,
+
+Freezing the Unit 100 August shutdown list this Friday. Confirmed so far:
+
+1. E-204 bundle pull and chemical cleaning (carried from WO-2238 follow-up;
+   fouling recurrence expected per the trend).
+2. V-203 manway gasket replacement - permanent fix for the weep we
+   retorqued under WO-2221 and WO-2125.
+3. P-101A suction line design review implementation, per the WO-2257
+   recommendation. Scope note from process engineering pending.
+4. K-301 vibration spectrum follow-up if Suresh's reading this week
+   confirms the trend.
+
+Anything not on this list waits for the November window. Please verify
+isolation plans reference SOP-U100-07 for the pump work and SOP-U100-12
+for the compressor.
+
+Vikram

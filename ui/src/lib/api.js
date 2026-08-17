@@ -54,13 +54,38 @@ export async function ask(question, history = []) {
   return res.json();
 }
 
+export async function uploadDocument(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetchWithAuth(`${BASE}/ingest`, {
+    method: "POST",
+    headers: { ...(await authHeaders()) },
+    body: formData,
+  });
+  if (!res.ok) {
+    let errMsg = `Upload failed: ${res.status}`;
+    try {
+      const errJson = await res.json();
+      errMsg = errJson.detail || errMsg;
+    } catch {
+      try {
+        const errText = await res.text();
+        errMsg = errText || errMsg;
+      } catch {}
+    }
+    throw new Error(errMsg);
+  }
+  return res.json();
+}
+
 // Streams the answer. Calls onToken(text) for each delta and returns the
 // final answer object (citations, mode, confidence) from the 'done' event.
-export async function askStream(question, onToken, history = [], signal) {
+export async function askStream(question, onToken, history = [], alertContext = null, signal = null) {
   const res = await fetchWithAuth(`${BASE}/ask/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify({ question, history }),
+    body: JSON.stringify({ question, history, alert_context: alertContext }),
     signal,
   });
   if (!res.ok) throw new Error(`stream failed: ${res.status}`);
@@ -363,5 +388,109 @@ export function subscribeDraftWorkOrders(onWorkOrder, after = "0") {
   })();
 
   return () => control.abort();
+}
+
+// ─── Simulation API extensions ──────────────────────────────────────────────
+
+export async function getEnvelopes() {
+  const res = await fetchWithAuth(`${BASE}/sim/envelopes`);
+  if (!res.ok) throw new Error(`failed to get envelopes: ${res.status}`);
+  return res.json();
+}
+
+export async function updateLimit(tagId, limits) {
+  const res = await fetchWithAuth(`${BASE}/sim/limits/${encodeURIComponent(tagId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(limits),
+  });
+  if (!res.ok) throw new Error(`failed to update limit for ${tagId}: ${res.status}`);
+  return res.json();
+}
+
+export async function getLimitsAudit() {
+  const res = await fetchWithAuth(`${BASE}/sim/limits/audit`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`failed to get limits audit: ${res.status}`);
+  return res.json();
+}
+
+export async function simControl(unit, action) {
+  const res = await fetchWithAuth(`${BASE}/sim/${unit}/${action}`, {
+    method: "POST",
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`simControl ${unit} ${action} failed: ${res.status}`);
+  return res.json();
+}
+
+export async function simFault(unit, fault, tag = null, stage = null, value = null) {
+  const res = await fetchWithAuth(`${BASE}/sim/${unit}/fault`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ fault, tag, stage, value }),
+  });
+  if (!res.ok) throw new Error(`simFault ${unit} failed: ${res.status}`);
+  return res.json();
+}
+
+/** TEP-specific: Inject or clear an IDV fault by number (1-21). */
+export async function simIdv(idv, active = true) {
+  const res = await fetchWithAuth(`${BASE}/sim/tep/idv`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ idv, active }),
+  });
+  if (!res.ok) throw new Error(`simIdv IDV-${idv} failed: ${res.status}`);
+  return res.json();
+}
+
+
+export function subscribeSimTelemetry(onMessage, unit = null) {
+  let active = true;
+  let ws = null;
+  let backoff = 1000;
+
+  async function connect() {
+    if (!active) return;
+    try {
+      const headers = await authHeaders();
+      const token = headers.Authorization ? headers.Authorization.replace("Bearer ", "") : "";
+      const wsBase = BASE.replace(/^http/, "ws");
+      let url = `${wsBase}/ws/plant-telemetry?token=${encodeURIComponent(token)}`;
+      if (unit) url += `&unit=${encodeURIComponent(unit)}`;
+
+      ws = new WebSocket(url);
+      ws.onmessage = (event) => {
+        if (!active) return;
+        try {
+          const data = JSON.parse(event.data);
+          onMessage(data);
+        } catch (e) {}
+      };
+      ws.onopen = () => {
+        backoff = 1000;
+      };
+      ws.onclose = () => {
+        if (!active) return;
+        setTimeout(connect, backoff);
+        backoff = Math.min(backoff * 2, 30000);
+      };
+      ws.onerror = () => {
+        if (ws) ws.close();
+      };
+    } catch (err) {
+      if (active) {
+        setTimeout(connect, backoff);
+        backoff = Math.min(backoff * 2, 30000);
+      }
+    }
+  }
+
+  connect();
+
+  return () => {
+    active = false;
+    if (ws) ws.close();
+  };
 }
 

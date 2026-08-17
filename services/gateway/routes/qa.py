@@ -19,9 +19,12 @@ metered = [Depends(rate_limit("ask"))]
 MAX_HISTORY = 8
 
 
+from typing import Optional
+
 class AskRequest(BaseModel):
     question: str
     history: list[Turn] = Field(default_factory=list, max_length=MAX_HISTORY)
+    alert_context: Optional[str] = None
 
 
 @router.post("/ask", dependencies=metered)
