@@ -1,0 +1,163 @@
+{
+  "_comment": "TEP operating envelopes — Downs & Vogel (1993) Mode 1 normal operating zone.",
+  "_note": "ll=LoLo, l=Lo, h=Hi, hh=HiHi, setpoint=nominal value",
+
+  "REACTOR.T": {
+    "ll": 100.0, "l": 110.0, "setpoint": 122.9, "h": 135.0, "hh": 145.0,
+    "min": 110.0, "max": 135.0
+  },
+  "REACTOR.P": {
+    "ll": 2000.0, "l": 2500.0, "setpoint": 2705.0, "h": 2900.0, "hh": 3000.0,
+    "min": 2500.0, "max": 2900.0
+  },
+  "REACTOR.Level": {
+    "ll": 10.0, "l": 30.0, "setpoint": 75.0, "h": 90.0, "hh": 95.0,
+    "min": 30.0, "max": 90.0
+  },
+  "REACTOR.CoolT": {
+    "ll": 5.0, "l": 10.0, "setpoint": 20.0, "h": 40.0, "hh": 50.0,
+    "min": 10.0, "max": 40.0
+  },
+  "REACTOR.xA": {
+    "ll": 5.0, "l": 10.0, "setpoint": 32.94, "h": 55.0, "hh": 65.0,
+    "min": 10.0, "max": 55.0
+  },
+  "REACTOR.xB": {
+    "ll": 1.0, "l": 3.0, "setpoint": 8.71, "h": 20.0, "hh": 25.0,
+    "min": 3.0, "max": 20.0
+  },
+  "REACTOR.xC": {
+    "ll": 5.0, "l": 10.0, "setpoint": 42.9, "h": 65.0, "hh": 75.0,
+    "min": 10.0, "max": 65.0
+  },
+  "REACTOR.xD": {
+    "ll": 0.0, "l": 0.05, "setpoint": 0.39, "h": 5.0, "hh": 10.0,
+    "min": 0.05, "max": 5.0
+  },
+  "REACTOR.xE": {
+    "ll": 0.0, "l": 0.05, "setpoint": 0.36, "h": 5.0, "hh": 10.0,
+    "min": 0.05, "max": 5.0
+  },
+  "REACTOR.xF": {
+    "ll": 0.0, "l": 0.0, "setpoint": 0.04, "h": 1.5, "hh": 3.0,
+    "min": 0.0, "max": 1.5
+  },
+  "REACTOR.xG": {
+    "ll": 0.0, "l": 0.0, "setpoint": 0.12, "h": 5.0, "hh": 10.0,
+    "min": 0.0, "max": 5.0
+  },
+  "REACTOR.xH": {
+    "ll": 0.0, "l": 0.0, "setpoint": 0.08, "h": 5.0, "hh": 10.0,
+    "min": 0.0, "max": 5.0
+  },
+  "REACTOR.HeatDuty": {
+    "ll": -500.0, "l": -200.0, "setpoint": 0.0, "h": 200.0, "hh": 500.0,
+    "min": -200.0, "max": 200.0
+  },
+
+  "CONDENSER.T": {
+    "ll": 30.0, "l": 50.0, "setpoint": 80.1, "h": 100.0, "hh": 120.0,
+    "min": 50.0, "max": 100.0
+  },
+  "CONDENSER.P": {
+    "ll": 1500.0, "l": 2000.0, "setpoint": 2633.7, "h": 2800.0, "hh": 2950.0,
+    "min": 2000.0, "max": 2800.0
+  },
+
+  "SEPARATOR.T": {
+    "ll": 20.0, "l": 50.0, "setpoint": 80.1, "h": 100.0, "hh": 120.0,
+    "min": 50.0, "max": 100.0
+  },
+  "SEPARATOR.P": {
+    "ll": 1500.0, "l": 2000.0, "setpoint": 2633.7, "h": 2800.0, "hh": 2950.0,
+    "min": 2000.0, "max": 2800.0
+  },
+  "SEPARATOR.Level": {
+    "ll": 5.0, "l": 20.0, "setpoint": 50.0, "h": 80.0, "hh": 90.0,
+    "min": 20.0, "max": 80.0
+  },
+  "SEPARATOR.xG": {
+    "ll": 0.0, "l": 10.0, "setpoint": 51.63, "h": 80.0, "hh": 95.0,
+    "min": 10.0, "max": 80.0
+  },
+  "SEPARATOR.xH": {
+    "ll": 0.0, "l": 10.0, "setpoint": 48.37, "h": 80.0, "hh": 95.0,
+    "min": 10.0, "max": 80.0
+  },
+  "SEPARATOR.VapFlow": {
+    "ll": 100.0, "l": 500.0, "setpoint": 810.0, "h": 1100.0, "hh": 1300.0,
+    "min": 500.0, "max": 1100.0
+  },
+  "SEPARATOR.LiqFlow": {
+    "ll": 0.0, "l": 20.0, "setpoint": 61.28, "h": 150.0, "hh": 200.0,
+    "min": 20.0, "max": 150.0
+  },
+
+  "STRIPPER.T": {
+    "ll": 40.0, "l": 50.0, "setpoint": 65.7, "h": 80.0, "hh": 95.0,
+    "min": 50.0, "max": 80.0
+  },
+  "STRIPPER.P": {
+    "ll": 1500.0, "l": 2000.0, "setpoint": 2705.0, "h": 2850.0, "hh": 2950.0,
+    "min": 2000.0, "max": 2850.0
+  },
+  "STRIPPER.Level": {
+    "ll": 5.0, "l": 20.0, "setpoint": 50.0, "h": 80.0, "hh": 90.0,
+    "min": 20.0, "max": 80.0
+  },
+  "STRIPPER.xG": {
+    "ll": 10.0, "l": 35.0, "setpoint": 54.19, "h": 70.0, "hh": 80.0,
+    "min": 35.0, "max": 70.0
+  },
+  "STRIPPER.xH": {
+    "ll": 10.0, "l": 25.0, "setpoint": 37.80, "h": 60.0, "hh": 70.0,
+    "min": 25.0, "max": 60.0
+  },
+  "STRIPPER.Flow": {
+    "ll": 0.0, "l": 20.0, "setpoint": 60.0, "h": 120.0, "hh": 150.0,
+    "min": 20.0, "max": 120.0
+  },
+
+  "COMPRESSOR.Speed": {
+    "ll": 10.0, "l": 15.0, "setpoint": 22.89, "h": 35.0, "hh": 40.0,
+    "min": 15.0, "max": 35.0
+  },
+  "COMPRESSOR.Power": {
+    "ll": 0.0, "l": 100.0, "setpoint": 627.2, "h": 800.0, "hh": 900.0,
+    "min": 100.0, "max": 800.0
+  },
+  "COMPRESSOR.RecycleF": {
+    "ll": 0.0, "l": 50.0, "setpoint": 274.0, "h": 600.0, "hh": 800.0,
+    "min": 50.0, "max": 600.0
+  },
+
+  "PRODUCT-SPLIT.xG": {
+    "ll": 30.0, "l": 40.0, "setpoint": 51.63, "h": 65.0, "hh": 75.0,
+    "min": 40.0, "max": 65.0
+  },
+  "PRODUCT-SPLIT.xH": {
+    "ll": 25.0, "l": 35.0, "setpoint": 48.37, "h": 60.0, "hh": 70.0,
+    "min": 35.0, "max": 60.0
+  },
+  "PRODUCT-SPLIT.TotalF": {
+    "ll": 0.0, "l": 20.0, "setpoint": 60.0, "h": 120.0, "hh": 150.0,
+    "min": 20.0, "max": 120.0
+  },
+  "PRODUCT-SPLIT.Purity": {
+    "ll": 70.0, "l": 85.0, "setpoint": 98.0, "h": 100.0, "hh": 100.0,
+    "min": 85.0, "max": 100.0
+  },
+
+  "MV.D-FEED":        {"ll": 0.0, "l": 10.0, "setpoint": 63.053, "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.E-FEED":        {"ll": 0.0, "l": 10.0, "setpoint": 53.98,  "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.A-FEED":        {"ll": 0.0, "l": 10.0, "setpoint": 51.13,  "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.AC-FEED":       {"ll": 0.0, "l": 10.0, "setpoint": 50.39,  "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.COMP-RECYCLE":  {"ll": 0.0, "l": 10.0, "setpoint": 50.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.PURGE":         {"ll": 0.0, "l": 5.0,  "setpoint": 22.21,  "h": 70.0, "hh": 90.0,  "min": 5.0,  "max": 70.0},
+  "MV.SEP-LIQ-OUT":   {"ll": 0.0, "l": 10.0, "setpoint": 30.64,  "h": 80.0, "hh": 95.0,  "min": 10.0, "max": 80.0},
+  "MV.STRIP-LIQ-IN":  {"ll": 0.0, "l": 10.0, "setpoint": 47.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.STRIP-STEAM":   {"ll": 0.0, "l": 10.0, "setpoint": 45.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.REACTOR-COOL":  {"ll": 0.0, "l": 10.0, "setpoint": 50.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.COND-COOL":     {"ll": 0.0, "l": 10.0, "setpoint": 47.446, "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
+  "MV.PRODUCT-SPLIT": {"ll": 0.0, "l": 10.0, "setpoint": 40.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0}
+}

@@ -1,0 +1,28 @@
+{
+  "_comment": "CSTR & Distillation Column Demo Train 1 — operating envelopes. Single source of truth used by the watchers (services/watchers/) and the frontend time-series/profile panels (fetched via GET /sim/envelopes). Keep in sync with reactor and column design basis in SOPs.",
+
+  "CSTR-101.T":        { "max": 360.0, "min": 290.0, "unit": "K",     "dT_dt_max": 2.0 },
+  "CSTR-101.Ca":       { "max": 3.0,   "min": 0.05,  "unit": "mol/L"  },
+  "CSTR-101.Tc":       { "max": 340.0, "min": 270.0, "unit": "K"      },
+  "CSTR-101.CoolantValve": { "max": 100.0, "min": 0.0, "unit": "%" },
+
+  "CSTR-102A.T":       { "max": 355.0, "min": 290.0, "unit": "K",     "dT_dt_max": 2.0 },
+  "CSTR-102A.Ca":      { "max": 3.0,   "min": 0.05,  "unit": "mol/L"  },
+  "CSTR-102A.Tc":      { "max": 340.0, "min": 270.0, "unit": "K"      },
+  "CSTR-102A.CoolantValve": { "max": 100.0, "min": 0.0, "unit": "%" },
+
+  "CSTR-102B.T":       { "max": 355.0, "min": 290.0, "unit": "K",     "dT_dt_max": 2.0 },
+  "CSTR-102B.Ca":      { "max": 3.0,   "min": 0.05,  "unit": "mol/L"  },
+  "CSTR-102B.Tc":      { "max": 340.0, "min": 270.0, "unit": "K"      },
+  "CSTR-102B.CoolantValve": { "max": 100.0, "min": 0.0, "unit": "%" },
+
+  "CSTR-104.T":        { "max": 350.0, "min": 290.0, "unit": "K",     "dT_dt_max": 1.5 },
+  "CSTR-104.Ca":       { "max": 3.0,   "min": 0.02,  "unit": "mol/L"  },
+  "CSTR-104.Tc":       { "max": 340.0, "min": 270.0, "unit": "K"      },
+  "CSTR-104.CoolantValve": { "max": 100.0, "min": 0.0, "unit": "%" },
+
+  "COLUMN-1.DISTILLATE.x": { "min": 0.90, "unit": "mol_frac" },
+  "COLUMN-1.BOTTOMS.x":     { "max": 0.08, "unit": "mol_frac" },
+  "COLUMN-1.REBOILER.T":   { "max": 365.0, "min": 310.0, "unit": "K" },
+  "COLUMN-1.FLOODING":     { "max": 1.20, "unit": "index" }
+}

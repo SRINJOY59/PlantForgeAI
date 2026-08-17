@@ -35,6 +35,8 @@ class EdgeType(str, Enum):
     FAILED_FIX = "FAILED_FIX"        # a repair that did not hold
     CONTRADICTS = "CONTRADICTS"      # two sources disagree
     CORRECTED_BY = "CORRECTED_BY"    # a human/outcome overturned a claim
+    SHARES_HEADER = "SHARES_HEADER"  # sharing a utility header (CSTR siblings)
+    FEEDS = "FEEDS"                  # cross-unit feed direction (CSTR -> Column)
 
 
 class Source(str, Enum):
@@ -162,7 +164,7 @@ class WebSource(BaseModel):
 
 class Alert(BaseModel):
     """Raised by the agents service onto the alert stream; the UI shows it."""
-    kind: Literal["failure_pattern", "compliance", "standard_revision"]
+    kind: Literal["failure_pattern", "compliance", "standard_revision", "process_limit"]
     severity: Literal["info", "warning", "critical"]
     title: str
     body: str

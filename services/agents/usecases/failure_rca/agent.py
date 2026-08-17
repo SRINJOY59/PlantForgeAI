@@ -23,13 +23,14 @@ class InvestigatorAgent(GraphAgent):
         r = self._reader
         return [tools.failure_history(r), tools.sibling_history(r),
                 tools.fix_procedures(r), tools.connected_equipment(r),
-                tools.work_orders(r)]
+                tools.shared_utilities(r), tools.downstream_units(r),
+                tools.work_orders(r), tools.tep_idv_context()]
 
-    async def investigate(self, trigger) -> Alert:
-        alert, _ = await self.investigate_reasoned(trigger)
+    async def investigate(self, trigger, alert_context: dict | None = None) -> Alert:
+        alert, _ = await self.investigate_reasoned(trigger, alert_context=alert_context)
         return alert
 
-    async def investigate_reasoned(self, trigger):
+    async def investigate_reasoned(self, trigger, alert_context: dict | None = None):
         """The alert plus the reasoning behind it, as (Alert, Reasoned).
 
         The work-order drafter needs the trace rather than the prose: it
@@ -41,7 +42,7 @@ class InvestigatorAgent(GraphAgent):
         # Layer 1: every tag the agent named must trace to its evidence
         given = {trigger.tag, trigger.family,
                  *(s["tag"] for s in trigger.siblings)}
-        reasoned = await self.reason(prompts.task(trigger), given)
+        reasoned = await self.reason(prompts.task(trigger, alert_context=alert_context), given)
 
         grounding = reasoned.grounding
         log.info("investigation done", tag=trigger.tag, mode=trigger.mode,

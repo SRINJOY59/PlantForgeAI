@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { FileText, Search, Clock, ShieldCheck, Wrench, FileSearch, Filter, Loader2 } from "lucide-react";
-import { getGraph } from "../../lib/api";
+import { getGraph, uploadDocument } from "../../lib/api";
 
 const TYPE_CFG = {
   work_order: { label: "Work Order", Icon: Wrench,     color: "#d97706", bg: "#fef3c7" },
@@ -27,8 +27,14 @@ export default function Documents() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  useEffect(() => {
+  const fileInputRef = useRef(null);
+
+  const loadDocs = () => {
+    setLoading(true);
     getGraph().then(data => {
       const { nodes, edges } = data;
       const docNodes = nodes.filter(n => n.label === "Document");
@@ -60,7 +66,42 @@ export default function Documents() {
       console.error(err);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadDocs();
   }, []);
+
+  const handleUploadClick = () => {
+    setUploadError(null);
+    setUploadSuccess(false);
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(false);
+
+    try {
+      await uploadDocument(file);
+      setUploadSuccess(true);
+      loadDocs();
+    } catch (err) {
+      console.error(err);
+      if (err.message.includes("403")) {
+        setUploadError("Access Denied: Uploading documents requires the Engineer role.");
+      } else {
+        setUploadError(err.message || "Failed to upload document.");
+      }
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const filtered = useMemo(() =>
     docs.filter(d =>
@@ -79,8 +120,42 @@ export default function Documents() {
             The raw knowledge base driving the plant brain.
           </p>
         </div>
-        <button className="btn-primary text-xs px-4">Upload Document</button>
+        <div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+            accept=".pdf,.md,.txt,.docx,.doc,.html,.csv,.tsv,.xlsx,.xls,.xlsm,.eml,.msg,.svg,.png,.jpg,.jpeg,.webp"
+          />
+          <button
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="btn-primary text-xs px-4 flex items-center gap-1.5"
+          >
+            {uploading ? (
+              <>
+                <Loader2 size={12} className="animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              "Upload Document"
+            )}
+          </button>
+        </div>
       </div>
+
+      {uploadError && (
+        <div className="mb-4 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3">
+          ⚠️ {uploadError}
+        </div>
+      )}
+
+      {uploadSuccess && (
+        <div className="mb-4 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          ✓ Document uploaded successfully. The pipeline will now parse, extract, and index it into the plant brain.
+        </div>
+      )}
 
       <div className="mb-6 flex items-center gap-3">
         <div className="relative flex-1">

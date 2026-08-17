@@ -1,0 +1,27 @@
+From: Ravi Sharma <ravi.sharma@unit100plant.example>
+To: Ops Team <ops-team@unit100plant.example>
+Cc: Vikram Iyer <vikram.iyer@unit100plant.example>
+Subject: P-101A gland weeping again after morning restart
+Date: Mon, 13 Jul 2026 09:12:41 +0530
+Message-ID: <20260713091241.GA2231@unit100plant.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Team,
+
+During the 08:30 round I found P-101A weeping at the gland again, third
+time since the January seal change. Suction pressure on PI-102 was reading
+0.5 barg at start, well below the 0.8 barg minimum in SOP-U100-07.
+
+I have throttled back and lined up P-101B for now. Flow on FT-103 is
+steady. Requesting a suction strainer inspection before we swap back -
+last time (WO-2257) the strainer was half blocked.
+
+Will raise the work order after the toolbox talk.
+
+Regards,
+Ravi
+
+On Fri, 10 Jul 2026 at 17:40, Vikram Iyer wrote:
+> FYI the E-204 bundle cleaning is confirmed for the August shutdown
+> window. Also note K-301 vibration readings are due this week.

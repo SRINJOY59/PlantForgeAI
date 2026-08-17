@@ -117,6 +117,22 @@ class AgentReader:
             "[l IN labels(m) WHERE l <> 'Entity'][0] AS label",
             tag=tag)
 
+    def shared_utilities(self, tag: str) -> list:
+        """Equipment sharing a utility header with the given tag (e.g. SHARES_HEADER)."""
+        return self._run(
+            "MATCH (e:Equipment {surface_form: $tag})-[:SHARES_HEADER]-(m:Equipment) "
+            "RETURN m.surface_form AS tag, "
+            "[l IN labels(m) WHERE l <> 'Entity'][0] AS label",
+            tag=tag)
+
+    def downstream_units(self, tag: str) -> list:
+        """Units downstream connected via FEEDS relationship (e.g. CSTR -> Column)."""
+        return self._run(
+            "MATCH (e:Equipment {surface_form: $tag})-[:FEEDS*1..2]->(m:Equipment) "
+            "RETURN m.surface_form AS tag, "
+            "[l IN labels(m) WHERE l <> 'Entity'][0] AS label",
+            tag=tag)
+
     def work_orders_for(self, tag: str, limit=10) -> list:
         """Recent work-order history with actions taken."""
         return self._run(

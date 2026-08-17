@@ -124,6 +124,17 @@ class LLMClient:
             except (APITimeoutError, APIConnectionError) as e:
                 err = e
             except APIStatusError as e:
+                if e.status_code == 402:
+                    match = re.search(r"can only afford (\d+)", str(e))
+                    if match:
+                        afford = int(match.group(1))
+                        if afford > 20:
+                            max_tokens = min(max_tokens, afford - 5)
+                            log.warning("OpenRouter 402: reduced max_tokens", max_tokens=max_tokens)
+                            continue
+                    max_tokens = max(100, max_tokens // 2)
+                    log.warning("OpenRouter 402: reduced max_tokens", max_tokens=max_tokens)
+                    continue
                 if e.status_code not in RETRYABLE:
                     raise
                 err = e
@@ -151,20 +162,34 @@ class LLMClient:
 
     async def stream(self, messages, tier=Tier.MID, max_tokens=2048,
                      temperature=0.0):
-        """Yields answer text deltas as they arrive. No retry mid-stream:
-        once tokens are flowing a failure is surfaced by ending the stream,
-        because the caller has already shown partial output."""
+        """Yields answer text deltas as they arrive."""
         model = self._models[tier]
-        async with self._sem:
-            stream = await self._client.chat.completions.create(
-                model=model, messages=messages, max_tokens=max_tokens,
-                temperature=temperature, stream=True)
-            async for chunk in stream:
-                if not chunk.choices:
+        for attempt in range(self._max_retries + 1):
+            try:
+                async with self._sem:
+                    stream = await self._client.chat.completions.create(
+                        model=model, messages=messages, max_tokens=max_tokens,
+                        temperature=temperature, stream=True)
+                    async for chunk in stream:
+                        if not chunk.choices:
+                            continue
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            yield delta
+                break
+            except APIStatusError as e:
+                if e.status_code == 402:
+                    match = re.search(r"can only afford (\d+)", str(e))
+                    if match:
+                        afford = int(match.group(1))
+                        if afford > 20:
+                            max_tokens = min(max_tokens, afford - 5)
+                            log.warning("OpenRouter 402 stream: reduced max_tokens", max_tokens=max_tokens)
+                            continue
+                    max_tokens = max(100, max_tokens // 2)
+                    log.warning("OpenRouter 402 stream: reduced max_tokens", max_tokens=max_tokens)
                     continue
-                delta = chunk.choices[0].delta.content
-                if delta:
-                    yield delta
+                raise
 
     async def structured(self, messages, schema: Type[T], tier=Tier.CHEAP,
                          max_tokens=4096) -> T:
