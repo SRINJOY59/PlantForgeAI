@@ -12,6 +12,7 @@
   <img alt="stack" src="https://img.shields.io/badge/stack-Docker%20Compose-2496ED">
   <img alt="tests" src="https://img.shields.io/badge/tests-405%20passing-16a34a">
   <img alt="golden set" src="https://img.shields.io/badge/golden%20set-28%20questions-7a54a0">
+  <img alt="tep benchmark" src="https://img.shields.io/badge/simulation-Tennessee%20Eastman-blue">
 </p>
 
 ---
@@ -33,6 +34,8 @@ Built for **ET AI Hackathon 2026, PS-8** (*Unified Asset & Operations Brain*).
 | **Reasoning you can see** | PathRAG walks the plant's real topology and shows the chain it followed. |
 | **Warns you first** | Agents watch every new failure, find sibling patterns, and investigate with LLM tool-calling before anyone asks. |
 | **Turns warnings into work** | Each investigation drafts a corrective work order — facts harvested from the graph, prose from the model, approval from a human. |
+| **Live TEP Plant Simulation** | Full physics simulation of the **Tennessee Eastman Process (TEP)** benchmark (Downs & Vogel, 1993) — 8 chemical species, 4 gas-phase reactions, 6 unit areas (Reactor, Condenser, Separator, Stripper, Compressor, Product Split), 12 regulatory PID loops, and 21 IDV fault injections. |
+| **Interactive P&ID & Analytics** | Real-time interactive P&ID canvas overlaying live stream telemetry, multi-subplot time-series trends, phase-space trajectory portraits, and ISA 18.2 four-level envelope monitoring. |
 | **Proves compliance** | Statutory obligations read from the graph, with evidence documents and one-click scheduling into the approval queue. |
 | **Captures what is retiring** | A voice interview reads the graph first, asks about the assets that engineer actually worked on, and feeds the transcript back through ingestion. |
 | **Trust by design** | Document facts / agent inferences / human corrections are separate tiers. Agent output is grounding-checked; ungrounded claims are flagged, never trusted. |
@@ -46,28 +49,30 @@ Built for **ET AI Hackathon 2026, PS-8** (*Unified Asset & Operations Brain*).
 ```
                        ┌──────────── UI (React) ────────────┐
                        │  Ask · Graph · Alerts · Work Orders │
-                       │  Compliance · Permits · Interview   │
+                       │  TEP Simulation · Compliance · PTW │
                        └───────────────┬────────────────────┘
-                                       │  HTTP + SSE
-                              ┌────────▼────────┐        ┌─────────────┐
-                              │  gateway :8000  │◄───────┤ MCP server  │
-                              └────────┬────────┘        │ (stdio)     │
-              ┌───────────────────────┼──────────┐       └─────────────┘
-              │                       │          │
-      ┌───────▼──────┐        ┌───────▼───────┐  │  ┌──────────────┐
-      │ retrieval    │        │ Redis         │  └─►│ MinIO        │
-      │ :8001        │        │ broker · bus  │     │ raw documents│
-      │ PathRAG      │        │ cache · locks │     └──────────────┘
-      └───────┬──────┘        └───────┬───────┘
-              │                       │  celery queues
-              │        ┌──────────────┴───────────────────────┐
-              │   ingestion → extraction (6 lanes) → resolution → graphd
-              │        │                                          │
-              └────────┴──────────► Neo4j (the graph) ◄───────────┘
-                                          ▲
-                                     agents (delta stream →
-                                     detect → investigate → alert
-                                     → draft work order)
+                                       │  HTTP + WebSocket / SSE
+                               ┌────────▼────────┐        ┌─────────────┐
+                               │  gateway :8000  │◄───────┤ MCP server  │
+                               │  modular routes │        │ (stdio)     │
+                               └────────┬────────┘        └─────────────┘
+               ┌───────────────────────┼──────────┐       └─────────────┘
+               │                       │          │
+       ┌───────▼──────┐        ┌───────▼───────┐  │  ┌──────────────┐
+       │ retrieval    │        │ Redis         │  └─►│ MinIO        │
+       │ :8001        │        │ telemetry bus │     │ raw documents│
+       │ PathRAG      │        │ cache · locks │     └──────────────┘
+       └───────┬──────┘        └───────┬───────┘
+               │                       │  celery queues
+               │        ┌──────────────┴───────────────────────┐
+               │   ingestion → extraction (6 lanes) → resolution → graphd
+               │        │                                          │
+               └────────┴──────────► Neo4j (the graph) ◄───────────┘
+                                           ▲
+                                     agents runtime & watchers
+                                     (tep-watcher · delta handler
+                                      → investigate → alert
+                                      → draft work order)
 ```
 
 **Hard rules**
@@ -138,7 +143,7 @@ docker compose up --build
 ```
 
 Brings up infra, applies the Neo4j schema (`graph-init` runs once and exits —
-that's correct), and starts all services. Gateway on `:8000`.
+that's correct), seeds the TEP topology into Neo4j (`tep-seed`), starts the TEP physics simulator (`tep-sim`), TEP threshold watcher (`tep-watcher`), and all services. Gateway on `:8000`.
 
 ### Option B — local dev (recommended while building)
 
@@ -162,6 +167,7 @@ cd ui && npm run dev        # http://localhost:5173
 | UI | http://localhost:5173 |
 | Gateway (API) | http://localhost:8000 |
 | Retrieval | http://localhost:8001 |
+| TEP Simulator | http://localhost:8012 (proxied via `/sim/tep/*` on Gateway) |
 | Neo4j browser | http://localhost:7474 (`neo4j` / your `NEO4J_PASSWORD`) |
 | MinIO console | http://localhost:9001 |
 
@@ -169,7 +175,7 @@ cd ui && npm run dev        # http://localhost:5173
 
 ## Building the knowledge graph
 
-Ingest the sample corpus (42 documents across 3 plant units):
+Ingest the sample corpus (42 documents across 3 plant units + TEP SOPs):
 
 ```bash
 python -m tools.build_kg data/samples
@@ -250,18 +256,28 @@ services/<name>/    service.py (pure logic) + tasks.py (celery adapter)
   resolution/       canonical ids
   graphd/           SOLE Neo4j writer + denoise
   retrieval/        linker → router → pathfinder → pruner → assembler
-  agents/           watchers → investigator → alerts → work-order drafts
-  gateway/          the edge API
+  simulation/       unified simulation engine (TEP physics model, controllers, runner)
+  agents/           modularized runtime:
+                    ├── handlers/ (delta, tep_alarm, process_limit)
+                    ├── watchers/ (failure, tep, cstr, column)
+                    ├── consumer.py (event loop runtime)
+                    └── main.py (API endpoints)
+  gateway/          the edge API:
+                    ├── routes/
+                    │   ├── simulation/ (envelopes, proxy, ws, idv)
+                    │   └── (qa, moc, documents, graph, permit, reports, compliance)
+                    └── main.py
   connectors/       scheduled data-source sync
   interview/        knowledge capture (voice + graph-aware questioning)
   mcp_server/       MCP tools over stdio
 
 infra/              containers.py, celery_workers.py, autoscaler, docker/, neo4j/
 tools/              serve.py, build_kg.py, autoscale.py
+config/             tep_envelopes.json (ISA 18.2 operating envelopes)
 eval/               golden QA set, runner, retrieval ablation
 docs/               architecture reports, demo script
-data/samples/       the demo corpus
-ui/                 React + Vite + Tailwind + Supabase
+data/samples/       the demo corpus (TEP SOPs, P&IDs, inspection records)
+ui/                 React + Vite + Vanilla CSS + D3 P&ID canvas
 ```
 
 ---

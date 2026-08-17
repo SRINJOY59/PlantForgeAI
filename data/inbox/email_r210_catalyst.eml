@@ -1,0 +1,23 @@
+From: process.eng@haldia-refinery.example
+To: reliability@haldia-refinery.example, panel.u200@haldia-refinery.example
+Subject: R-210 bed dP trend - catalyst screening before next campaign
+Date: Wed, 21 Jan 2026 09:12:00 +0530
+
+Team,
+
+The differential pressure across R-210 has been creeping up again — about
+0.15 barg over the last three weeks (WO-2303). Same signature as before a
+turnaround: fines migrating and blinding the top screen.
+
+We can nurse it by trimming throughput, but the honest fix is a bed screening.
+I'd like to line that up for the next short window rather than let it force an
+unplanned trip.
+
+Two asks:
+1. Reliability to confirm the reactor internal inspection date (INS-510) still
+   holds so we don't double-handle the vessel.
+2. Panel to keep the bed temperature profile tight during the ramp per
+   SOP-U200-14 — any segment running 40 C hot means feed comes off.
+
+Regards,
+Process Engineering

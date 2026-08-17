@@ -9,6 +9,8 @@ x-service-base: &svc
     MINIO_ENDPOINT: http://minio:9000
     RETRIEVAL_URL: http://retrieval:8001
     AGENTS_URL: http://agents-api:8002
+    CSTR_SIM_URL: http://cstr-sim:8010
+    COLUMN_SIM_URL: http://column-sim:8011
   depends_on:
     redis: { condition: service_healthy }
     neo4j: { condition: service_healthy }
@@ -228,6 +230,46 @@ services:
       redis: { condition: service_healthy }
     restart: unless-stopped
     command: python -m tools.autoscale
+
+  # ---------- Tennessee Eastman Process simulator & topology seed ----------
+  tep-sim:
+    build:
+      context: .
+      dockerfile: infra/docker/simulation.Dockerfile
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      SIM_PORT: "8012"
+    # NOT exposed to the host: accessed only via the gateway proxy
+    ports: []
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+    command: python -m simulation.run --type tep
+
+  # one-shot: seeds TEP topology into Neo4j on deploy (idempotent)
+  tep-seed:
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: agents }
+    env_file: .env
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+    depends_on:
+      neo4j: { condition: service_healthy }
+    entrypoint: ["python", "scripts/seed_tep_topology.py"]
+    restart: "no"
+
+  tep-watcher:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: agents }
+    volumes:
+      - ./config:/srv/config:ro
+    command: python -m agents.watchers.tep
 
 volumes:
   neo4j_data:
