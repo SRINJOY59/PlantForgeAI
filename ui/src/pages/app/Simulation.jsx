@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useState } from "react";
-import { subscribeSimTelemetry, fetchDocumentUrl, getEnvelopes } from "../../lib/api";
+import { subscribeSimTelemetry, fetchDocumentUrl, getEnvelopes, getSimStatus } from "../../lib/api";
 import { DocumentModal } from "../../components/DocumentViewer";
 import SimControlStrip from "./simulation/SimControlStrip";
 import TepPnidCanvas from "./simulation/TepPnidCanvas";
@@ -63,14 +63,9 @@ export default function Simulation() {
   // Fetch TEP simulator status
   const fetchStatuses = async () => {
     try {
-      const res = await fetch("http://localhost:8000/sim/tep/status");
-      if (res.ok) {
-        const data = await res.json();
-        setTepStatus(data);
-        setConnected(true);
-      } else {
-        setConnected(false);
-      }
+      const data = await getSimStatus("tep");
+      setTepStatus(data);
+      setConnected(true);
     } catch {
       setConnected(false);
     } finally {
@@ -111,8 +106,14 @@ export default function Simulation() {
         lastSeenRef.current = Date.now();
       } else if (msg.type === "alert") {
         setAlerts((prev) => {
-          if (prev.some(a => a.fingerprint === msg.fingerprint)) return prev;
-          return [msg, ...prev].slice(0, 200);
+          const alertId = msg.id || `${msg.fingerprint || msg.tag_id}:${msg.timestamp || Date.now()}`;
+          const existingIdx = prev.findIndex(a => (msg.id && a.id === msg.id) || (a.fingerprint && a.fingerprint === msg.fingerprint));
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            updated[existingIdx] = { ...updated[existingIdx], ...msg };
+            return updated;
+          }
+          return [{ ...msg, id: alertId }, ...prev].slice(0, 200);
         });
       } else if (msg.type === "investigation") {
         setInvestigations((prev) => {
@@ -216,10 +217,10 @@ export default function Simulation() {
       <div className="grid gap-4 lg:grid-cols-10">
 
         {/* Left: P&ID canvas (always visible) */}
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-5">
           <div
             className="rounded-xl shadow-sm overflow-hidden"
-            style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", minHeight: 520 }}
+            style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", minHeight: 600 }}
           >
             <TepPnidCanvas
               activeNode={activeNode}
@@ -231,7 +232,7 @@ export default function Simulation() {
         </div>
 
         {/* Right: Tabbed analysis panels */}
-        <div className="lg:col-span-6 flex flex-col gap-3">
+        <div className="lg:col-span-5 flex flex-col gap-3">
           {/* Tab bar */}
           <div className="flex flex-wrap items-center gap-1 rounded-xl p-1.5"
             style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>

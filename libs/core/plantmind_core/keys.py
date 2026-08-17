@@ -7,7 +7,7 @@ WRITE_DLQ = "graphd:write_dlq"           # unparseable buffer items land here
 FLUSH_LOCK = "graphd:flush_lock"
 GRAPH_VERSION = "graph:version"          # INCR on every committed batch
 DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
-ALERT_STREAM = "alerts"                  # agents publish, UI/gateway tail
+ALERT_STREAM = "alerts:critical"         # agents & watchers publish, UI/gateway tail
 DRAFT_WORK_ORDERS_STREAM = "work_orders:drafts"
 # <stream entry id> -> {decision, by, at}. Beside the stream, not in it: the
 # draft is immutable (it is what the agent produced at one graph version), the
@@ -22,3 +22,5 @@ ANSWER_CACHE_LRU = "answercache:lru"     # id -> ts, for eviction
 # of the graph, where every fact is supposed to trace to a document we hold.
 STANDARD_REVISION_PREFIX = "standards:revision:"
 RATE_PREFIX = "ratelimit:"               # ratelimit:<bucket>:<who> fixed window
+EXTRACTION_LOCK_PREFIX = "lock:extract:"  # lock:extract:<lane>:<content_hash>
+EXTRACTION_CACHE_PREFIX = "cache:extract:"  # cache:extract:<lane>:<content_hash>

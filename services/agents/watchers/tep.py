@@ -150,20 +150,32 @@ class TepWatcher:
         severity = {"HH": "critical", "LL": "critical", "H": "warning", "L": "warning"}.get(level, "warning")
         fingerprint = f"tep:{tag_id}:{level}"
 
+        msg_text = (
+            f"TEP {unit_area} — {tag_id} {level} alarm: "
+            f"value={value:.3f} breached {'>' if level in ('H','HH') else '<'} {limit_val}"
+        )
         payload = {
+            "title": f"Process Alarm: {tag_id} ({level})",
+            "body": (
+                f"**Process Limit Breach**: `{tag_id}` reading is **{value:.3f}** "
+                f"(limit: **{limit_val}**, setpoint: **{setpoint}**).\n\n"
+                f"* **Unit**: {unit_area}\n"
+                f"* **Alarm Level**: {level}\n"
+                f"* **Severity**: {severity.upper()}"
+            ),
+            "kind": "process_limit",
             "fingerprint": fingerprint,
             "tag_id": tag_id,
             "unit": unit_area,
+            "equipment": unit_area,
             "value": round(value, 4),
             "level": level,
             "limit": limit_val,
             "setpoint": setpoint,
             "severity": severity,
             "timestamp": ts,
-            "message": (
-                f"TEP {unit_area} — {tag_id} {level} alarm: "
-                f"value={value:.3f} breached {'>' if level in ('H','HH') else '<'} {limit_val}"
-            ),
+            "message": msg_text,
+            "verified": True,
         }
         try:
             self._bus._r.xadd(

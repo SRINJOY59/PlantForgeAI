@@ -133,11 +133,11 @@ class TepControllerBank(BaseControllerBank):
         if active:
             self._faults[fault_key] = value
             self._active_idvs.add(idv)
-            log.info("IDV injected", idv=idv, description=description)
+            log.info(f"IDV injected: idv={idv} description={description}")
         else:
             self._faults.pop(fault_key, None)
             self._active_idvs.discard(idv)
-            log.info("IDV cleared", idv=idv)
+            log.info(f"IDV cleared: idv={idv}")
         return description
 
     def saturate_valve(self, tag: str, value: float = 100.0) -> None:
@@ -145,17 +145,17 @@ class TepControllerBank(BaseControllerBank):
         if key in self._mv:
             self._mv[key] = float(value)
             self._faults[f"valve_sat_{key}"] = value
-            log.info("valve saturated", tag=tag, value=value)
+            log.info(f"valve saturated: tag={tag} value={value}")
 
     def bias_sensor(self, tag: str, offset: float = 5.0) -> None:
         self._sensor_bias[tag] = offset
         self._faults[f"sensor_bias_{tag}"] = offset
-        log.info("sensor bias applied", tag=tag, offset=offset)
+        log.info(f"sensor bias applied: tag={tag} offset={offset}")
 
     def degrade_pid(self, tag: str, factor: float = 0.1) -> None:
         self._pid_degrade[tag] = max(0.0, min(1.0, factor))
         self._faults[f"pid_degrade_{tag}"] = factor
-        log.info("PID degraded", tag=tag, factor=factor)
+        log.info(f"PID degraded: tag={tag} factor={factor}")
 
     def clear_faults(self, tag: str | None = None) -> None:
         if tag is None:

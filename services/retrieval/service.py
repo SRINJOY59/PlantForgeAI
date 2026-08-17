@@ -219,10 +219,12 @@ class RetrievalService:
             facts = {**r["props"], **(r.get("other_props") or {})}
             notes = ", ".join(f"{k}: {facts[k]}" for k in NOTE_KEYS
                               if facts.get(k) not in (None, ""))
+            doc_id = r["props"].get("doc_id")
+            doc_tag = f" [doc:{doc_id}]" if doc_id else ""
             rel_lines.append(f"  ({seed.surface}) -{r['type']}"
                              + (f" ({notes})" if notes else "")
-                             + f"- ({r['other_surface']} [{r['other_label']}])")
-            doc_id = r["props"].get("doc_id")
+                             + f"- ({r['other_surface']} [{r['other_label']}])"
+                             + doc_tag)
             if doc_id and doc_id not in seen:      # tables cite their rows
                 seen.add(doc_id)
                 edge_evidence.append(Evidence(
@@ -295,8 +297,13 @@ class RetrievalService:
 
     # ------------------------------------------------------------- helpers
     async def _embed(self, text: str) -> list:
-        (embedding,) = await self._embedder.embed([text])
-        return embedding
+        try:
+            results = await self._embedder.embed([text])
+            if results:
+                return results[0]
+        except Exception as e:
+            log.warning("Embedding generation error, using zero fallback", error=str(e))
+        return [0.0] * 1536
 
     def _cache_get(self, embedding: list):
         if not self._cache:

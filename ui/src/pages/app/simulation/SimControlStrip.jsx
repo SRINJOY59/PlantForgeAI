@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Play, Square, RotateCcw, AlertTriangle, CheckCircle, Radio, Zap, Activity } from "lucide-react";
-import { simControl, simFault } from "../../../lib/api";
+import { simControl, simFault, simIdv } from "../../../lib/api";
 
 // IDV table — descriptions for the dropdown
 const IDV_TABLE = {
@@ -37,6 +37,15 @@ export default function SimControlStrip({ tepStatus, tepOnline, tepSimHealth, on
   const [selectedIDV, setSelectedIDV] = useState(4);
   const [activeIDVs, setActiveIDVs] = useState([]);
 
+  // Sync active IDVs from simulator status
+  useEffect(() => {
+    if (tepStatus?.active_idvs) {
+      setActiveIDVs(tepStatus.active_idvs);
+    } else if (tepStatus?.active_faults?._active_idvs) {
+      setActiveIDVs(tepStatus.active_faults._active_idvs);
+    }
+  }, [tepStatus]);
+
   const handleAction = async (action) => {
     try {
       await simControl("tep", action);
@@ -49,18 +58,19 @@ export default function SimControlStrip({ tepStatus, tepOnline, tepSimHealth, on
   const handleInjectIDV = async () => {
     setInjecting(true);
     try {
-      const res = await fetch("http://localhost:8000/sim/tep/idv", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idv: selectedIDV, active: true }),
-      });
-      const data = await res.json();
+      // If simulation is not running, start it automatically
+      if (!tepStatus?.running) {
+        await simControl("tep", "start");
+      }
+      const data = await simIdv(selectedIDV, true);
       if (data.active_faults?._active_idvs) {
         setActiveIDVs(data.active_faults._active_idvs);
+      } else {
+        setActiveIDVs((prev) => Array.from(new Set([...prev, selectedIDV])));
       }
       onRefresh();
     } catch (e) {
-      console.error(e);
+      console.error("Failed to inject IDV:", e);
     } finally {
       setInjecting(false);
     }
@@ -69,6 +79,11 @@ export default function SimControlStrip({ tepStatus, tepOnline, tepSimHealth, on
   const handleClearAll = async () => {
     try {
       await simFault("tep", "clear");
+      for (const idv of activeIDVs) {
+        try {
+          await simIdv(idv, false);
+        } catch {}
+      }
       setActiveIDVs([]);
       onRefresh();
     } catch (e) {
@@ -197,9 +212,10 @@ export default function SimControlStrip({ tepStatus, tepOnline, tepSimHealth, on
           {/* Inject button */}
           <button
             onClick={handleInjectIDV}
-            disabled={injecting || !running}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-50"
+            disabled={injecting}
+            className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 hover:brightness-110 active:scale-95 cursor-pointer shadow-sm"
             style={{ background: "#dc2626", color: "#fff" }}
+            title={!running ? "Starts simulation and injects fault" : "Inject selected IDV fault"}
           >
             <Zap size={11} />
             {injecting ? "Injecting…" : "Inject"}

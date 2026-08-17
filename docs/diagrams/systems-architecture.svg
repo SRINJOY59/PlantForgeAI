@@ -1,0 +1,294 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
+<style>
+  .bg    { fill:#FFFFFF; }
+  .h1    { fill:#0F172A; font-size:27px; font-weight:700; }
+  .sub   { fill:#64748B; font-size:13.5px; }
+  .sec   { fill:#1E3A8A; font-size:12px; font-weight:700; letter-spacing:1.4px; }
+  .box   { fill:#F8FAFC; stroke:#CBD5E1; stroke-width:1.5; }
+  .boxb  { fill:#EFF6FF; stroke:#2563EB; stroke-width:1.8; }
+  .boxr  { fill:#FEF2F2; stroke:#DC2626; stroke-width:1.8; stroke-dasharray:5 3; }
+  .boxw  { fill:#FFF7ED; stroke:#EA580C; stroke-width:2.4; }
+  .boxn  { fill:#ECFEFF; stroke:#0891B2; stroke-width:2; }
+  .bt    { fill:#0F172A; font-size:13.5px; font-weight:700; text-anchor:middle; }
+  .bm    { fill:#475569; font-size:10.5px; text-anchor:middle; font-family:Consolas,monospace; }
+  .bs    { fill:#2563EB; font-size:10px; font-weight:600; text-anchor:middle; }
+  .bw    { fill:#EA580C; font-size:9.5px; font-weight:700; text-anchor:middle; letter-spacing:.5px; }
+  .lane  { fill:#FFFFFF; stroke:#93C5FD; stroke-width:1.2; }
+  .lt    { fill:#0F172A; font-size:10.5px; font-weight:700; font-family:Consolas,monospace; }
+  .lm    { fill:#64748B; font-size:9.5px; }
+  .lr    { fill:#2563EB; font-size:9.5px; font-weight:600; text-anchor:end; }
+  .note  { fill:#475569; font-size:11px; }
+  .noteb { fill:#0F172A; font-size:11px; font-weight:700; }
+  .panR  { fill:#FEF2F2; stroke:#DC2626; stroke-width:1.8; }
+  .panG  { fill:#ECFDF5; stroke:#059669; stroke-width:1.8; }
+  .panB  { fill:#F8FAFC; stroke:#2563EB; stroke-width:1.8; }
+  .panS  { fill:#F8FAFC; stroke:#CBD5E1; stroke-width:1.5; }
+  .pt    { font-size:14px; font-weight:700; }
+  .ps    { fill:#64748B; font-size:11px; }
+  .chip  { fill:#FFFFFF; stroke:#FCA5A5; stroke-width:1.2; }
+  .ct    { fill:#B91C1C; font-size:10px; font-weight:700; }
+  .cb    { fill:#475569; font-size:9.5px; }
+  .it    { fill:#0F172A; font-size:10px; font-weight:700; }
+  .ib    { fill:#64748B; font-size:9px; }
+  .flow  { stroke:#334155; stroke-width:2; fill:none; }
+  .dash  { stroke:#DC2626; stroke-width:1.4; fill:none; stroke-dasharray:4 3; opacity:.75; }
+  .mono  { font-family:Consolas,monospace; }
+</style>
+
+<rect class="bg" x="0" y="0" width="1600" height="900"/>
+
+<!-- ══ TITLE ══ -->
+<text class="h1" x="40" y="42">Seven queues. One writer. The graph can never fork.</text>
+<text class="sub" x="40" y="66">Redis-coordinated Celery fleet · backlog-driven autoscaling · at-least-once delivery · every handler idempotent</text>
+
+<defs>
+  <marker id="arw" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 z" fill="#334155"/>
+  </marker>
+  <marker id="arwr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" fill="#DC2626"/>
+  </marker>
+</defs>
+
+<!-- ══ ① WRITE PATH ══ -->
+<text class="sec" x="40" y="100">① WRITE PATH — BYTES TO CONNECTED FACTS</text>
+
+<!-- upload -->
+<rect class="box" x="40" y="126" width="86" height="94" rx="8"/>
+<text class="bt" x="83" y="163">upload</text>
+<text class="bm" x="83" y="181">PDF · P&amp;ID</text>
+<text class="bm" x="83" y="195">XLSX · email</text>
+
+<!-- gateway -->
+<rect class="boxb" x="150" y="126" width="118" height="94" rx="8"/>
+<text class="bt" x="209" y="157">gateway</text>
+<text class="bm" x="209" y="175">uvicorn :8000</text>
+<text class="bm" x="209" y="189">bytes → MinIO</text>
+<text class="bs" x="209" y="207">×2 processes</text>
+
+<!-- ingestion -->
+<rect class="boxb" x="292" y="126" width="124" height="94" rx="8"/>
+<text class="bt" x="354" y="157">ingestion</text>
+<text class="bm" x="354" y="175">q_classify</text>
+<text class="bm" x="354" y="189">-c 4</text>
+<text class="bs" x="354" y="207">×1–3 replicas</text>
+
+<!-- extraction lanes -->
+<rect class="boxb" x="440" y="112" width="254" height="122" rx="8"/>
+<text class="bt" x="567" y="130">extraction — 3 lanes</text>
+<rect class="lane" x="450" y="138" width="234" height="28" rx="5"/>
+<text class="lt" x="459" y="150">q_parse_wo · -c 8</text>
+<text class="lm" x="459" y="161">deterministic — no LLM</text>
+<text class="lr" x="675" y="156">×1–4</text>
+<rect class="lane" x="450" y="170" width="234" height="28" rx="5"/>
+<text class="lt" x="459" y="182">q_extract_pnid · -c 4</text>
+<text class="lm" x="459" y="193">vision LLM — topology</text>
+<text class="lr" x="675" y="188">×1–3</text>
+<rect class="lane" x="450" y="202" width="234" height="28" rx="5"/>
+<text class="lt" x="459" y="214">q_extract_text · -c 32</text>
+<text class="lm" x="459" y="225">manuals · SOPs · email</text>
+<text class="lr" x="675" y="220">×1–4</text>
+
+<!-- resolution -->
+<rect class="boxb" x="714" y="126" width="124" height="94" rx="8"/>
+<text class="bt" x="776" y="152">resolution</text>
+<text class="bm" x="776" y="170">q_resolve · -c 4</text>
+<text class="bm" x="776" y="184">P-101A ≡ Pump 101A</text>
+<text class="bs" x="776" y="207">×1–3 replicas</text>
+
+<!-- write buffer -->
+<rect class="boxr" x="862" y="126" width="124" height="94" rx="8"/>
+<text class="bt" x="924" y="152">write buffer</text>
+<text class="bm" x="924" y="170">Redis list</text>
+<text class="bm" x="924" y="184">RPUSH subgraphs</text>
+<text class="bm" x="924" y="205">≤500 per flush</text>
+
+<!-- graphd -->
+<rect class="boxw" x="1010" y="126" width="148" height="94" rx="8"/>
+<text class="bt" x="1084" y="150">graphd</text>
+<text class="bm" x="1084" y="168">q_write · -c 1 · beat</text>
+<text class="bw" x="1084" y="188">SINGLE WRITER — PINNED</text>
+<text class="bm" x="1084" y="207">flush 2s · MERGE</text>
+
+<!-- neo4j -->
+<rect class="boxn" x="1178" y="126" width="120" height="94" rx="8"/>
+<text class="bt" x="1238" y="155">Neo4j 5</text>
+<text class="bm" x="1238" y="173">+ GDS · vector</text>
+<text class="bm" x="1238" y="187">+ range indexes</text>
+<text class="bs" x="1238" y="207">durable truth</text>
+
+<!-- flow arrows -->
+<path class="flow" d="M126,173 L146,173" marker-end="url(#arw)"/>
+<path class="flow" d="M268,173 L288,173" marker-end="url(#arw)"/>
+<path class="flow" d="M416,173 L436,173" marker-end="url(#arw)"/>
+<path class="flow" d="M694,173 L710,173" marker-end="url(#arw)"/>
+<path class="flow" d="M838,173 L858,173" marker-end="url(#arw)"/>
+<path class="flow" d="M986,173 L1006,173" marker-end="url(#arw)"/>
+<path class="flow" d="M1158,173 L1174,173" marker-end="url(#arw)"/>
+
+<!-- notes under write path -->
+<text class="noteb" x="40" y="254">Content fingerprint claimed atomically in Redis before any model is billed —</text>
+<text class="note" x="497" y="254">a repeat upload dies at the ingestion boundary, never in the extractor.</text>
+<text class="noteb" x="40" y="272">Every lane emits candidates, never facts —</text>
+<text class="note" x="277" y="272">each claim carries source document, page, character span or bounding box, extractor version and confidence.</text>
+
+<!-- ══ ② REDIS ══ -->
+<text class="sec" x="40" y="302">② REDIS 7 — THE COORDINATION LAYER</text>
+
+<rect class="panR" x="40" y="318" width="1258" height="188" rx="10"/>
+<text class="pt" x="62" y="344" fill="#B91C1C">Seven independent services. No shared memory, no direct calls between them.</text>
+<text class="ps" x="62" y="362">Each can be restarted or killed without warning — yet they must agree continuously on what is ingested, what just changed, and what a user has already been shown.</text>
+
+<rect class="chip" x="62" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="72" y="392">① BROKER</text>
+<text class="cb" x="72" y="408">7 task queues, retries,</text>
+<text class="cb" x="72" y="421">beat schedules, DLQ</text>
+<text class="cb" x="72" y="434">routing by Route table</text>
+<text class="cb" x="72" y="452">no cross-service imports</text>
+
+<rect class="chip" x="237" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="247" y="392">② DEDUPE</text>
+<text class="cb" x="247" y="408">doc:&lt;sha256&gt; claimed</text>
+<text class="cb" x="247" y="421">atomically on arrival</text>
+<text class="cb" x="247" y="434">identical uploads are</text>
+<text class="cb" x="247" y="452">processed exactly once</text>
+
+<rect class="chip" x="412" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="422" y="392">③ WRITE BUFFER</text>
+<text class="cb" x="422" y="408">resolved subgraphs held</text>
+<text class="cb" x="422" y="421">for batch commit</text>
+<text class="cb" x="422" y="434">+ flush lock</text>
+<text class="cb" x="422" y="452">+ dead-letter queue</text>
+
+<rect class="chip" x="587" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="597" y="392">④ GRAPH VERSION</text>
+<text class="cb" x="597" y="408">INCR on every commit</text>
+<text class="cb" x="597" y="421">stamped on every answer</text>
+<text class="cb" x="597" y="434">and every artifact</text>
+<text class="cb" x="597" y="452">outputs state their state</text>
+
+<rect class="chip" x="762" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="772" y="392">⑤ EVENT STREAMS</text>
+<text class="cb" x="772" y="408">graph:deltas · alerts</text>
+<text class="cb" x="772" y="421">work-order drafts</text>
+<text class="cb" x="772" y="434">append-only + cursors</text>
+<text class="cb" x="772" y="452">restart resumes exactly</text>
+
+<rect class="chip" x="937" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="947" y="392">⑥ ANSWER CACHE</text>
+<text class="cb" x="947" y="408">semantic, not string</text>
+<text class="cb" x="947" y="421">stores node IDs relied on</text>
+<text class="cb" x="947" y="434">→ targeted invalidation</text>
+<text class="cb" x="947" y="452">+ LRU eviction</text>
+
+<rect class="chip" x="1112" y="374" width="164" height="92" rx="6"/>
+<text class="ct" x="1122" y="392">⑦ GUARDS</text>
+<text class="cb" x="1122" y="408">fixed-window rate limits</text>
+<text class="cb" x="1122" y="421">alert-fingerprint set</text>
+<text class="cb" x="1122" y="434">(no duplicate alarms)</text>
+<text class="cb" x="1122" y="452">standards watch state</text>
+
+<text class="noteb" x="62" y="490">Redis holds coordination state only.</text>
+<text class="note" x="257" y="490">Losing it costs recomputation, never plant knowledge — the durable stores are Neo4j (the graph) and MinIO (the original documents, reopenable by a citation years later).</text>
+
+<!-- ══ ③ AUTOSCALER + READ PATH ══ -->
+<text class="sec" x="40" y="536">③ CAPACITY &amp; THE READ PATH</text>
+
+<rect class="panG" x="40" y="552" width="610" height="258" rx="10"/>
+<text class="pt" x="62" y="578" fill="#047857">AUTOSCALER — capacity follows backlog</text>
+<text class="ps" x="62" y="596">The one service that talks to the Docker daemon rather than to Redis alone.</text>
+
+<rect fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1.2" x="62" y="608" width="566" height="34" rx="6"/>
+<text class="mono" x="76" y="630" font-size="13.5" fill="#065F46">replicas = clamp( ⌈ queue_depth / per_worker ⌉ , min , max )</text>
+
+<text class="it" x="62" y="666">Polls every 5 s</text>
+<text class="ib" x="62" y="680">depth read straight off the broker</text>
+<text class="it" x="330" y="666">Up on the first busy tick</text>
+<text class="ib" x="330" y="680">a burst gets capacity immediately</text>
+
+<text class="it" x="62" y="704">Down only after 3 quiet ticks</text>
+<text class="ib" x="62" y="718">a lull between batches must not</text>
+<text class="ib" x="62" y="730">tear down workers we want back</text>
+<text class="it" x="330" y="704">One replica at a time</text>
+<text class="ib" x="330" y="718">scale-down is serialised so a slow</text>
+<text class="ib" x="330" y="730">shutdown never stalls other lanes</text>
+
+<rect fill="#FFF7ED" stroke="#EA580C" stroke-width="1.4" x="62" y="744" width="566" height="50" rx="6"/>
+<text class="it" x="76" y="762" fill="#9A3412">graphd is excluded from autoscaling by policy — guarded in two places.</text>
+<text class="ib" x="76" y="778">One writer lets the flush batch without taking a lock. It is a correctness guarantee, not a bottleneck to fix.</text>
+
+<rect class="panB" x="672" y="552" width="626" height="258" rx="10"/>
+<text class="pt" x="694" y="578" fill="#1D4ED8">READ PATH — stateless, horizontally scaled</text>
+<text class="ps" x="694" y="596">Ingestion may take minutes; nobody is watching. A read must not make another read wait.</text>
+
+<text class="it" x="694" y="626">gateway ×2 · retrieval ×2 · agents-api ×2</text>
+<text class="ib" x="694" y="641">Multi-process uvicorn: each worker owns an event loop plus a thread pool for blocking calls.</text>
+<text class="ib" x="694" y="654">They share every piece of state through Redis and Neo4j, so any worker can serve any request.</text>
+
+<text class="it" x="694" y="680">interview ×1 — deliberately pinned</text>
+<text class="ib" x="694" y="695">Holds live WebRTC and session state in-process; a second worker would not see the user's session.</text>
+
+<text class="it" x="694" y="721">agents consumer — never stops tailing</text>
+<text class="ib" x="694" y="736">Separate process from agents-api: a request blocking 30 s on an LLM has no business sharing that loop.</text>
+
+<rect fill="#EFF6FF" stroke="#2563EB" stroke-width="1.4" x="694" y="748" width="582" height="46" rx="6"/>
+<text class="it" x="708" y="766" fill="#1D4ED8">Load tested: 50 concurrent users · 100% success · no dropped connections</text>
+<text class="ib" x="708" y="782">Neo4j driver pool of 50 with a 30 s acquisition timeout; the semantic cache absorbs repeats at zero LLM cost.</text>
+
+<!-- ══ RIGHT RAIL — DELIVERY GUARANTEES ══ -->
+<rect class="panS" x="1318" y="112" width="242" height="698" rx="10"/>
+<text class="pt" x="1338" y="140" fill="#0F172A">DELIVERY GUARANTEES</text>
+<text class="ps" x="1338" y="157">Why a killed worker is survivable</text>
+
+<text class="it" x="1338" y="188">JSON-only serialization</text>
+<text class="ib" x="1338" y="202">Pickle over the wire is an RCE</text>
+<text class="ib" x="1338" y="214">waiting to happen. Refused.</text>
+
+<text class="it" x="1338" y="243">acks_late + reject_on_lost</text>
+<text class="ib" x="1338" y="257">At-least-once delivery: a task is</text>
+<text class="ib" x="1338" y="269">acked after it runs, not before.</text>
+
+<text class="it" x="1338" y="298">Every handler idempotent</text>
+<text class="ib" x="1338" y="312">Content hashes, MERGE writes,</text>
+<text class="ib" x="1338" y="324">provenance-hash keys. Redelivery</text>
+<text class="ib" x="1338" y="336">converges instead of duplicating.</text>
+
+<text class="it" x="1338" y="365">prefetch = 1</text>
+<text class="ib" x="1338" y="379">A 30 s vision extraction cannot</text>
+<text class="ib" x="1338" y="391">hoard quick parses in its buffer.</text>
+
+<text class="it" x="1338" y="420">Soft 540 s / hard 600 s</text>
+<text class="ib" x="1338" y="434">A hung LLM or DB call is killed</text>
+<text class="ib" x="1338" y="446">and re-queued, never jams the pool.</text>
+
+<text class="it" x="1338" y="475">stop_grace = 600 s</text>
+<text class="ib" x="1338" y="489">Matched to the task limit, not the</text>
+<text class="ib" x="1338" y="501">10 s default: Redis will not redeliver</text>
+<text class="ib" x="1338" y="513">an unacked task for a full hour.</text>
+
+<text class="it" x="1338" y="542">DLQ → operator alert</text>
+<text class="ib" x="1338" y="556">A permanently failed task raises a</text>
+<text class="ib" x="1338" y="568">deduplicated alert. Failures surface;</text>
+<text class="ib" x="1338" y="580">they do not vanish silently.</text>
+
+<text class="it" x="1338" y="609">Results ignored by design</text>
+<text class="ib" x="1338" y="623">Outcomes flow through the streams</text>
+<text class="ib" x="1338" y="635">and the graph, not a result backend.</text>
+
+<rect fill="#F0FDF4" stroke="#059669" stroke-width="1.4" x="1336" y="654" width="206" height="88" rx="6"/>
+<text class="it" x="1350" y="674" fill="#047857">Same policy, bigger cluster</text>
+<text class="ib" x="1350" y="690">The scaling signal is exactly what</text>
+<text class="ib" x="1350" y="702">KEDA applies in Kubernetes. Here</text>
+<text class="ib" x="1350" y="714">the unit is a container; there it is</text>
+<text class="ib" x="1350" y="726">a pod. The policy code is unchanged.</text>
+
+<text class="ib" x="1338" y="768">Fleet is an interface: spec / count /</text>
+<text class="ib" x="1338" y="780">scale_to / reap. Local subprocesses</text>
+<text class="ib" x="1338" y="792">and containers are both valid — and</text>
+<text class="ib" x="1338" y="804">the tests run with no Docker at all.</text>
+
+<!-- ══ FOOTER ══ -->
+<line x1="40" y1="832" x2="1560" y2="832" stroke="#E2E8F0" stroke-width="1.5"/>
+<text class="note" x="40" y="856"><tspan font-weight="700">-c N</tspan> = concurrency inside one container   ·   <tspan font-weight="700">×N–M</tspan> = autoscaled replica range   ·   solid arrow = work in flight   ·   dashed = coordination state</text>
+<text class="note" x="40" y="876">Stack: FastAPI / uvicorn · Celery 5 · Redis 7 (AOF) · Neo4j 5 Community + GDS · MinIO · Docker Compose, autoscaled through the daemon socket.</text>
+</svg>

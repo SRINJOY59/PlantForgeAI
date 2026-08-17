@@ -23,6 +23,19 @@ function opacityForSeverity(severity, acked) {
   return acked ? 0.35 : severity === "critical" ? 0.8 : 0.65;
 }
 
+function parseTimestamp(ts) {
+  if (!ts) return Date.now();
+  if (typeof ts === "number") {
+    return ts < 1e11 ? ts * 1000 : ts;
+  }
+  const num = Number(ts);
+  if (!isNaN(num) && num > 0) {
+    return num < 1e11 ? num * 1000 : num;
+  }
+  const parsed = new Date(ts).getTime();
+  return isNaN(parsed) ? Date.now() : parsed;
+}
+
 export default function EventHistorian({ alerts = [], acknowledgedIds = new Set() }) {
   const svgRef = useRef(null);
 
@@ -30,7 +43,7 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
     if (!svgRef.current) return;
 
     // Group alerts by tag_id
-    const byTag = d3.group(alerts, d => d.tag_id || d.equipment || "Unknown");
+    const byTag = d3.group(alerts, d => d.tag_id || d.unit || d.equipment || "Unknown");
     const tags = Array.from(byTag.keys());
 
     if (tags.length === 0) {
@@ -39,7 +52,7 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
     }
 
     // Time domain: from oldest alert to now
-    const allTimes = alerts.map(a => new Date(a.timestamp).getTime()).filter(t => !isNaN(t));
+    const allTimes = alerts.map(a => parseTimestamp(a.timestamp));
     const tMin = allTimes.length ? Math.min(...allTimes) : Date.now() - 60000;
     const tNow = Date.now();
 
@@ -53,7 +66,7 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
     svg.selectAll("*").remove();
 
     const xScale = d3.scaleTime()
-      .domain([new Date(tMin - 2000), new Date(tNow)])
+      .domain([new Date(Math.min(tMin - 2000, tNow - 10000)), new Date(tNow)])
       .range([MARGIN.left, width - MARGIN.right]);
 
     const xAxis = d3.axisBottom(xScale)
@@ -65,7 +78,7 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
       .call(xAxis)
       .selectAll("text")
       .attr("font-size", "9px")
-      .attr("fill", "#64748b");
+      .attr("fill", "var(--muted, #64748b)");
 
     svg.selectAll(".x-grid-line")
       .data(xScale.ticks(6))
@@ -76,8 +89,10 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
       .attr("x2", d => xScale(d))
       .attr("y1", MARGIN.top)
       .attr("y2", height - MARGIN.bottom)
-      .attr("stroke", "#e2e8f0")
-      .attr("stroke-width", 1);
+      .attr("stroke", "var(--border, #e2e8f0)")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "2,2")
+      .attr("opacity", 0.6);
 
     // Draw swimlanes
     tags.forEach((tag, laneIdx) => {
@@ -89,45 +104,45 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
         .attr("y", y)
         .attr("width", width - MARGIN.left - MARGIN.right)
         .attr("height", LANE_HEIGHT - 2)
-        .attr("fill", laneIdx % 2 === 0 ? "rgba(248,250,252,0.6)" : "transparent")
-        .attr("rx", 2);
+        .attr("fill", laneIdx % 2 === 0 ? "rgba(148,163,184,0.06)" : "transparent")
+        .attr("rx", 3);
 
       // Lane label
       svg.append("text")
-        .attr("x", MARGIN.left - 6)
+        .attr("x", MARGIN.left - 8)
         .attr("y", y + LANE_HEIGHT / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", "end")
-        .attr("font-size", "9px")
+        .attr("font-size", "10px")
         .attr("font-weight", "600")
-        .attr("fill", "#475569")
-        .text(tag.length > 22 ? tag.slice(0, 22) + "…" : tag);
+        .attr("fill", "var(--text-md, #475569)")
+        .attr("font-family", "monospace")
+        .text(tag.length > 20 ? tag.slice(0, 20) + "…" : tag);
 
       // Draw alert bars
       const tagAlerts = byTag.get(tag) || [];
       tagAlerts.forEach(alert => {
-        const ts = new Date(alert.timestamp).getTime();
-        if (isNaN(ts)) return;
-
+        const ts = parseTimestamp(alert.timestamp);
         const acked = acknowledgedIds.has(alert.id);
-        const barWidth = Math.max(6, (tNow - ts) * 0.002); // bar grows with age
-        const clampedWidth = Math.min(barWidth, xScale(new Date(tNow)) - xScale(new Date(ts)));
+        const barWidth = Math.max(8, (tNow - ts) * 0.002);
+        const startX = xScale(new Date(ts));
+        const clampedWidth = Math.max(6, Math.min(barWidth, (width - MARGIN.right) - startX));
 
         svg.append("rect")
-          .attr("x", xScale(new Date(ts)))
+          .attr("x", startX)
           .attr("y", y + 4)
-          .attr("width", Math.max(4, clampedWidth))
-          .attr("height", LANE_HEIGHT - 10)
+          .attr("width", clampedWidth)
+          .attr("height", LANE_HEIGHT - 8)
           .attr("fill", colorForSeverity(alert.severity, acked))
           .attr("opacity", opacityForSeverity(alert.severity, acked))
           .attr("rx", 3)
           .append("title")
-          .text(`${alert.title}\n${new Date(ts).toLocaleTimeString()}\nSeverity: ${alert.severity}`);
+          .text(`${alert.message || alert.tag_id}\nTime: ${new Date(ts).toLocaleTimeString()}\nSeverity: ${alert.severity || "warning"}`);
 
         // Severity indicator dot at start
         svg.append("circle")
-          .attr("cx", xScale(new Date(ts)))
-          .attr("cy", y + LANE_HEIGHT / 2 - 1)
+          .attr("cx", startX)
+          .attr("cy", y + LANE_HEIGHT / 2)
           .attr("r", 3.5)
           .attr("fill", colorForSeverity(alert.severity, acked))
           .attr("opacity", acked ? 0.4 : 1);
@@ -140,7 +155,7 @@ export default function EventHistorian({ alerts = [], acknowledgedIds = new Set(
       .attr("x2", xScale(new Date(tNow)))
       .attr("y1", MARGIN.top)
       .attr("y2", height - MARGIN.bottom)
-      .attr("stroke", "#2563eb")
+      .attr("stroke", "var(--brand, #7a54a0)")
       .attr("stroke-width", 1.5)
       .attr("stroke-dasharray", "4,3");
 

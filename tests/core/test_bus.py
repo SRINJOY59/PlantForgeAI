@@ -165,3 +165,22 @@ def test_blocks_up_to_the_maximum_are_passed_through(bus):
 
     assert bus.read_deltas("$", MAX_BLOCK_MS) == []
     assert seen["block"] == MAX_BLOCK_MS
+
+
+def test_extraction_lock_single_flight(bus):
+    assert bus.acquire_extraction_lock("hash123", "pnid") is True
+    assert bus.acquire_extraction_lock("hash123", "pnid") is False
+    # different lane or hash is independent
+    assert bus.acquire_extraction_lock("hash123", "text") is True
+    assert bus.acquire_extraction_lock("hash456", "pnid") is True
+
+    bus.release_extraction_lock("hash123", "pnid")
+    assert bus.acquire_extraction_lock("hash123", "pnid") is True
+
+
+def test_extraction_cache_get_set(bus):
+    assert bus.get_cached_extraction("hash999", "pnid") is None
+    bus.set_cached_extraction("hash999", "pnid", '{"doc_id": "abc"}')
+    assert bus.get_cached_extraction("hash999", "pnid") == '{"doc_id": "abc"}'
+    # different lane
+    assert bus.get_cached_extraction("hash999", "text") is None

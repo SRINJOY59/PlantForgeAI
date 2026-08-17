@@ -63,6 +63,29 @@ class RedisBus:
         crashed ingest would block that file forever."""
         self._r.delete(keys.DOC_HASH_PREFIX + content_hash)
 
+    # extraction deduplication & idempotency --------------------------------
+    def acquire_extraction_lock(self, content_hash: str, lane: str,
+                                ttl_seconds: int = 300) -> bool:
+        """Single-flight lock per (lane, content_hash) so concurrent tasks
+        don't run duplicate expensive OCR/VLM inference."""
+        key = f"{keys.EXTRACTION_LOCK_PREFIX}{lane}:{content_hash}"
+        return bool(self._r.set(key, "1", nx=True, ex=ttl_seconds))
+
+    def release_extraction_lock(self, content_hash: str, lane: str):
+        key = f"{keys.EXTRACTION_LOCK_PREFIX}{lane}:{content_hash}"
+        self._r.delete(key)
+
+    def get_cached_extraction(self, content_hash: str, lane: str) -> str | None:
+        """Return serialized CandidateSubgraph JSON if previously extracted."""
+        key = f"{keys.EXTRACTION_CACHE_PREFIX}{lane}:{content_hash}"
+        return self._r.get(key)
+
+    def set_cached_extraction(self, content_hash: str, lane: str, csg_json: str,
+                               ttl_seconds: int = 604800):
+        """Cache CandidateSubgraph JSON with a default 7-day TTL."""
+        key = f"{keys.EXTRACTION_CACHE_PREFIX}{lane}:{content_hash}"
+        self._r.set(key, csg_json, ex=ttl_seconds)
+
     # write buffer + quarantine ---------------------------------------------
     def queue_subgraph(self, payload_json: str):
         self._r.rpush(keys.WRITE_BUFFER, payload_json)
