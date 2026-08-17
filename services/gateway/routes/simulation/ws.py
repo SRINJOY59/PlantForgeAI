@@ -86,16 +86,44 @@ async def ws_telemetry(websocket: WebSocket, token: Optional[str] = None, unit: 
                 break
             await asyncio.sleep(0.1)
 
+    crit_alert_cursor = "$"
+    legacy_alert_cursor = "$"
+
+    # Send recent historical alerts on initial connection
+    try:
+        recent_crit = await r_async.xrevrange("alerts:critical", "+", "-", count=30)
+        if recent_crit:
+            for entry_id, fields in reversed(recent_crit):
+                raw_payload = fields.get("payload", "{}")
+                payload = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
+                msg = {
+                    "type": "alert",
+                    "id": entry_id,
+                    **payload
+                }
+                await websocket.send_text(json.dumps(msg))
+    except Exception as e:
+        log.warning("Failed to send initial recent alerts", error=str(e))
+
     async def send_alerts():
-        nonlocal alert_cursor
+        nonlocal crit_alert_cursor, legacy_alert_cursor
         while True:
             try:
-                reply = await r_async.xread({keys.ALERT_STREAM: alert_cursor}, block=5000, count=10)
+                reply = await r_async.xread(
+                    {"alerts:critical": crit_alert_cursor, "alerts": legacy_alert_cursor},
+                    block=5000,
+                    count=10
+                )
                 if reply:
-                    for _stream, entries in reply:
+                    for stream_name, entries in reply:
                         for entry_id, fields in entries:
-                            alert_cursor = entry_id
-                            payload = json.loads(fields.get("payload", "{}"))
+                            if stream_name == "alerts:critical":
+                                crit_alert_cursor = entry_id
+                            else:
+                                legacy_alert_cursor = entry_id
+
+                            raw_payload = fields.get("payload", "{}")
+                            payload = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
 
                             msg = {
                                 "type": "alert",

@@ -2,8 +2,8 @@ import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // Matches [doc:ID], [doc:ID p3], [ID], or [ID p3]
-// Assuming ID is at least 8 alphanumeric/underscore/dash chars
-const CITE_RE = /\[(?:doc:)?([a-zA-Z0-9_-]{8,})(?:\s*p(\d+))?\]/g;
+// Supports standard 6-16+ char doc hashes
+const CITE_RE = /\[(?:doc:)?([a-zA-Z0-9_-]{6,})(?:\s*p(\d+))?\]/g;
 
 // react-markdown only trusts http/https/irc/mailto/xmpp and rewrites anything
 // else to "" - which silently turned every citation into <a href=""> pointing
@@ -16,7 +16,16 @@ const urlTransform = (url) =>
 // it is: keep the stem, drop a long middle. "incident_report_IR-2025-032.md"
 // stays readable; a raw content hash never was.
 function label(docId, page, names) {
-  const name = names?.[docId] || names?.[`doc:${docId}`];
+  let name = names?.[docId] || names?.[`doc:${docId}`];
+  if (!name && names) {
+    for (const [k, v] of Object.entries(names)) {
+      const cleanKey = k.replace(/^doc:/, "");
+      if (cleanKey.startsWith(docId) || docId.startsWith(cleanKey)) {
+        name = v;
+        break;
+      }
+    }
+  }
   const base = name
     ? (name.length > 22 ? name.slice(0, 20) + "…" : name)
     : docId.slice(0, 6);

@@ -12,6 +12,9 @@ WHERE YOUR ANSWER MAY COME FROM
 1. The REFERENCE MATERIAL below - graph paths from this plant's knowledge
    graph, and passages from its documents. Anything you take from it MUST be
    cited inline as [doc:<id>] or [doc:<id> p<page>].
+   CRITICAL CITATION FORMAT: <id> must strictly be the exact document hash found
+   in the passage headers (e.g. [doc:e8f375a97dfc7674] or [doc:191e721c4ea2fb76 p1]).
+   NEVER write equipment tags, relation names, or prose inside [doc:...].
 
 2. Your own general process-engineering knowledge, for questions the material
    was never going to answer: what a unit or symbol means, what a class of
@@ -97,7 +100,7 @@ class Answerer:
         how, confidence = grounding.classify(text, evidence)
         # only show sources the answer leaned on. Listing every chunk retrieval
         # happened to fetch is what made an ungrounded answer look cited.
-        used = grounding.cited_docs(text)
+        used = grounding.cited_docs(text, evidence)
         citations = [Citation(doc_id=e.doc_id, page=e.page,
                               snippet=e.text[:200])
                      for e in evidence if e.doc_id in used]

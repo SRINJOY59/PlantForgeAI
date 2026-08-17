@@ -40,6 +40,10 @@ export default function AlertCard({ alert, onOpenDoc }) {
   const Icon = ICONS[alert.kind] ?? Wrench;
   const fromWeb = WEB_KINDS.has(alert.kind);
 
+  const displayTitle = alert.title || alert.message || (alert.tag_id ? `Process Alarm: ${alert.tag_id} (${alert.level || alert.rule || "Deviation"})` : "Process Limit Breach");
+  const displayBody = alert.body || alert.summary || alert.message || (alert.value !== undefined ? `Tag **${alert.tag_id || alert.unit}** current reading is **${alert.value}** (limit: ${alert.limit || "N/A"}).` : "");
+  const displayEquipment = alert.equipment || alert.unit || (alert.tag_id ? alert.tag_id.split('.')[0] : null);
+
   return (
     <div
       className="animate-slide-up rounded-xl p-4 transition-all duration-150"
@@ -56,14 +60,14 @@ export default function AlertCard({ alert, onOpenDoc }) {
         <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg" style={{ background: s.iconBg }}>
           <Icon size={15} style={{ color: s.color }} />
         </div>
-        <span className="flex-1 text-sm font-semibold" style={{ color: "var(--text)" }}>{alert.title}</span>
+        <span className="flex-1 text-sm font-semibold" style={{ color: "var(--text)" }}>{displayTitle}</span>
         <span className="badge" style={{ background: s.chipBg, color: s.color }}>
           {alert.severity ?? "info"}
         </span>
       </div>
 
-      {alert.equipment && (
-        <div className="mt-2 font-mono text-[11px]" style={{ color: "var(--muted)" }}>📍 {alert.equipment}</div>
+      {displayEquipment && (
+        <div className="mt-2 font-mono text-[11px]" style={{ color: "var(--muted)" }}>📍 {displayEquipment}</div>
       )}
 
       {/* The investigator writes three bold sections ending in a numbered list
@@ -71,10 +75,12 @@ export default function AlertCard({ alert, onOpenDoc }) {
           something readable on a phone in a plant: headings in full text
           colour so they separate the sections, and list items given room so
           the actions read as steps rather than a paragraph with digits in it. */}
-      <div className="prose prose-sm mt-2.5 max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-strong:text-[var(--text)] prose-strong:font-semibold prose-ol:my-1.5 prose-ol:pl-5 prose-ul:my-1.5 prose-li:my-1 prose-li:pl-0.5 prose-li:marker:text-[var(--muted-lt)] prose-li:marker:font-semibold"
-        style={{ color: "var(--muted)" }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanBody(alert.body)}</ReactMarkdown>
-      </div>
+      {displayBody && (
+        <div className="prose prose-sm mt-2.5 max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-strong:text-[var(--text)] prose-strong:font-semibold prose-ol:my-1.5 prose-ol:pl-5 prose-ul:my-1.5 prose-li:my-1 prose-li:pl-0.5 prose-li:marker:text-[var(--muted-lt)] prose-li:marker:font-semibold"
+          style={{ color: "var(--muted)" }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanBody(displayBody)}</ReactMarkdown>
+        </div>
+      )}
 
       {/* verified=false means two different things. On a plant alert the agent
           named something its evidence didn't support - a mistake. On a web

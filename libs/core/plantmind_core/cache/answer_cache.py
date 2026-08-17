@@ -62,7 +62,7 @@ class AnswerCache:
     def put(self, question: str, embedding: list, answer: dict,
             cited_nodes: list):
         eid = hashlib.sha1(question.strip().lower().encode()).hexdigest()[:16]
-        entry = {"question": question, "embedding": embedding,
+        entry = {"question": question, "embedding": [float(x) for x in embedding],
                  "answer": answer, "cited_nodes": cited_nodes}
         self._r.hset(keys.ANSWER_CACHE, eid, json.dumps(entry))
         self._r.zadd(keys.ANSWER_CACHE_LRU, {eid: time.time()})

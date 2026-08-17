@@ -444,6 +444,14 @@ export async function simIdv(idv, active = true) {
   return res.json();
 }
 
+export async function getSimStatus(unit = "tep") {
+  const res = await fetchWithAuth(`${BASE}/sim/${unit}/status`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`getSimStatus ${unit} failed: ${res.status}`);
+  return res.json();
+}
+
 
 export function subscribeSimTelemetry(onMessage, unit = null) {
   let active = true;
