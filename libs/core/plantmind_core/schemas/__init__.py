@@ -7,7 +7,11 @@ from plantmind_core.schemas.contracts import (
     ChangeProposal,
     Citation,
     CorrectionNote,
+    Diagnosis,
+    DiagnosisMatch,
     EdgeType,
+    FaultMode,
+    FaultSignature,
     GraphDelta,
     ImpactAssessment,
     NodeType,
@@ -15,6 +19,7 @@ from plantmind_core.schemas.contracts import (
     Provenance,
     QueryMode,
     Source,
+    TagDeviation,
     Turn,
     WebSource,
     WorkOrderDraft,
@@ -24,8 +29,9 @@ from plantmind_core.schemas.contracts import (
 
 __all__ = [
     "Alert", "Answer", "CandidateEdge", "CandidateNode", "CandidateSubgraph",
-    "ChangeProposal", "Citation", "CorrectionNote",
-    "EdgeType", "GraphDelta", "ImpactAssessment", "NodeType", "PermitRequest",
-    "Provenance", "QueryMode", "Source", "Turn", "WebSource",
+    "ChangeProposal", "Citation", "CorrectionNote", "Diagnosis", "DiagnosisMatch",
+    "EdgeType", "FaultMode", "FaultSignature", "GraphDelta", "ImpactAssessment",
+    "NodeType", "PermitRequest",
+    "Provenance", "QueryMode", "Source", "TagDeviation", "Turn", "WebSource",
     "WorkOrderDraft", "WorkOrderDraftProse", "WorkPermit",
 ]

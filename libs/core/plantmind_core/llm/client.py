@@ -81,6 +81,23 @@ def _strip_fences(raw: str) -> str:
     return raw.strip()
 
 
+class AsyncRateLimiter:
+    """Token-bucket style rate limiter ensuring requests stay within max_rps."""
+    def __init__(self, max_rps: float = 3.0):
+        self._interval = 1.0 / max(0.1, max_rps)
+        self._lock = asyncio.Lock()
+        self._last_time = 0.0
+
+    async def acquire(self):
+        async with self._lock:
+            loop = asyncio.get_event_loop()
+            now = loop.time()
+            elapsed = now - self._last_time
+            if elapsed < self._interval:
+                await asyncio.sleep(self._interval - elapsed)
+            self._last_time = loop.time()
+
+
 class Tier(str, Enum):
     CHEAP = "cheap"
     MID = "mid"
@@ -103,17 +120,19 @@ class LLMClient:
             Tier.VISION: s.llm_vision,
         }
         self._sem = asyncio.Semaphore(s.llm_max_concurrency)
+        self._limiter = AsyncRateLimiter(max_rps=getattr(s, "llm_max_rps", 3.0))
         self._max_retries = s.llm_max_retries
         self.meter = TokenMeter()
 
     async def _create(self, messages, tier, max_tokens, temperature=0.0,
                       **extra):
-        """The one place that talks to the provider: semaphore, retry,
+        """The one place that talks to the provider: semaphore, rate limit, retry,
         token accounting. Returns the raw response."""
         model = self._models[tier]
         for attempt in range(self._max_retries + 1):
             try:
                 async with self._sem:
+                    await self._limiter.acquire()
                     resp = await self._client.chat.completions.create(
                         model=model, messages=messages, max_tokens=max_tokens,
                         temperature=temperature, **extra)
@@ -124,7 +143,10 @@ class LLMClient:
             except (APITimeoutError, APIConnectionError) as e:
                 err = e
             except APIStatusError as e:
+                err = e
                 if e.status_code == 402:
+                    if attempt == self._max_retries:
+                        raise
                     match = re.search(r"can only afford (\d+)", str(e))
                     if match:
                         afford = int(match.group(1))
@@ -135,9 +157,15 @@ class LLMClient:
                     max_tokens = max(100, max_tokens // 2)
                     log.warning("OpenRouter 402: reduced max_tokens", max_tokens=max_tokens)
                     continue
+                if e.status_code == 429:
+                    if attempt == self._max_retries:
+                        raise
+                    delay = min(3.0 * (2 ** attempt) + random.uniform(0.5, 2.0), 30.0)
+                    log.warning("OpenRouter 429 rate limited; backing off", model=model, attempt=attempt, delay=round(delay, 1))
+                    await asyncio.sleep(delay)
+                    continue
                 if e.status_code not in RETRYABLE:
                     raise
-                err = e
             if attempt == self._max_retries:
                 raise err
             delay = min(2 ** attempt + random.random(), 30)

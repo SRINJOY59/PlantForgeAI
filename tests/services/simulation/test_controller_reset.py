@@ -75,3 +75,47 @@ def test_cold_start_is_also_bumpless():
     bank.step(nominal_state, dt=1.0)
     for valve in TepControllerBank._LOOP_VALVE.values():
         assert bank.mv[valve] > 1.0, f"{valve} collapsed on cold start"
+
+
+# --- divergence guard --------------------------------------------------------
+# The 4-hour hang: the model drifted, LSODA stalled on the diverged state, and
+# the whole async loop froze. is_healthy() catches it on bounds (while still
+# finite) so the runner can reset before the solver ever sees it.
+
+def test_model_is_healthy_at_nominal():
+    from simulation.tep.model import TepProcessModel
+    assert TepProcessModel().is_healthy() is True
+
+
+def test_non_finite_state_is_unhealthy():
+    import numpy as np
+    from simulation.tep.model import TepProcessModel
+    m = TepProcessModel()
+    m._state[0] = np.inf
+    assert m.is_healthy() is False
+
+
+def test_out_of_bounds_state_is_unhealthy_while_still_finite():
+    from simulation.tep.model import STATE_SANE_MAX, TepProcessModel
+    m = TepProcessModel()
+    m._state[1] = STATE_SANE_MAX * 10        # large but finite - the early catch
+    assert m.is_healthy() is False
+
+
+def test_step_refuses_to_integrate_a_diverged_state():
+    import numpy as np
+    from simulation.tep.model import TepProcessModel
+    m = TepProcessModel()
+    m._state[:] = np.nan
+    m.step(1.0, {})                          # must return fast, never call LSODA
+    assert m.is_healthy() is False           # and flags itself for reset
+
+
+def test_reset_clears_divergence():
+    import numpy as np
+    from simulation.tep.model import TepProcessModel
+    m = TepProcessModel()
+    m._state[:] = np.inf
+    m._diverged = True
+    m.reset()
+    assert m.is_healthy() is True

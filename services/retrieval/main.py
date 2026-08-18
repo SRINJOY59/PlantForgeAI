@@ -11,8 +11,12 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from strawberry.fastapi import GraphQLRouter
+
 from plantmind_core.schemas import Turn
 
+from retrieval.graphql_reader import GraphQLReader
+from retrieval.graphql_schema import schema as graphql_schema, set_reader
 from retrieval.service import RetrievalService
 
 _service = None
@@ -22,10 +26,14 @@ _service = None
 async def lifespan(app):
     global _service
     _service = RetrievalService.from_settings()
+    set_reader(GraphQLReader.from_settings())
     yield
 
 
 app = FastAPI(title="plantmind-retrieval", lifespan=lifespan)
+
+# GraphQL endpoint — GraphiQL playground available at GET /graphql
+app.include_router(GraphQLRouter(graphql_schema), prefix="/graphql")
 
 
 class AskRequest(BaseModel):
@@ -62,6 +70,37 @@ async def ask_stream(request: AskRequest):
 def graph(limit: int = 400):
     """The plant graph for the explorer and the documents view."""
     return _service.graph_snapshot(limit)
+
+
+@app.get("/diagnostics/library")
+def diagnostics_library():
+    """All stored fault modes for the Library view."""
+    rows = _service._reader.fault_library()
+    # Parse the signature_json inline so the client gets structured data
+    library = []
+    for r in rows:
+        sig_raw = r.get("signature_json")
+        sig = None
+        if sig_raw:
+            import json as _json
+            try:
+                sig = _json.loads(sig_raw)
+            except Exception:
+                sig = None
+        library.append({
+            "id": r.get("id", ""),
+            "cause_id": r.get("cause_id"),
+            "cause_label": r.get("cause_label", ""),
+            "unit_areas": r.get("unit_areas") or [],
+            "lead_tag": r.get("lead_tag", ""),
+            "deviation_tags": r.get("deviation_tags") or [],
+            "severity": r.get("severity", "warning"),
+            "source": r.get("source", "sim"),
+            "procedure_id": r.get("procedure_id"),
+            "procedure_name": r.get("procedure_name"),
+            "signature": sig,
+        })
+    return library
 
 
 @app.get("/health")

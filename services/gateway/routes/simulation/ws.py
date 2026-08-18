@@ -21,6 +21,8 @@ log = get_logger("gateway.routes.simulation.ws")
 # generous because one alarm costs two entries here — the alarm and the
 # investigation that answers it — and the Historian needs both to draw a lane.
 ALERT_REPLAY_COUNT = 100
+# the Diagnose view is a shorter list — one entry per fault episode, not per tag
+DIAGNOSIS_REPLAY_COUNT = 50
 
 router = APIRouter()
 
@@ -162,8 +164,57 @@ async def ws_telemetry(websocket: WebSocket, token: Optional[str] = None, unit: 
                 break
             await asyncio.sleep(0.5)
 
+    diag_cursor = "$"
+
+    async def replay_recent_diagnoses():
+        """Send the tail of the diagnoses stream before following it live, for
+        the same reason as the alerts replay: the Diagnose view is built from
+        this socket, so without a replay it is empty on every load and reconnect
+        even though the diagnoses are still on the stream. Returns the cursor to
+        resume from so the live tail is exactly-once."""
+        try:
+            recent = await r_async.xrevrange(keys.DIAGNOSES_STREAM, "+", "-",
+                                             count=DIAGNOSIS_REPLAY_COUNT)
+        except Exception as e:
+            log.warning("Failed to replay recent diagnoses", error=str(e))
+            return "$"
+        if not recent:
+            return "0"
+        for entry_id, fields in reversed(recent):
+            try:
+                raw = fields.get("payload", "{}")
+                payload = json.loads(raw) if isinstance(raw, str) else raw
+                await websocket.send_text(json.dumps({
+                    "type": "diagnosis", "id": entry_id, "replay": True, **payload,
+                }))
+            except Exception as e:
+                log.warning("Failed to replay diagnosis", entry_id=entry_id, error=str(e))
+        return recent[0][0]
+
+    async def send_diagnoses():
+        nonlocal diag_cursor
+        diag_cursor = await replay_recent_diagnoses()
+        while True:
+            try:
+                reply = await r_async.xread({keys.DIAGNOSES_STREAM: diag_cursor},
+                                            block=5000, count=10)
+                if reply:
+                    for _stream, entries in reply:
+                        for entry_id, fields in entries:
+                            diag_cursor = entry_id
+                            raw = fields.get("payload", "{}")
+                            payload = json.loads(raw) if isinstance(raw, str) else raw
+                            await websocket.send_text(json.dumps({
+                                "type": "diagnosis", "id": entry_id, **payload,
+                            }))
+            except Exception as e:
+                log.warning("WebSocket diagnoses error", error=str(e))
+                break
+            await asyncio.sleep(0.5)
+
     t1 = asyncio.create_task(send_telemetry())
     t2 = asyncio.create_task(send_alerts())
+    t3 = asyncio.create_task(send_diagnoses())
 
     try:
         while True:
@@ -173,7 +224,8 @@ async def ws_telemetry(websocket: WebSocket, token: Optional[str] = None, unit: 
     finally:
         t1.cancel()
         t2.cancel()
+        t3.cancel()
         try:
-            await asyncio.gather(t1, t2, return_exceptions=True)
+            await asyncio.gather(t1, t2, t3, return_exceptions=True)
         except Exception:
             pass

@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
   Plug, Leaf, UserRound, AudioLines, Shield, LayoutDashboard,
-  FilePieChart, FileSignature, Mic, Activity,
+  FilePieChart, FileSignature, Mic, Activity, Fingerprint,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
@@ -17,6 +17,7 @@ const nav = [
   { to: "/app/documents", icon: FileStack, label: "Documents", minRole: "operator" },
   { to: "/app/moc", icon: GitPullRequestArrow, label: "Change Impact", minRole: "engineer" },
   { to: "/app/simulation", icon: Activity, label: "Simulation", minRole: "engineer" },
+  { to: "/app/fault-library", icon: Fingerprint, label: "Fault Library", minRole: "engineer" },
   { to: "/app/reports", icon: FilePieChart, label: "Asset Reports", minRole: "engineer" },
   { to: "/app/permits", icon: FileSignature, label: "Permits", minRole: "engineer" },
   { to: "/app/graph", icon: GitBranch, label: "Graph", minRole: "engineer" },

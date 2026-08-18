@@ -109,6 +109,19 @@ class BaseSimulationRunner:
                 pass
         self._sim_task = None
 
+        self._reset_to_nominal()
+
+        # Auto-restart running loop from nominal steady-state
+        self._running = True
+        self._sim_task = asyncio.create_task(self._sim_loop())
+
+        return {"status": "reset", "running": True}
+
+    def _reset_to_nominal(self):
+        """The reset itself, with no task management around it. sim_reset wraps
+        this in stop/start; the tick loop calls it bare when it catches a
+        divergence, because it is already the running task and must not cancel
+        or recreate itself."""
         self.model.reset()
         self.bank.reset_pids()
         self.bank.clear_faults()
@@ -116,21 +129,13 @@ class BaseSimulationRunner:
         self._tick_count = 0
         self._sim_health = "nominal"
 
-        # Publish nominal baseline telemetry immediately so UI canvas/cards update instantly
+        # Publish nominal baseline immediately so the UI canvas/cards update instantly
         try:
-            mv = self.bank.mv
-            nominal_state = self.model.state_dict(mv)
-            self.publisher.publish(nominal_state)
+            self.publisher.publish(self.model.state_dict(self.bank.mv))
         except Exception:
             log.exception("failed to publish reset telemetry")
 
         self._announce_reset()
-
-        # Auto-restart running loop from nominal steady-state
-        self._running = True
-        self._sim_task = asyncio.create_task(self._sim_loop())
-
-        return {"status": "reset", "running": True}
 
     def _announce_reset(self):
         """Tell the alarm watcher the process is back at nominal.
@@ -212,12 +217,38 @@ class BaseSimulationRunner:
                 await self.tick(self.dt)
             except Exception:
                 log.exception("Simulation tick failed")
+            else:
+                # A diverged model is the one failure that does not raise: the
+                # stiff solver just slows to a crawl on the next step and takes
+                # the whole loop down with it. Catch the divergence here, while
+                # the state is merely out of bounds, and reset before it can
+                # reach the solver. Left running for months, this is what keeps
+                # the sim - and the telemetry the historian depends on - alive.
+                if not self._model_healthy():
+                    log.error("simulation diverged at tick %d - "
+                              "auto-resetting to nominal", self._tick_count)
+                    self._sim_health = "diverged_reset"
+                    self._reset_to_nominal()
 
             self._tick_count += 1
             elapsed = time.monotonic() - tick_start
             sleep = max(0.0, self.dt - elapsed)
             if sleep > 0:
                 await asyncio.sleep(sleep)
+
+    def _model_healthy(self) -> bool:
+        """Divergence guard hook. Models that expose is_healthy() are checked;
+        those that don't are assumed fine, so this stays a no-op for any
+        simulation that hasn't opted in."""
+        check = getattr(self.model, "is_healthy", None)
+        if check is None:
+            return True
+        try:
+            return bool(check())
+        except Exception:
+            # a broken health check must never be the thing that stops the sim
+            log.exception("model health check raised; treating as healthy")
+            return True
 
     def run(self):
         """Start the Uvicorn worker process."""

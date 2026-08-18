@@ -8,8 +8,9 @@ import TepUnitPanel from "./simulation/TepUnitPanel";
 import AlertInvestigatorPanel from "./simulation/AlertInvestigatorPanel";
 import PhasePlot from "./simulation/PhasePlot";
 import EventHistorian from "./simulation/EventHistorian";
+import DiagnosePanel from "./simulation/DiagnosePanel";
 import LimitsPanel from "./simulation/LimitsPanel";
-import { Activity, Settings, DatabaseZap, LayoutGrid, TrendingUp, GitBranch, BellRing, Clock } from "lucide-react";
+import { Activity, Settings, DatabaseZap, LayoutGrid, TrendingUp, GitBranch, BellRing, Clock, Stethoscope } from "lucide-react";
 
 // Rolling telemetry buffer — 600 points per tag (~10 min at 1 Hz)
 function telemetryReducer(state, action) {
@@ -35,6 +36,7 @@ const TABS = [
   { id: "phase",     label: "Phase Portrait",icon: GitBranch },
   { id: "readings",  label: "Live Readings", icon: Activity },
   { id: "alerts",    label: "Alerts",        icon: BellRing, badgeKey: "alerts" },
+  { id: "diagnose",  label: "Diagnose",      icon: Stethoscope, badgeKey: "diagnoses" },
   { id: "historian", label: "Historian",     icon: Clock },
 ];
 
@@ -46,6 +48,7 @@ export default function Simulation() {
   const [telemetry, dispatchTelemetry] = useReducer(telemetryReducer, {});
   const [alerts, setAlerts] = useState([]);
   const [investigations, setInvestigations] = useState([]);
+  const [diagnoses, setDiagnoses] = useState([]);
   const [activeNode, setActiveNode] = useState("REACTOR");
   const [activeTab, setActiveTab] = useState("pnid");
 
@@ -120,6 +123,11 @@ export default function Simulation() {
           if (prev.some(i => i.alert_ref === msg.alert_ref)) return prev;
           return [msg, ...prev];
         });
+      } else if (msg.type === "diagnosis") {
+        setDiagnoses((prev) => {
+          if (msg.id && prev.some(d => d.id === msg.id)) return prev;
+          return [msg, ...prev].slice(0, 100);
+        });
       }
     });
     return () => unsub();
@@ -142,6 +150,7 @@ export default function Simulation() {
     dispatchTelemetry({ type: "RESET" });
     setAlerts([]);
     setInvestigations([]);
+    setDiagnoses([]);
     fetchStatuses();
   };
 
@@ -243,7 +252,8 @@ export default function Simulation() {
             style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>
             {TABS.map(tab => {
               const Icon = tab.icon;
-              const badge = tab.badgeKey === "alerts" ? alertCount : 0;
+              const badge = tab.badgeKey === "alerts" ? alertCount
+                : tab.badgeKey === "diagnoses" ? diagnoses.length : 0;
               return (
                 <button
                   key={tab.id}
@@ -318,6 +328,10 @@ export default function Simulation() {
                 investigations={investigations}
                 onOpenDoc={(docId, filename) => setActiveDoc({ docId, filename })}
               />
+            )}
+
+            {activeTab === "diagnose" && (
+              <DiagnosePanel diagnoses={diagnoses} />
             )}
 
             {activeTab === "historian" && (
