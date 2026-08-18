@@ -247,12 +247,15 @@ services:
     restart: unless-stopped
     command: python -m simulation.run --type tep
 
-  # one-shot: seeds TEP topology into Neo4j on deploy (idempotent)
+  # one-shot: seeds TEP topology into Neo4j on deploy (idempotent).
+  # Its own image (seed.Dockerfile): the seed needs the scripts, the simulation
+  # topology package and the neo4j driver together, which no service image
+  # ships. The agents image it used to borrow carried neither the script nor
+  # the topology, so this job failed at startup on every deploy.
   tep-seed:
     build:
       context: .
-      dockerfile: infra/docker/service.Dockerfile
-      args: { SERVICE: agents }
+      dockerfile: infra/docker/seed.Dockerfile
     env_file: .env
     environment:
       NEO4J_URI: bolt://neo4j:7687

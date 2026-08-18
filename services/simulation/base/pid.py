@@ -37,6 +37,20 @@ class PIDController:
             output = self.output_min
         return output
 
-    def reset(self):
-        self._integral = 0.0
+    def reset(self, hold_output: float = 0.0):
+        """Reset the loop, optionally holding a nominal output.
+
+        Bumpless when hold_output is given. A plain zero-reset drops the
+        integral to 0, so on the first tick after a reset — with the process
+        sitting at setpoint, i.e. error ~ 0 — the loop outputs ~0 and slams its
+        valve shut. In TEP that collapsed every controlled flow (separator
+        outlet, compressor recycle, stripper inlet, purge, D-feed) the instant
+        the sim was reset, tripping a burst of low-flow alarms across the
+        reactor, separator and compressor until the integrators wound back up.
+
+        At steady state output = Ki * integral (the Kp and Kd terms vanish at
+        zero error), so seeding integral = hold_output / Ki makes the loop
+        resume holding hold_output instead of zero.
+        """
+        self._integral = hold_output / self.Ki if self.Ki else 0.0
         self._prev_error = 0.0
