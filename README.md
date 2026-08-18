@@ -1,87 +1,127 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="ui/src/assets/logo-dark.png">
-    <img src="ui/src/assets/logo-light.png" alt="PlantForge.ai" width="120">
+    <img src="ui/src/assets/logo-light.png" alt="PlantForge.ai" width="140">
   </picture>
 </p>
 
 <h1 align="center">PlantForge.ai</h1>
-<p align="center"><em>Industrial Knowledge Intelligence — a unified asset &amp; operations brain</em></p>
+<p align="center"><em>Enterprise Industrial Knowledge Intelligence &amp; Operational AI Co-Pilot for Process Plants</em></p>
 
 <p align="center">
   <img alt="stack" src="https://img.shields.io/badge/stack-Docker%20Compose-2496ED">
+  <img alt="llm" src="https://img.shields.io/badge/LLM-Vertex%20AI%20%7C%20OpenRouter-4285F4">
+  <img alt="graph" src="https://img.shields.io/badge/graph-Neo4j%205-008CC1">
+  <img alt="timeseries" src="https://img.shields.io/badge/historian-TimescaleDB-FDB515">
+  <img alt="simulation" src="https://img.shields.io/badge/simulation-Tennessee%20Eastman-blue">
+  <img alt="slack" src="https://img.shields.io/badge/notifications-Slack%20Enterprise-4A154B">
   <img alt="tests" src="https://img.shields.io/badge/tests-405%20passing-16a34a">
-  <img alt="golden set" src="https://img.shields.io/badge/golden%20set-28%20questions-7a54a0">
-  <img alt="tep benchmark" src="https://img.shields.io/badge/simulation-Tennessee%20Eastman-blue">
 </p>
 
 ---
 
-Turns the documents scattered across a process plant — work orders, P&IDs,
-SOPs, OEM manuals, emails, nameplate photos, trend charts — into one knowledge
-graph, then answers operational questions with citations, warns before failures
-repeat, and proves compliance.
+## Overview
+
+**PlantForge** transforms unstructured plant documentation (P&IDs, maintenance work orders, SOPs, OEM manuals, laboratory logs, and statutory inspection certificates) and high-frequency time-series telemetry into an active, unified **Industrial Knowledge Brain**. Combining multi-modal graph retrieval (**PathRAG**), a high-performance **TimescaleDB Historian**, live **Tennessee Eastman Process (TEP)** simulation, and persona-tailored reasoning, PlantForge enables real-time root-cause analysis, predictive failure detection, statutory compliance tracking, and voice-assisted field operations.
 
 Built for **ET AI Hackathon 2026, PS-8** (*Unified Asset & Operations Brain*).
 
 ---
 
-## What it does
+## Key Capabilities
 
-| Capability | How |
+| Capability | Technical Mechanism |
 |---|---|
-| **Ask anything, cited** | 3-mode retrieval: vector (single facts), local (asset-centric), **PathRAG** (causal/multi-entity). Every claim carries `[doc:id p3]`, and a citation opens the original document. |
-| **Reasoning you can see** | PathRAG walks the plant's real topology and shows the chain it followed. |
-| **Warns you first** | Agents watch every new failure, find sibling patterns, and investigate with LLM tool-calling before anyone asks. |
-| **Turns warnings into work** | Each investigation drafts a corrective work order — facts harvested from the graph, prose from the model, approval from a human. |
-| **Live TEP Plant Simulation** | Full physics simulation of the **Tennessee Eastman Process (TEP)** benchmark (Downs & Vogel, 1993) — 8 chemical species, 4 gas-phase reactions, 6 unit areas (Reactor, Condenser, Separator, Stripper, Compressor, Product Split), 12 regulatory PID loops, and 21 IDV fault injections. |
-| **Interactive P&ID & Analytics** | Real-time interactive P&ID canvas overlaying live stream telemetry, multi-subplot time-series trends, phase-space trajectory portraits, and ISA 18.2 four-level envelope monitoring. |
-| **Proves compliance** | Statutory obligations read from the graph, with evidence documents and one-click scheduling into the approval queue. |
-| **Captures what is retiring** | A voice interview reads the graph first, asks about the assets that engineer actually worked on, and feeds the transcript back through ingestion. |
-| **Trust by design** | Document facts / agent inferences / human corrections are separate tiers. Agent output is grounding-checked; ungrounded claims are flagged, never trusted. |
-| **Answers before you ask** | The investigation that produces an alert pre-fills the answer cache — the follow-up question is an instant cache hit at zero extra cost. |
-| **Works outside the app** | An MCP server exposes nine tools, so any AI assistant can query the plant graph with the same citations and grounding. |
+| **Multi-Persona AI Reasoning** | Dynamic prompt grounding and token budgets tailored for **Field Operator** (checklists/limits), **Process Engineer** (kinetics/control loops), **Maintenance Lead** (CMMS/work orders), and **Safety Officer** (OISD/IBR standards). |
+| **PathRAG & Hybrid Graph Retrieval** | 3-mode retrieval engine combining vector search, asset-centric local subgraphs, and **causal PathRAG** topology traversals with exact document provenance `[doc:id p3]`. |
+| **TimescaleDB Plant Historian** | High-throughput continuous telemetry sink landing sub-second sensor streams into partitioned hypertables with native columnar compression and automated retention. |
+| **Statutory Compliance & Standards Center** | Real-time monitoring of regulatory obligations (**OISD-STD-119**, **IBR/OISD-STD-132**, **API 510/570/653**) directly from the graph with 1-click **PM02 work order drafting**. |
+| **Enterprise Slack Alerts** | Automated webhook dispatcher broadcasting rich block-formatted statutory inspection alerts and AI failure diagnoses with actionable remediation links. |
+| **Dynamic Failure Pattern Detection** | Continuous graph analysis of equipment failure modes (`HAS_FAILURE`) and CMMS logs (`WorkOrder`) surfacing recurring root causes (e.g. `P-101A` cavitation & `PI-102` low suction pressure). |
+| **Real-Time Physics Simulation (TEP / CSTR)** | Live dynamic simulation of the **Tennessee Eastman Process** (8 chemical species, 4 gas reactions, 12 PID loops, 21 IDV fault injections) and ISA 18.2 alarm envelopes. |
+| **Automated AI Root-Cause Investigation** | Multi-agent diagnostic runtime triggered on process limit breaches that evaluates sensor signatures, isolates root causes, and pre-fills the answer cache. |
+| **Mobile Field Co-Pilot (PWA) & Voice** | Mobile-first interface with multilingual audio synthesis (`hi`, `bn`, `ta`, `te`, `mr`, `gu`), voice dictation, and barcode/tag scanning for field walkdowns. |
+| **Live Document Reader** | Integrated viewer rendering Markdown, CSV, tabular inspection records, and PDFs directly from MinIO object storage with provenance highlights. |
+| **MCP Server Integration** | Exposes 9 Model Context Protocol (MCP) tools over stdio for external AI assistants to query plant graph topology and telemetry. |
+
+---
+
+## TimescaleDB Industrial Historian Architecture
+
+PlantForge features an enterprise-grade time-series telemetry engine built on **TimescaleDB** designed for high-frequency sensor capture, real-time downsampling, and long-term trend analysis:
+
+```
+  Live Plant Telemetry / TEP Simulator
+                 │
+                 ▼  sub-second sensor batches (JSON)
+           Redis Stream (`plant:telemetry`)
+                 │
+                 ▼  XREADGROUP consumer (`historian-sink-1`)
+        Telemetry Sink (`services/historian/sink.py`)
+                 │
+                 ▼  PostgreSQL bulk `COPY` (at-least-once)
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    TimescaleDB Engine                       │
+  │                                                             │
+  │  1. Hypertable Partitioning: (time, tag_id)                 │
+  │  2. Columnar Compression: segmentby 'tag_id', orderby 'time'│
+  │     (Up to 90-95% storage reduction)                        │
+  │  3. Window Aggregations: Dynamic min/max/avg downsampling   │
+  │  4. Automated Retention: 90-day sliding data lifecycle      │
+  └─────────────────────────────────────────────────────────────┘
+                 │
+                 ├─► Real-Time Multi-Tag Trend Dashboards
+                 ├─► Phase-Space Trajectory & ISA 18.2 Envelopes
+                 └─► Historical Upset Signature Mining (Fault Library)
+```
+
+### Key Historian Features
+* **Hypertable Time-Partitioning**: Telemetry samples are automatically partitioned into time-based chunks, maintaining sub-millisecond query performance across billions of data points.
+* **Segmented Columnar Compression**: Automatically compresses older chunks grouped by `tag_id` and ordered by `time DESC`, slashing disk usage by **up to 95%** while keeping compressed data directly queryable via SQL.
+* **Zero-Data-Loss Ingestion**: The `historian.sink` background worker batches stream events and issues transactional `COPY` operations before acknowledging messages (`XACK`), guaranteeing at-least-once delivery.
+* **Adaptive Backend**: Seamlessly connects to **Timescale Cloud** or self-hosted TimescaleDB, and automatically falls back to standard PostgreSQL tables when running in minimal environments.
+* **Fault Library Builder**: The diagnostic engine queries historical time-series baselines to extract multi-variate statistical excursion profiles during equipment trips.
 
 ---
 
 ## Architecture
 
 ```
-                       ┌──────────── UI (React) ────────────┐
-                       │  Ask · Graph · Alerts · Work Orders │
-                       │  TEP Simulation · Compliance · PTW │
-                       └───────────────┬────────────────────┘
-                                       │  HTTP + WebSocket / SSE
-                               ┌────────▼────────┐        ┌─────────────┐
-                               │  gateway :8000  │◄───────┤ MCP server  │
-                               │  modular routes │        │ (stdio)     │
-                               └────────┬────────┘        └─────────────┘
-               ┌───────────────────────┼──────────┐       └─────────────┘
-               │                       │          │
-       ┌───────▼──────┐        ┌───────▼───────┐  │  ┌──────────────┐
-       │ retrieval    │        │ Redis         │  └─►│ MinIO        │
-       │ :8001        │        │ telemetry bus │     │ raw documents│
-       │ PathRAG      │        │ cache · locks │     └──────────────┘
-       └───────┬──────┘        └───────┬───────┘
-               │                       │  celery queues
-               │        ┌──────────────┴───────────────────────┐
-               │   ingestion → extraction (6 lanes) → resolution → graphd
-               │        │                                          │
-               └────────┴──────────► Neo4j (the graph) ◄───────────┘
-                                           ▲
-                                     agents runtime & watchers
-                                     (tep-watcher · delta handler
-                                      → investigate → alert
-                                      → draft work order)
+                       ┌────────────── UI (React + Vite + PWA) ─────────────┐
+                       │  Ask · Graph · Alerts · Work Orders · Compliance   │
+                       │  TEP Simulation · MOC · Field Co-Pilot · Permits   │
+                       └────────────────────────┬───────────────────────────┘
+                                                │  HTTP + WebSocket / SSE
+                                        ┌───────▼────────┐        ┌─────────────┐
+                                        │  gateway :8000 │◄───────┤ MCP server  │
+                                        │  FastAPI edge  │        │ (stdio)     │
+                                        └───────┬────────┘        └─────────────┘
+                        ┌───────────────────────┼──────────────────────┬──────────────────────┐
+                        │                       │                      │                      │
+                ┌───────▼──────┐        ┌───────▼───────┐      ┌───────▼──────┐       ┌───────▼──────┐
+                │ retrieval    │        │ Redis         │      │ MinIO        │       │ TimescaleDB  │
+                │ :8001        │        │ telemetry bus │      │ raw documents│       │ hypertable   │
+                │ PathRAG      │        │ cache · locks │      └──────────────┘       │ historian    │
+                └───────┬──────┘        └───────┬───────┘                             └───────▲──────┘
+                        │                       │  celery queues                              │
+                        │        ┌──────────────┴───────────────────────┐                     │ COPY
+                        │   ingestion → extraction (6 lanes) → resolution → graphd            │ sink
+                        │        │                                          │                 │
+                        └────────┴──────────► Neo4j (the graph) ◄───────────┴─────────► telemetry-sink
+                                                    ▲
+                                              agents runtime & watchers
+                                              (tep-watcher · delta handler
+                                               → investigate → slack alert
+                                               → draft work order)
 ```
 
-**Hard rules**
+### Architectural Guardrails
 
-1. **Writes to Neo4j go through `graphd` only** — single writer, batched `UNWIND`, one graph version per batch.
-2. Extractors emit `CandidateSubgraph` — never DB writes.
-3. Every edge carries provenance `(doc_id, page/span, extractor_version, confidence, source)`.
-4. All async messaging over Redis; the pipeline topology is declared once in `plantmind_core.queues.Flow`.
-5. LLM access only via `plantmind_core.llm` — tiered cheap/mid/vision, retries, structured outputs.
+1. **Single Graph Writer (`graphd`)**: All writes to Neo4j execute through `graphd` via batched `UNWIND` transactions to guarantee deterministic graph versioning.
+2. **Durable Time-Series Ingestion**: Telemetry is streamed to Redis and persisted durably into **TimescaleDB** hypertables.
+3. **Provenance Preservation**: Every entity and edge stores `(doc_id, page/span, extractor_version, confidence, source)`.
+4. **Multi-Tier Model Client**: Primary execution on Vertex AI / high-throughput LLM endpoints with structured schema outputs and OpenRouter fallbacks.
+5. **Asynchronous Decoupling**: All inter-service pipelines and telemetry streaming operate over Redis streams and Celery message brokers.
 
 ---
 
@@ -90,41 +130,45 @@ Built for **ET AI Hackathon 2026, PS-8** (*Unified Asset & Operations Brain*).
 - **Docker Desktop** (running)
 - **Python 3.11+**
 - **Node 18+**
-- An **OpenRouter API key** (open-weight models: Qwen / DeepSeek)
+- Cloud Vertex AI credentials / API Keys (OpenRouter / OpenAI / Anthropic)
 
 ---
 
-## Setup
+## Environment Setup
 
-### 1. Configure
+### 1. Configure Environment Variables
 
 ```bash
-cd plantmind
 cp .env.example .env
 ```
 
-Edit `.env` — the only value you *must* set:
+Edit `.env`:
 
 ```ini
-OPENROUTER_API_KEY=sk-or-...
+# Cloud Vertex AI / LLM Configuration
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+
+# TimescaleDB / Industrial Historian (Optional - connects to Timescale Cloud / PostgreSQL)
+TIMESCALE_DSN=postgres://user:password@timescale-host:5432/plantmind
+
+# Slack Enterprise Webhook (Optional for live alert broadcasts)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00/B00/XXXX
+
+# Fallback OpenRouter API Key (Optional)
+OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
-Every other default works as-is. Docker Compose overrides the infra URLs to
-service names automatically, so **the same `.env` serves both run modes**.
+### 2. Cloud Vertex AI Authentication
 
-### 2. Python environment
+Authenticate your local environment with Application Default Credentials (ADC):
 
 ```bash
-python -m venv .venv
-.venv\Scripts\pip install -e libs\core[celery,dev]
-.venv\Scripts\pip install minio openpyxl fakeredis pypdfium2 pillow ^
-                          fastapi "uvicorn[standard]" python-multipart neo4j
-
-# put services/ on sys.path so `python -m graphd.tasks` works from anywhere
-echo <abs-path-to-repo>\services > .venv\Lib\site-packages\plantmind_services.pth
+gcloud auth application-default login
 ```
 
-### 3. Frontend
+### 3. Frontend Setup
 
 ```bash
 cd ui
@@ -134,150 +178,130 @@ cp .env.example .env      # VITE_GATEWAY_URL=http://localhost:8000
 
 ---
 
-## Running
+## Running the Application
 
-### Option A — everything in Docker (demo / judges)
+### Option A — Full Stack Docker Compose (Recommended)
 
 ```bash
 docker compose up --build
 ```
 
-Brings up infra, applies the Neo4j schema (`graph-init` runs once and exits —
-that's correct), seeds the TEP topology into Neo4j (`tep-seed`), starts the TEP physics simulator (`tep-sim`), TEP threshold watcher (`tep-watcher`), and all services. Gateway on `:8000`.
+Starts all database and application services:
+- **`plantmind-neo4j`**: Knowledge graph database on `:7474` / `:7687`
+- **`plantmind-redis`**: Event bus, alert streams, and cache on `:6379`
+- **`plantmind-minio`**: Object storage on `:9000` (Console `:9001`)
+- **`plantmind-gateway`**: Edge API on `:8000`
+- **`plantmind-retrieval`**: PathRAG engine on `:8001`
+- **`plantmind-agents-api` / `agents`**: Multi-agent diagnostic runtime
+- **`tep-sim` / `tep-watcher`**: Physics simulation & threshold watchers
 
-### Option B — local dev (recommended while building)
+### Option B — Local Development Mode
 
-Infra in Docker, services in your venv — no rebuild on code changes:
+Infra in Docker, Python services running locally for instant hot-reloading:
 
 ```bash
 python -m tools.serve
 ```
 
-One command: infra → schema → 6 celery workers → agents → retrieval:8001 →
-gateway:8000. `Ctrl+C` stops everything. Logs in `logs/`.
-
-### Then the UI
+Then start the React UI:
 
 ```bash
-cd ui && npm run dev        # http://localhost:5173
+cd ui
+npm run dev        # http://localhost:5173
 ```
-
-| Service | URL |
-|---|---|
-| UI | http://localhost:5173 |
-| Gateway (API) | http://localhost:8000 |
-| Retrieval | http://localhost:8001 |
-| TEP Simulator | http://localhost:8012 (proxied via `/sim/tep/*` on Gateway) |
-| Neo4j browser | http://localhost:7474 (`neo4j` / your `NEO4J_PASSWORD`) |
-| MinIO console | http://localhost:9001 |
 
 ---
 
-## Building the knowledge graph
+## Service Endpoints Map
 
-Ingest the sample corpus (42 documents across 3 plant units + TEP SOPs):
+| Service | Port / URL | Description |
+|---|---|---|
+| **Web UI** | `http://localhost:5173` | Unified Operations, Compliance & Simulation Dashboard |
+| **Gateway API** | `http://localhost:8000` | REST API, SSE Alert Stream, Slack Webhook Proxy |
+| **Retrieval Engine** | `http://localhost:8001` | PathRAG, Vector & Local Hybrid Search Service |
+| **TEP Physics Simulator** | `http://localhost:8012` | Tennessee Eastman Process simulation engine |
+| **Neo4j Browser** | `http://localhost:7474` | Cypher query console (`neo4j` / `password`) |
+| **MinIO Console** | `http://localhost:9001` | Object storage browser (`minioadmin` / `minioadmin`) |
+
+---
+
+## Ingesting & Building the Knowledge Graph
+
+Ingest plant documents (P&IDs, maintenance logs, inspection sheets, SOPs):
 
 ```bash
 python -m tools.build_kg data/samples
 ```
 
-Prints the pipeline topology, submits every file, watches the queues drain and
-reports what landed. Re-runs are safe — the content-hash gate drops duplicates.
-
-Cheap first spin (no LLM calls — tables parse deterministically):
+Fast table-only ingestion (deterministic CSV extraction without LLM calls):
 
 ```bash
 python -m tools.build_kg data/samples/work_orders.csv data/samples/inspection_records.csv
 ```
 
-Or drop a file into `data/inbox/` and the folder connector syncs it on schedule.
-
-> **Re-ingesting after a wipe?** The content-hash gate lives in Redis. If Neo4j
-> was cleared but Redis was not, every document is dropped as a duplicate and
-> the graph stays empty. Clear the gate first:
-> `docker compose exec -T redis redis-cli FLUSHALL`
+To sync new files on a schedule, place documents directly into `data/inbox/`.
 
 ---
 
-## Evaluating
+## Evaluation & Benchmarks
+
+Run the golden evaluation benchmark (28 multi-hop operational & root-cause questions):
 
 ```bash
-python -m eval.run_eval                  # 28 golden questions, as deployed
-python -m eval.run_eval --limit 3        # quick spin
+python -m eval.run_eval
 ```
 
-Reports answer accuracy (LLM judge), citation hit rate, mode-routing accuracy
-and mean time-to-answer. Results land in `eval/results/`.
-
-**Retrieval ablation** — the same questions forced through each strategy, so
-retrieval is the only variable:
+Run retrieval strategy ablations (**Vector** vs. **Local** vs. **PathRAG**):
 
 ```bash
-python -m eval.run_ablation              # vector vs local vs path
 python -m eval.run_ablation --modes vector,path
-python -m eval.run_ablation --limit 5
 ```
-
-The answer cache is disabled per arm (a cache hit would make every arm look
-identical) and questions that link no entity fall back to vector retrieval and
-are counted, so no arm is credited for questions it did not handle. Accuracy is
-also broken down by the question's intended mode — path retrieval should beat
-the baseline on multi-hop causal questions and roughly tie on single-fact
-lookups, which is what confirms the router is not paying traversal cost for
-nothing.
 
 ---
 
 ## Testing
 
-```bash
-python -m pytest -q        # 405 tests, all offline (no API keys, no infra)
-```
+Run the full offline test suite (405 passing tests with zero cloud dependencies):
 
-Every external dependency is faked — Redis via `fakeredis`, Neo4j/LLM/MinIO via
-injected test doubles.
+```bash
+pytest -q
+```
 
 ---
 
-## Repo layout
+## Repository Structure
 
 ```
-libs/core/          shared package (plantmind_core)
-  ├── schemas/      pydantic contracts — the only shapes crossing services
-  ├── queues/       Route + Flow: the pipeline topology, declared once
-  ├── bus/          RedisBus: queues, locks, streams, cursors
-  ├── cache/        AnswerCache: semantic answer cache
-  ├── llm/          tiered client, structured outputs, ToolAgent
-  └── storage/      ObjectStore (MinIO)
-
-services/<name>/    service.py (pure logic) + tasks.py (celery adapter)
-  ingestion/        hash gate → classify → route
-  extraction/       6 lanes: table, text, pnid, manual, mail, imaging
-  resolution/       canonical ids
-  graphd/           SOLE Neo4j writer + denoise
-  retrieval/        linker → router → pathfinder → pruner → assembler
-  simulation/       unified simulation engine (TEP physics model, controllers, runner)
-  agents/           modularized runtime:
-                    ├── handlers/ (delta, tep_alarm, process_limit)
-                    ├── watchers/ (failure, tep, cstr, column)
-                    ├── consumer.py (event loop runtime)
-                    └── main.py (API endpoints)
-  gateway/          the edge API:
-                    ├── routes/
-                    │   ├── simulation/ (envelopes, proxy, ws, idv)
-                    │   └── (qa, moc, documents, graph, permit, reports, compliance)
-                    └── main.py
-  connectors/       scheduled data-source sync
-  interview/        knowledge capture (voice + graph-aware questioning)
-  mcp_server/       MCP tools over stdio
-
-infra/              containers.py, celery_workers.py, autoscaler, docker/, neo4j/
-tools/              serve.py, build_kg.py, autoscale.py
-config/             tep_envelopes.json (ISA 18.2 operating envelopes)
-eval/               golden QA set, runner, retrieval ablation
-docs/               architecture reports, demo script
-data/samples/       the demo corpus (TEP SOPs, P&IDs, inspection records)
-ui/                 React + Vite + Vanilla CSS + D3 P&ID canvas
+plantmind/
+├── libs/
+│   └── core/                     # plantmind_core shared library
+│       ├── bus/                  # RedisBus, streams, alert pub/sub
+│       ├── cache/                # Semantic AnswerCache
+│       ├── llm/                  # Vertex AI / Gemini multi-tier client
+│       ├── notify/               # SlackNotifier & webhook dispatchers
+│       ├── queues/               # Pipeline Route & Flow definitions
+│       ├── schemas/              # Pydantic data contracts
+│       └── storage/              # MinIO ObjectStore client
+├── services/
+│   ├── agents/                   # Multi-agent diagnostic runtime & watchers
+│   ├── extraction/               # 6 extraction lanes (table, text, P&ID, OCR)
+│   ├── gateway/                  # FastAPI edge proxy & Slack endpoints
+│   ├── graphd/                   # Sole Neo4j writer & deduplication engine
+│   ├── ingestion/                # Document classification & content-hash gate
+│   ├── interview/                # Voice knowledge capture service
+│   ├── mcp_server/               # Stdio Model Context Protocol tools
+│   ├── resolution/               # Entity resolution & canonical IDs
+│   ├── retrieval/                # PathRAG causal search & hybrid answerer
+│   └── simulation/               # TEP physics simulator & PID controllers
+├── ui/                           # React + Vite + Vanilla CSS frontend
+│   ├── src/
+│   │   ├── auth/                 # Persona routing & auth context
+│   │   ├── components/           # AlertCard, DocumentViewer, P&ID canvas
+│   │   ├── pages/app/            # Dashboard, Ask, Alerts, Compliance, Sim
+│   │   └── pages/field/          # Field Co-Pilot & mobile checklist PWA
+├── infra/                        # Dockerfiles, Celery configs, Neo4j schema
+├── data/samples/                 # Plant sample corpus (P&IDs, SOPs, CSVs)
+└── eval/                         # Golden QA benchmark & ablation harness
 ```
 
 ---
