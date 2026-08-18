@@ -120,7 +120,14 @@ export default function Simulation() {
         });
       } else if (msg.type === "investigation") {
         setInvestigations((prev) => {
-          if (prev.some(i => i.alert_ref === msg.alert_ref)) return prev;
+          const diagId = msg.diagnosis_id || msg.alert_ref || msg.id;
+          if (!diagId) return [msg, ...prev];
+          const idx = prev.findIndex(i => (i.diagnosis_id && i.diagnosis_id === diagId) || (i.alert_ref && i.alert_ref === diagId) || (i.id && i.id === diagId));
+          if (idx >= 0) {
+            const copy = [...prev];
+            copy[idx] = { ...copy[idx], ...msg };
+            return copy;
+          }
           return [msg, ...prev];
         });
       } else if (msg.type === "diagnosis") {
@@ -331,7 +338,7 @@ export default function Simulation() {
             )}
 
             {activeTab === "diagnose" && (
-              <DiagnosePanel diagnoses={diagnoses} />
+              <DiagnosePanel diagnoses={diagnoses} investigations={investigations} />
             )}
 
             {activeTab === "historian" && (

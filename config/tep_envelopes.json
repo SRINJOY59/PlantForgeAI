@@ -146,18 +146,6 @@
   "PRODUCT-SPLIT.Purity": {
     "ll": 70.0, "l": 85.0, "setpoint": 98.0, "h": 100.0, "hh": 100.0,
     "min": 85.0, "max": 100.0
-  },
-
-  "MV.D-FEED":        {"ll": 0.0, "l": 10.0, "setpoint": 63.053, "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.E-FEED":        {"ll": 0.0, "l": 10.0, "setpoint": 53.98,  "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.A-FEED":        {"ll": 0.0, "l": 10.0, "setpoint": 51.13,  "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.AC-FEED":       {"ll": 0.0, "l": 10.0, "setpoint": 50.39,  "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.COMP-RECYCLE":  {"ll": 0.0, "l": 10.0, "setpoint": 50.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.PURGE":         {"ll": 0.0, "l": 5.0,  "setpoint": 22.21,  "h": 70.0, "hh": 90.0,  "min": 5.0,  "max": 70.0},
-  "MV.SEP-LIQ-OUT":   {"ll": 0.0, "l": 10.0, "setpoint": 30.64,  "h": 80.0, "hh": 95.0,  "min": 10.0, "max": 80.0},
-  "MV.STRIP-LIQ-IN":  {"ll": 0.0, "l": 10.0, "setpoint": 47.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.STRIP-STEAM":   {"ll": 0.0, "l": 10.0, "setpoint": 45.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.REACTOR-COOL":  {"ll": 0.0, "l": 10.0, "setpoint": 50.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.COND-COOL":     {"ll": 0.0, "l": 10.0, "setpoint": 47.446, "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0},
-  "MV.PRODUCT-SPLIT": {"ll": 0.0, "l": 10.0, "setpoint": 40.0,   "h": 90.0, "hh": 100.0, "min": 10.0, "max": 90.0}
+  }
 }
+

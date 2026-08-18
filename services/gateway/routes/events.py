@@ -1,11 +1,11 @@
 """The agent alert stream, fanned out to browsers over SSE."""
 
 import json
-
+import httpx
 from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 
-from gateway.deps import get_service, sse
+from gateway.deps import get_service, sse, get_agents_http
 
 router = APIRouter()
 
@@ -30,3 +30,11 @@ async def alerts(after: str = "$", svc=Depends(get_service)):
                 cursor = entry_id
                 yield sse("alert", {"id": entry_id, **json.loads(payload)})
     return StreamingResponse(events(), media_type="text/event-stream")
+
+
+@router.get("/initial-alerts")
+async def initial_alerts(http: httpx.AsyncClient = Depends(get_agents_http)):
+    """Return real equipment failure patterns discovered from the knowledge graph."""
+    resp = await http.get("/failures")
+    return Response(content=resp.content, status_code=resp.status_code,
+                    media_type="application/json")

@@ -294,7 +294,11 @@ class DiagnosticsRuntime:
             matches=result.matches,
             graph_version=self._bus.graph_version(),
         )
-        self._bus.publish_diagnosis(diagnosis.model_dump_json())
+        diag_json = diagnosis.model_dump_json()
+        self._bus.publish_diagnosis(diag_json)
+        # index it too, so an operator can later ask for an LLM RCA of this exact
+        # episode and the agents runtime can fetch the whole diagnosis by id
+        self._bus.index_diagnosis(diagnosis.id, diag_json)
         log.info("diagnosis published", tag=episode.tag,
                  deviations=len(result.signature.deviations),
                  candidates=len(result.matches),

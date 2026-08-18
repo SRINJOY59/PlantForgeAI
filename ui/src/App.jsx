@@ -2,7 +2,9 @@ import React, { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import RoleRoute from "./auth/RoleRoute";
+import { ConsoleOnly, WorkerOnly } from "./auth/PersonaRoute";
 import AppShell from "./components/shell/AppShell";
+import FieldShell from "./components/field/FieldShell";
 
 // Lightweight pages (loaded instantly)
 import Landing from "./pages/Landing";
@@ -25,6 +27,8 @@ const Permits = React.lazy(() => import("./pages/app/Permits"));
 const WorkOrders = React.lazy(() => import("./pages/app/WorkOrders"));
 const Simulation = React.lazy(() => import("./pages/app/Simulation"));
 const FaultLibrary = React.lazy(() => import("./pages/app/FaultLibrary"));
+const FieldCopilot = React.lazy(() => import("./pages/field/FieldCopilot"));
+const FieldAsk = React.lazy(() => import("./pages/field/FieldAsk"));
 
 const Suspended = ({ children }) => (
   <Suspense fallback={<div className="flex h-full items-center justify-center p-8 text-slate-500">Loading...</div>}>
@@ -38,11 +42,29 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
+      {/* Field worker persona — its own mobile shell, gated so only workers
+          land here and workers never reach the engineer console below. */}
+      <Route
+        path="/field"
+        element={
+          <ProtectedRoute>
+            <WorkerOnly>
+              <FieldShell />
+            </WorkerOnly>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Suspended><FieldCopilot /></Suspended>} />
+        <Route path="ask" element={<Suspended><FieldAsk /></Suspended>} />
+      </Route>
+
       <Route
         path="/app"
         element={
           <ProtectedRoute>
-            <AppShell />
+            <ConsoleOnly>
+              <AppShell />
+            </ConsoleOnly>
           </ProtectedRoute>
         }
       >

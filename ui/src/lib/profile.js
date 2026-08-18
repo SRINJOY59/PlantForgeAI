@@ -5,9 +5,22 @@
 import { supabase, supabaseEnabled } from "./supabase";
 
 export const JOB_TITLES = [
-  "Reliability Engineer", "Process Engineer", "Maintenance Planner",
-  "Inspection Engineer", "Shift Supervisor", "Instrumentation Engineer",
-  "Plant Manager", "HSE Officer",
+  "Field Worker",
+  "Field Operator",
+  "Field Technician",
+  "Maintenance Technician",
+  "Instrument Technician",
+  "Mechanical Fitter",
+  "Electrician",
+  "Control Room Operator",
+  "Shift Supervisor",
+  "Reliability Engineer",
+  "Process Engineer",
+  "Instrumentation Engineer",
+  "Maintenance Planner",
+  "Inspection Engineer",
+  "HSE Officer",
+  "Plant Manager",
 ];
 
 export const DEPARTMENTS = [

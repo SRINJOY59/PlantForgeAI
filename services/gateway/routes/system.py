@@ -18,3 +18,21 @@ def metrics(svc=Depends(get_service), user=Depends(current_user)):
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@router.get("/system/slack/status")
+def slack_status():
+    from plantmind_core.notify import SlackNotifier
+    notifier = SlackNotifier.from_settings()
+    return {"enabled": notifier.enabled, "configured": bool(notifier._url)}
+
+
+@router.post("/system/slack/test")
+def slack_test(user=Depends(current_user)):
+    from plantmind_core.notify import SlackNotifier
+    notifier = SlackNotifier.from_settings()
+    if not notifier.enabled:
+        return {"success": False, "detail": "Slack webhook is not configured or disabled in .env"}
+    name = user.get("full_name") or user.get("email") or "Plant Engineer"
+    sent = notifier.post_test(user_name=name)
+    return {"success": sent, "detail": "Notification sent" if sent else "Failed to post to Slack webhook"}

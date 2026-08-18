@@ -82,6 +82,13 @@ class AnswerCache:
                 removed += 1
         return removed
 
+    def clear(self) -> int:
+        """Purge all cached question-answer entries and their LRU index."""
+        count = self._r.hlen(keys.ANSWER_CACHE) if self._r.exists(keys.ANSWER_CACHE) else 0
+        self._r.delete(keys.ANSWER_CACHE)
+        self._r.delete(keys.ANSWER_CACHE_LRU)
+        return count
+
     def _evict(self):
         while self._r.hlen(keys.ANSWER_CACHE) > self._max:
             oldest = self._r.zpopmin(keys.ANSWER_CACHE_LRU, 1)

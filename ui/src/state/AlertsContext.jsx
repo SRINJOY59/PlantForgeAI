@@ -1,23 +1,16 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { subscribeAlerts } from "../lib/api";
+import { subscribeAlerts, getCompliance, getInitialAlerts } from "../lib/api";
 
 const AlertsContext = createContext(null);
 
-// How many events the feed holds. The stream is replayed from the start on
-// connect, so this is a window on the newest end of it, not a quota.
 const FEED_LIMIT = 200;
 
-// The simulator's process alarms and the RCA investigations that answer them
-// share alerts:critical with the agent alerts — one stream, deliberately, so
-// the Simulation page can tail both from its own socket. They do not belong on
-// this feed, and not merely because they are noise: a single fault injection
-// puts dozens of tag-level entries on the stream, and since the feed keeps the
-// newest N, an afternoon of simulator work silently evicts every compliance
-// and failure-pattern alert from the page whose whole job is to show them.
-// Simulation traffic is shown on the Simulation page, which has the tag
-// context to make sense of it.
 const isSimulationEvent = (a) =>
-  a?.kind === "process_limit" || a?.type === "investigation";
+  a?.kind === "process_limit" ||
+  a?.type === "investigation" ||
+  a?.fingerprint?.startsWith("tep:") ||
+  a?.fingerprint?.startsWith("cstr:") ||
+  a?.fingerprint?.startsWith("column:");
 
 export function AlertsProvider({ children }) {
   const [alerts, setAlerts] = useState([]);
@@ -25,14 +18,47 @@ export function AlertsProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const seen = useRef(new Set());
 
+  // Load real statutory compliance and graph failure patterns dynamically
+  useEffect(() => {
+    Promise.all([
+      getCompliance().catch(() => ({ items: [] })),
+      getInitialAlerts().catch(() => []),
+    ]).then(([complianceData, graphFailures]) => {
+      const complianceAlerts = (complianceData?.items || [])
+        .filter((item) => item.status === "overdue" || item.status === "due_soon")
+        .map((item) => ({
+          id: item.id,
+          title: `Statutory Inspection Overdue: ${item.equipment} (${item.standard})`,
+          body: `**Obligation**: ${item.inspection_type} under **${item.standard}**.\n\n* **Asset**: \`${item.equipment}\`\n* **Due Date**: **${item.next_due}** (Past Due)\n* **Last Done**: ${item.last_inspection || "N/A"}\n\nImmediate maintenance action required to maintain statutory operating compliance.`,
+          kind: item.standard?.includes("OISD") || item.standard?.includes("IBR") ? "compliance" : "standard_revision",
+          severity: item.status === "overdue" ? "critical" : "warning",
+          equipment: item.equipment,
+          standard: item.standard,
+          doc_id: item.doc_id,
+          page: item.page,
+          verified: true,
+        }));
+
+      setAlerts((prev) => {
+        const combined = [...prev];
+        for (const a of [...complianceAlerts, ...(graphFailures || [])]) {
+          if (!isSimulationEvent(a) && !seen.current.has(a.id)) {
+            seen.current.add(a.id);
+            combined.push(a);
+          }
+        }
+        return combined.slice(0, FEED_LIMIT);
+      });
+    });
+  }, []);
+
+  // Listen to real-time live plant events (filtering out transient simulation noise)
   useEffect(() => {
     let stop = () => {};
     try {
       stop = subscribeAlerts((alert) => {
         if (seen.current.has(alert.id)) return;
         seen.current.add(alert.id);
-        // connected tracks the socket, so it is set for every event that
-        // arrives — including the ones this feed then drops
         setConnected(true);
         if (isSimulationEvent(alert)) return;
         setAlerts((prev) => [alert, ...prev].slice(0, FEED_LIMIT));

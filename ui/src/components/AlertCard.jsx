@@ -108,24 +108,56 @@ export default function AlertCard({ alert, onOpenDoc }) {
         </Link>
       )}
 
-      {alert.citations?.length > 0 && (
+      {alert.kind === "compliance" && (
+        <Link to="/app/compliance"
+          className="mt-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors"
+          style={{ background: "var(--bg-subtle)", color: "var(--text-md)",
+                   border: "1px solid var(--border)" }}>
+          <ShieldAlert size={11} style={{ color: "#d97706" }} />
+          Statutory inspection required — view compliance position & schedule inspection
+          <ExternalLink size={9} style={{ color: "var(--muted-lt)" }} />
+        </Link>
+      )}
+
+      {(alert.citations?.length > 0 || alert.doc_id) && (
         <div className="mt-3">
           <p className="mb-1 text-[9px] font-semibold uppercase tracking-widest"
             style={{ color: "var(--muted-lt)" }}>
             {fromWeb ? "Your documents that cite this standard" : "Sources"}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {alert.citations.map((c, i) => (
-              <button key={i} type="button" onClick={() => onOpenDoc?.(c.doc_id, c.filename)}
-                className="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors"
-                style={{ background: "var(--brand-light)", color: "var(--brand-dark)", border: "1px solid var(--brand-mid)" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--brand-mid)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "var(--brand-light)"; }}
-                title={c.doc_id}>
-                <ExternalLink size={9} />
-                {c.filename || c.doc_id}
-              </button>
-            ))}
+            {alert.citations && alert.citations.length > 0 ? (
+              alert.citations.map((c, i) => {
+                const label = c.filename || alert.filename || alert.standard || "Document";
+                return (
+                  <button key={i} type="button" onClick={() => onOpenDoc?.(c.doc_id, label)}
+                    className="flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[10px] transition-colors"
+                    style={{ background: "var(--brand-light)", color: "var(--brand-dark)", border: "1px solid var(--brand-mid)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--brand-mid)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "var(--brand-light)"; }}
+                    title={c.doc_id}>
+                    <ExternalLink size={9} />
+                    {label} {c.page ? `(p.${c.page})` : ""}
+                  </button>
+                );
+              })
+            ) : alert.doc_id ? (
+              (() => {
+                const label = alert.filename || alert.standard || "Document";
+                const modalFilename = alert.filename || (alert.standard ? `${alert.standard}.pdf` : "Document.txt");
+                return (
+                  <button type="button" onClick={() => onOpenDoc?.(alert.doc_id, modalFilename)}
+                    className="flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[10px] transition-colors"
+                    style={{ background: "var(--brand-light)", color: "var(--brand-dark)", border: "1px solid var(--brand-mid)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--brand-mid)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "var(--brand-light)"; }}
+                    title={alert.doc_id}>
+                    <ExternalLink size={9} />
+                    {label} {alert.page ? `(p.${alert.page})` : ""}
+                  </button>
+                );
+              })()
+            ) : null}
           </div>
         </div>
       )}

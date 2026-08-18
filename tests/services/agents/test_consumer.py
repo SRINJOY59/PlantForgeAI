@@ -51,11 +51,12 @@ def seal_leak_reader():
     return r
 
 
-def runtime(reader):
+def runtime(reader, auto_rca=True):
     bus = RedisBus(fakeredis.FakeRedis(decode_responses=True))
     inv = StubInvestigator()
     return bus, inv, AgentsRuntime(bus, reader, investigator=inv,
-                                   compliance_interval=10_000, block_ms=0)
+                                   compliance_interval=10_000, block_ms=0,
+                                   auto_rca=auto_rca)
 
 
 def alerts_on(bus):
@@ -204,6 +205,104 @@ def test_investigation_is_not_investigated():
     assert route(rt, json.dumps(
         {"type": "investigation", "kind": "process_limit",
          "tag_id": "REACTOR.T", "summary": "..."})) is None
+
+
+def test_a_sim_alarm_is_not_auto_investigated_when_auto_rca_is_off():
+    """The new default: a process-limit alarm from a simulator is answered by the
+    diagnostics service, not by an automatic LLM call. Routing declines it."""
+    _, _, rt = runtime(seal_leak_reader(), auto_rca=False)
+    assert route(rt, tep_alarm_payload()) is None
+    assert route(rt, json.dumps(
+        {"kind": "process_limit", "tag_id": "CSTR.T", "rule": "T_HIGH"})) is None
+
+
+# --- on-demand RCA ----------------------------------------------------------
+class _DiagInvestigator:
+    """An investigator that records the grounding it was handed."""
+    def __init__(self):
+        self.calls = []
+
+    async def investigate_reasoned(self, trigger, alert_context=None):
+        self.calls.append((trigger, alert_context))
+        return Alert(kind="failure_pattern", severity="warning",
+                     title=f"{trigger.tag}", body="root cause narrative",
+                     equipment=trigger.tag, citations=[Citation(doc_id="d", snippet="")],
+                     fingerprint=f"failure:{trigger.tag}:x:1", verified=True), None
+
+
+def _diag(**over):
+    d = {
+        "id": "diag:1:REACTOR.T", "trigger_tag": "REACTOR.T", "trigger_level": "HH",
+        "signature": {"deviations": [
+            {"tag_id": "REACTOR.T", "direction": "high", "magnitude": 12.0,
+             "onset_offset_s": 1.0, "first_mover_rank": 0}]},
+        "matches": [{"fault_mode_id": "faultmode:IDV-4", "cause_id": "IDV-4",
+                     "cause_label": "coolant step", "confidence": 0.9}],
+    }
+    d.update(over)
+    return d
+
+
+def ondemand_runtime():
+    bus = RedisBus(fakeredis.FakeRedis(decode_responses=True))
+    inv = _DiagInvestigator()
+    rt = AgentsRuntime(bus, FakeAgentReader(), investigator=inv,
+                       compliance_interval=10_000, block_ms=0)
+    return bus, inv, rt
+
+
+def test_on_demand_rca_investigates_an_indexed_diagnosis_with_its_grounding():
+    bus, inv, rt = ondemand_runtime()
+    diag = _diag()
+    bus.index_diagnosis(diag["id"], json.dumps(diag))
+    bus.request_rca(diag["id"])
+
+    rt.tick_rca_requests()
+
+    assert len(inv.calls) == 1
+    trigger, ctx = inv.calls[0]
+    assert trigger.tag == "REACTOR"                       # the unit area
+    assert ctx["diagnosis"]["matched_fault"] == "IDV-4"   # grounded in the diagnosis
+    assert ctx["diagnosis"]["cascade"][0]["tag"] == "REACTOR.T"
+
+    invs = [json.loads(p) for _, p in bus.read_alerts(block_ms=0)
+            if json.loads(p).get("type") == "investigation"]
+    assert len(invs) == 1
+    assert invs[0]["diagnosis_id"] == "diag:1:REACTOR.T"
+    assert invs[0]["matched_fault"] == "IDV-4"
+    assert "root cause" in invs[0]["summary"]
+
+
+def test_on_demand_rca_runs_once_per_diagnosis():
+    bus, inv, rt = ondemand_runtime()
+    diag = _diag()
+    bus.index_diagnosis(diag["id"], json.dumps(diag))
+    bus.request_rca(diag["id"])
+    bus.request_rca(diag["id"])                           # double click
+
+    rt.tick_rca_requests()
+
+    assert len(inv.calls) == 1                            # claimed once
+
+
+def test_on_demand_rca_skips_a_request_for_an_unknown_diagnosis():
+    bus, inv, rt = ondemand_runtime()
+    bus.request_rca("diag:never:indexed")
+
+    rt.tick_rca_requests()
+
+    assert inv.calls == []
+
+
+def test_indexed_diagnosis_round_trips_and_is_ttl_bounded():
+    """The index is one key per diagnosis with an expiry, so it self-reclaims
+    instead of growing forever the way a hash field (no TTL) would."""
+    bus = RedisBus(fakeredis.FakeRedis(decode_responses=True))
+    bus.index_diagnosis("diag:1:REACTOR.T", '{"id": "diag:1:REACTOR.T"}')
+
+    assert bus.get_indexed_diagnosis("diag:1:REACTOR.T") == '{"id": "diag:1:REACTOR.T"}'
+    ttl = bus._r.ttl("diagnoses:index:diag:1:REACTOR.T")
+    assert ttl and ttl > 0            # bounded lifetime, not permanent
 
 
 def test_malformed_payload_is_skipped_not_raised():

@@ -37,3 +37,14 @@ async def schedule(request: ScheduleRequest,
     resp = await http.post("/compliance/schedule", json=request.model_dump())
     return Response(content=resp.content, status_code=resp.status_code,
                     media_type="application/json")
+
+
+@router.post("/compliance/notify-slack", dependencies=[require_role("engineer")])
+async def notify_slack(item: dict):
+    """Post an overdue statutory compliance alert directly to Slack."""
+    from plantmind_core.notify import SlackNotifier
+    notifier = SlackNotifier.from_settings()
+    if not notifier.enabled:
+        return {"success": False, "detail": "Slack webhook is not configured or disabled in .env"}
+    sent = notifier.post_compliance_alert(item)
+    return {"success": sent, "detail": "Alert posted to Slack" if sent else "Failed to send to Slack"}

@@ -26,6 +26,12 @@ from plantmind_core.config import get_settings
 MAX_BLOCK_MS = 15000
 SOCKET_TIMEOUT_S = MAX_BLOCK_MS / 1000 + 5
 
+# How long a published diagnosis stays fetchable by id for an on-demand RCA.
+# A day: long enough that an operator can investigate any diagnosis still on the
+# panel, short enough that the index self-reclaims and never outgrows the
+# (capped) diagnoses:live stream it mirrors.
+DIAGNOSIS_INDEX_TTL_S = 86400
+
 
 class RedisBus:
     def __init__(self, client, async_client=None):
@@ -147,6 +153,45 @@ class RedisBus:
     def publish_diagnosis(self, diagnosis_json: str) -> str:
         return self._r.xadd(keys.DIAGNOSES_STREAM, {"payload": diagnosis_json},
                             maxlen=5000, approximate=True)
+
+    def index_diagnosis(self, diag_id: str, diagnosis_json: str,
+                        ttl_seconds: int = DIAGNOSIS_INDEX_TTL_S) -> None:
+        """Keep each diagnosis by id so an on-demand RCA can fetch the whole
+        thing later without scanning the stream.
+
+        One key per diagnosis with a TTL, not one growing hash: a hash field has
+        no expiry, so an id -> json hash would grow for the life of the redis
+        volume while the diagnoses:live stream it mirrors is capped. Keyed with a
+        TTL, redis reclaims each entry on its own - a diagnosis stays
+        investigable for ttl_seconds, which is as long as it is on screen
+        anyway - and the index can never outgrow the stream."""
+        self._r.set(f"{keys.DIAGNOSES_INDEX}:{diag_id}", diagnosis_json,
+                    ex=ttl_seconds)
+
+    def get_indexed_diagnosis(self, diag_id: str) -> str | None:
+        return self._r.get(f"{keys.DIAGNOSES_INDEX}:{diag_id}")
+
+    # on-demand LLM RCA: the UI asks, the agents runtime answers ---------------
+    def request_rca(self, diag_id: str) -> str:
+        """Enqueue an LLM investigation of one diagnosis. Deliberately a stream,
+        not a direct call: the gateway stays thin and the agents runtime, which
+        already owns the investigator, picks the work up on its own loop."""
+        return self._r.xadd(keys.RCA_REQUESTS_STREAM,
+                            {"payload": json.dumps({"diagnosis_id": diag_id})},
+                            maxlen=1000, approximate=True)
+
+    def read_rca_requests(self, after_id: str = "0", block_ms: int = 0) -> list:
+        return self._read_stream(keys.RCA_REQUESTS_STREAM, after_id, block_ms)
+
+    def claim_rca_request(self, diag_id: str, ttl_seconds: int = 3600) -> bool:
+        """First worker to claim a diagnosis runs its RCA; a redelivery or a
+        double-click on the button does not run a second one."""
+        key = f"rca:ondemand:{diag_id}"
+        return bool(self._r.set(key, "1", nx=True, ex=ttl_seconds))
+
+    def release_rca_request(self, diag_id: str) -> None:
+        """Undo the claim after a failed investigation so it can be retried."""
+        self._r.delete(f"rca:ondemand:{diag_id}")
 
     def read_diagnoses(self, after_id: str = "0", block_ms: int = 15000) -> list:
         return self._read_stream(keys.DIAGNOSES_STREAM, after_id, block_ms)

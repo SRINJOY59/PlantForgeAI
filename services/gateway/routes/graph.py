@@ -25,3 +25,12 @@ async def graphql_proxy(request: Request,
                            headers={"content-type": "application/json"})
     return Response(content=resp.content, status_code=resp.status_code,
                     media_type="application/json")
+
+
+@router.get("/graphql", dependencies=[require_role("engineer")])
+async def graphql_playground(http: httpx.AsyncClient = Depends(get_http)):
+    """Forward the GraphiQL IDE. Only POST was proxied, so the interactive
+    explorer 404'd through the gateway even though the query path worked."""
+    resp = await http.get("/graphql", headers={"accept": "text/html"})
+    return Response(content=resp.content, status_code=resp.status_code,
+                    media_type=resp.headers.get("content-type", "text/html"))

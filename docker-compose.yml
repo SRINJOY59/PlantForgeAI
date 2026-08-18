@@ -11,6 +11,16 @@ x-service-base: &svc
     AGENTS_URL: http://agents-api:8002
     CSTR_SIM_URL: http://cstr-sim:8010
     COLUMN_SIM_URL: http://column-sim:8011
+    GOOGLE_CLOUD_PROJECT: ${GCP_PROJECT:-project-1e232997-e446-4263-977}
+    CLOUDSDK_CORE_PROJECT: ${GCP_PROJECT:-project-1e232997-e446-4263-977}
+  volumes:
+    - ${APPDATA:-~}/gcloud:/root/.config/gcloud:ro
+    # FastEmbed pulls the BAAI/bge model from HuggingFace on first use (~30s).
+    # fastembed 0.8 caches under the system temp dir (/tmp/fastembed_cache), not
+    # ~/.cache/huggingface - so the volume must target that exact path or the
+    # model re-downloads on every recreate. A shared named volume persists it,
+    # so only the first start on a fresh volume pays the download.
+    - hf_cache:/tmp/fastembed_cache
   depends_on:
     redis: { condition: service_healthy }
     neo4j: { condition: service_healthy }
@@ -95,6 +105,12 @@ services:
       args: { SERVICE: gateway }
     command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000 --workers ${GATEWAY_WORKERS:-2}
     ports: ["8000:8000"]
+    # the field asset picker falls back to the TEP envelope file when the sim
+    # has not published sim:limits to redis yet
+    volumes:
+      - ${APPDATA:-~}/gcloud:/root/.config/gcloud:ro
+      - hf_cache:/tmp/fastembed_cache
+      - ./config:/srv/config:ro
 
   ingestion:
     <<: *worker
@@ -151,6 +167,7 @@ services:
     volumes:
       - ./connectors.json:/srv/connectors.json:ro
       - ./data/inbox:/srv/data/inbox
+      - ${APPDATA:-~}/gcloud:/root/.config/gcloud:ro
     # beat drives scheduled data-source syncs into the pipeline
     command: celery -A connectors.tasks worker -Q q_connectors -c 2 -B --loglevel=info
 
@@ -208,6 +225,7 @@ services:
     ports: ["8003:8002"]
     volumes:
       - ./data/interviews:/srv/data/interviews
+      - ${APPDATA:-~}/gcloud:/root/.config/gcloud:ro
 
   # watches queue depth and scales the worker services to match. It is the one
   # service that talks to the docker daemon rather than to redis alone, which
@@ -302,3 +320,4 @@ volumes:
   neo4j_data:
   redis_data:
   minio_data:
+  hf_cache:

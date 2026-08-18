@@ -1,8 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase, supabaseEnabled } from "../lib/supabase";
+import { roleFromJwt, WORKER_ROLE } from "../auth/useRole";
 import { Eye, EyeOff } from "lucide-react";
 import { Wordmark } from "../components/Logo";
+
+// Send each persona to its home. A worker lands on the Field Copilot; everyone
+// else on the engineer console. Decoded from the fresh token so there is no
+// flash of the wrong shell (the persona guards would catch it either way).
+function homeFor(session) {
+  const role = session?.access_token ? roleFromJwt(session.access_token) : null;
+  return role === WORKER_ROLE ? "/field" : "/app";
+}
 
 export default function Login() {
   const nav = useNavigate();
@@ -16,10 +25,10 @@ export default function Login() {
     e.preventDefault();
     if (!supabaseEnabled) return nav("/app");
     setBusy(true); setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) setError(error.message);
-    else nav("/app");
+    else nav(homeFor(data?.session));
   }
 
   return (

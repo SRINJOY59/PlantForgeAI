@@ -15,8 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from plantmind_core.config import get_settings
 from gateway import deps
 from gateway.auth import current_user
-from gateway.routes import (compliance, diagnostics, documents, events, graph,
-                            moc, permit, qa, reports, simulation, system,
+from gateway.routes import (compliance, diagnostics, documents, events, field,
+                            graph, moc, permit, qa, reports, simulation, system,
                             work_orders)
 from gateway.security import SecurityHeadersMiddleware, cors_origins
 from gateway.service import GatewayService
@@ -62,5 +62,6 @@ app.include_router(work_orders.router, dependencies=protected)
 app.include_router(reports.router, dependencies=protected)
 app.include_router(compliance.router, dependencies=protected)
 app.include_router(diagnostics.router, dependencies=protected)
+app.include_router(field.router, dependencies=protected)
 app.include_router(simulation.router)
 app.include_router(system.router)   # /health must stay open for healthchecks
