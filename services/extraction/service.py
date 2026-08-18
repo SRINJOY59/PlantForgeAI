@@ -1,6 +1,6 @@
-import asyncio
 
 from plantmind_core import corrections
+from plantmind_core.aio import run_sync
 from plantmind_core.schemas import CandidateSubgraph
 from plantmind_core.storage import ObjectStore
 
@@ -50,35 +50,39 @@ class ExtractionService:
         )
 
     # ------------------------------------------------------------- handlers
+    # run_sync, not asyncio.run: this process handles many tasks and the
+    # clients it awaits are per-worker singletons. asyncio.run closes the loop
+    # it made, so the second task in a worker meets a dead connection pool and
+    # a semaphore bound to a loop that no longer exists. See plantmind_core.aio.
     def parse_table(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
-        return asyncio.run(self._table.parse(*doc, data))
+        return run_sync(self._table.parse(*doc, data))
 
     def extract_text(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
-        return asyncio.run(self._text.extract(
+        return run_sync(self._text.extract(
             *doc, data.decode("utf-8", errors="replace")))
 
     def extract_pnid(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
-        return asyncio.run(self._pnid.extract(*doc, data))
+        return run_sync(self._pnid.extract(*doc, data))
 
     def extract_manual(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
-        return asyncio.run(self._manual.extract(*doc, read_pdf_pages(data)))
+        return run_sync(self._manual.extract(*doc, read_pdf_pages(data)))
 
     def extract_email(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
-        return asyncio.run(self._email.extract(*doc, data))
+        return run_sync(self._email.extract(*doc, data))
 
     def extract_image(self, payload: dict) -> CandidateSubgraph:
         doc, data = self._fetch(payload)
-        return asyncio.run(self._image.extract(*doc, data))
+        return run_sync(self._image.extract(*doc, data))
 
     def extract_correction(self, payload: dict) -> CandidateSubgraph:
         (doc_id, content_hash, _), data = self._fetch(payload)
         c = corrections.parse(data.decode("utf-8", errors="replace"))
-        return asyncio.run(self._correction.extract(
+        return run_sync(self._correction.extract(
             doc_id=doc_id, content_hash=content_hash, question=c.question,
             answer=c.answer, correction=c.correction, author=c.author,
             wrong_doc_ids=c.cited_docs))

@@ -176,7 +176,7 @@ services:
     # rather than replace it, or the consumer loses NEO4J_URI/REDIS_URL/...
     environment:
       <<: *svc-env
-      STANDARDS_WATCH_ENABLED: "true"
+      STANDARDS_WATCH_ENABLED: "false"
     command: python -m agents.consumer
 
   # the same image and the same reasoning as `agents`, reached the other way

@@ -1,3 +1,5 @@
+import json
+
 import fakeredis
 
 from plantmind_core.bus import RedisBus
@@ -138,3 +140,104 @@ def test_startup_compliance_sweep():
 
     published = alerts_on(bus)
     assert len(published) == 1 and published[0].kind == "compliance"
+
+
+# --- alarm routing -------------------------------------------------------
+# The runtime reads alerts:critical and also publishes onto it, so the routing
+# rule is what keeps it from investigating its own output. It used to select on
+# severity, and every alert this runtime writes is warning or critical.
+
+def tep_alarm_payload(**over):
+    p = {"kind": "process_limit", "severity": "critical", "tag_id": "REACTOR.T",
+         "unit": "REACTOR", "equipment": "REACTOR", "level": "HH",
+         "value": 150.0, "limit": 145.0, "fingerprint": "tep:REACTOR.T:HH"}
+    p.update(over)
+    return json.dumps(p)
+
+
+def route(rt, payload):
+    """The routed coroutine, closed if there is one - these tests are about
+    which handler is chosen, not what it does, and an un-awaited coroutine
+    warns."""
+    coro = rt._route_alarm("1-0", payload)
+    if coro is not None:
+        coro.close()
+    return coro
+
+
+def test_tep_alarm_routes_to_the_tep_handler():
+    _, _, rt = runtime(seal_leak_reader())
+    assert route(rt, tep_alarm_payload()) is not None
+
+
+def test_watcher_alarm_with_a_rule_routes_to_the_process_limit_handler(monkeypatch):
+    _, _, rt = runtime(seal_leak_reader())
+    seen = []
+    monkeypatch.setattr(rt._process_limit_handler, "handle_process_limit",
+                        lambda entry_id, payload: seen.append(payload) or None)
+    rt._route_alarm("1-0", json.dumps(
+        {"kind": "process_limit", "severity": "warning", "tag_id": "CSTR.T",
+         "equipment": "CSTR-101", "rule": "T_HIGH"}))
+    assert len(seen) == 1 and seen[0]["rule"] == "T_HIGH"
+
+
+def test_compliance_alert_is_not_investigated_as_a_process_alarm():
+    """An overdue inspection is warning severity and has no tag. Routed on
+    severity it reached the TEP alarm handler, spent an LLM call on an empty
+    unit area, and published an investigation of nothing."""
+    _, _, rt = runtime(seal_leak_reader())
+    alert = Alert(kind="compliance", severity="warning", title="Overdue: V-203",
+                  body="overdue", fingerprint="compliance:V-203")
+    assert route(rt, alert.model_dump_json()) is None
+
+
+def test_failure_pattern_alert_is_not_reinvestigated():
+    _, _, rt = runtime(seal_leak_reader())
+    alert = Alert(kind="failure_pattern", severity="critical",
+                  title="P-101B SEAL-LEAK", body="investigated",
+                  fingerprint="failure:P-101B:SEAL-LEAK:1")
+    assert route(rt, alert.model_dump_json()) is None
+
+
+def test_investigation_is_not_investigated():
+    _, _, rt = runtime(seal_leak_reader())
+    assert route(rt, json.dumps(
+        {"type": "investigation", "kind": "process_limit",
+         "tag_id": "REACTOR.T", "summary": "..."})) is None
+
+
+def test_malformed_payload_is_skipped_not_raised():
+    _, _, rt = runtime(seal_leak_reader())
+    assert route(rt, "{not json") is None
+    assert route(rt, None) is None
+
+
+def test_alarm_cursor_advances_over_uninvestigated_entries():
+    """Entries this runtime has no handler for are finished with, not deferred -
+    otherwise a stream of compliance alerts parks the cursor forever and the
+    process alarms behind them are never read."""
+    bus, _, rt = runtime(seal_leak_reader())
+    bus.publish_alert(Alert(kind="compliance", severity="warning",
+                            title="Overdue: V-203", body="overdue",
+                            fingerprint="compliance:V-203").model_dump_json())
+    rt.tick_alarms()
+    assert bus.get_cursor("agents-tep-alerts-cursor") not in ("0", "0-0")
+
+
+# --- claim lapsing -------------------------------------------------------
+
+def test_swept_alerts_are_re_raised_once_the_claim_lapses():
+    """An overdue inspection is a condition, not an event: it is still true on
+    the next sweep. A permanent claim announced it once and then never again."""
+    bus, _, _ = runtime(seal_leak_reader())
+    assert bus.claim_alert("compliance:V-203", ttl_seconds=60) is True
+    assert bus.claim_alert("compliance:V-203", ttl_seconds=60) is False
+
+    bus._r.delete("agents:alerted:compliance:V-203")      # the TTL, expired
+    assert bus.claim_alert("compliance:V-203", ttl_seconds=60) is True
+
+
+def test_untimed_claims_are_still_permanent():
+    bus, _, _ = runtime(seal_leak_reader())
+    assert bus.claim_alert("failure:P-101B:SEAL-LEAK:1") is True
+    assert bus.claim_alert("failure:P-101B:SEAL-LEAK:1") is False

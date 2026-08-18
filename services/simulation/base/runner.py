@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import json
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -9,6 +10,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 log = logging.getLogger("simulation-runner")
+
+# the alarm watcher listens here; see _announce_reset
+RESET_CHANNEL = "sim:reset"
 
 class FaultRequest(BaseModel):
     fault: str             # "saturate_valve" | "bias_sensor" | "degrade_pid" | "clear" | "flood_column" | "bias_composition_sensor"
@@ -39,6 +43,12 @@ class BaseSimulationRunner:
         # Construct FastAPI app
         @asynccontextmanager
         async def lifespan(app: FastAPI):
+            try:
+                await self.sim_start()
+            except Exception:
+                # stdlib logger: no structlog-style kwargs here, they raise
+                # TypeError out of the handler that was meant to contain this
+                log.exception("Failed to auto-start simulation loop")
             yield
             await self.shutdown()
 
@@ -105,7 +115,42 @@ class BaseSimulationRunner:
         self.on_reset()
         self._tick_count = 0
         self._sim_health = "nominal"
-        return {"status": "reset"}
+
+        # Publish nominal baseline telemetry immediately so UI canvas/cards update instantly
+        try:
+            mv = self.bank.mv
+            nominal_state = self.model.state_dict(mv)
+            self.publisher.publish(nominal_state)
+        except Exception:
+            log.exception("failed to publish reset telemetry")
+
+        self._announce_reset()
+
+        # Auto-restart running loop from nominal steady-state
+        self._running = True
+        self._sim_task = asyncio.create_task(self._sim_loop())
+
+        return {"status": "reset", "running": True}
+
+    def _announce_reset(self):
+        """Tell the alarm watcher the process is back at nominal.
+
+        Reset drops every PV back inside its envelope in one step, so the
+        watcher never sees the in-envelope samples that would normally clear
+        the alarms it has open. Without this announcement those stale open
+        alarms suppress the alert for the next fault injected after a reset —
+        the operator injects an IDV, the process breaches, and nothing fires.
+        The RCA claim keys go with them for the same reason."""
+        try:
+            r = self.publisher._r
+            r.publish(RESET_CHANNEL, json.dumps({"at": time.time()}))
+            claimed = list(r.scan_iter(match="rca:claimed:*", count=500))
+            if claimed:
+                r.delete(*claimed)
+            log.info("simulation reset announced (%d RCA claims released)",
+                     len(claimed))
+        except Exception:
+            log.exception("failed to announce simulation reset")
 
     async def sim_fault(self, req: FaultRequest):
         """Standardized fault injection router forwarding requests to banks."""

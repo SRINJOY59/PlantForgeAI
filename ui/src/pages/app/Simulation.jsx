@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useState } from "react";
-import { subscribeSimTelemetry, fetchDocumentUrl, getEnvelopes, getSimStatus } from "../../lib/api";
+import { subscribeSimTelemetry, fetchDocumentUrl, getEnvelopes, getSimStatus, simControl } from "../../lib/api";
 import { DocumentModal } from "../../components/DocumentViewer";
 import SimControlStrip from "./simulation/SimControlStrip";
 import TepPnidCanvas from "./simulation/TepPnidCanvas";
@@ -133,7 +133,12 @@ export default function Simulation() {
     }
   };
 
-  const handleResetWorkspace = () => {
+  const handleResetWorkspace = async () => {
+    try {
+      await simControl("tep", "reset");
+    } catch (e) {
+      console.warn("Failed to reset simulator via control API:", e);
+    }
     dispatchTelemetry({ type: "RESET" });
     setAlerts([]);
     setInvestigations([]);

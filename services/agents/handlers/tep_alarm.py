@@ -10,6 +10,10 @@ from agents.watchers import Trigger, family_of
 
 log = get_logger("agents.handlers.tep_alarm")
 
+# long enough to cover a redelivery of the same stream entry, short enough
+# that these keys do not accumulate across a long-running deployment
+RCA_CLAIM_TTL_S = 3600
+
 
 class TepAlarmHandler:
     def __init__(self, bus, reader, investigator):
@@ -26,9 +30,19 @@ class TepAlarmHandler:
         fingerprint = payload.get("fingerprint", f"tep:{tag_id}:{level}")
         message = payload.get("message", "")
 
-        # Deduplicate
-        rca_claim_key = f"rca:claimed:{fingerprint}"
-        if not self._bus._r.set(rca_claim_key, "1", ex=3600, nx=True):
+        # One investigation per alarm occurrence.
+        #
+        # Claimed on the stream entry, not on the fingerprint. A fingerprint
+        # cooldown looks like the safe choice and is not: the watcher re-arms a
+        # tag after 30s back inside its envelope, so an operator who clears a
+        # fault and injects it again gets a second, genuine alarm inside the
+        # cooldown of the first - the alert appears on the panel and no
+        # investigation ever arrives beside it. Rate limiting is the watcher's
+        # job, and its debounce already does it. This key exists only so a
+        # redelivered entry is not investigated twice, which is what the TTL is
+        # sized for.
+        rca_claim_key = f"rca:claimed:{entry_id}:{fingerprint}"
+        if not self._bus._r.set(rca_claim_key, "1", ex=RCA_CLAIM_TTL_S, nx=True):
             return
 
         # Fetch live TEP status for IDV context
@@ -69,7 +83,7 @@ class TepAlarmHandler:
             graph_version=0,
         )
 
-        log.info("RCA: TEP alarm investigation starting", tag_id=tag_id, level=level, idvs=active_idvs)
+        log.info("RCA: TEP alarm investigation starting", tag_id=tag_id, alarm_level=level, idvs=active_idvs)
 
         try:
             alert_obj, reasoned = await self._investigator.investigate_reasoned(
@@ -93,4 +107,11 @@ class TepAlarmHandler:
             self._bus.publish_alert(json.dumps(investigation_payload))
             log.info("RCA: TEP investigation published", fingerprint=fingerprint)
         except Exception as e:
-            log.error("RCA: TEP investigation failed", tag_id=tag_id, error=str(e))
+            # Release the claim so the next delivery of this alarm can retry
+            self._bus._r.delete(rca_claim_key)
+            # error_type, not just the message: the failure that hid the
+            # event-loop bug for so long was a RuntimeError whose str() said
+            # "Event loop is closed", which reads like a shutdown race rather
+            # than the every-call breakage it was
+            log.error("RCA: TEP investigation failed", tag_id=tag_id,
+                      error_type=type(e).__name__, error=str(e)[:300])

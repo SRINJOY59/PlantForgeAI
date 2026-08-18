@@ -1,5 +1,4 @@
-import asyncio
-
+from plantmind_core.aio import run_sync
 from plantmind_core.bus import RedisBus
 from plantmind_core.celeryapp import WorkerApp
 from plantmind_core.llm import Tier, get_llm
@@ -24,7 +23,11 @@ def _llm_classify(filename: str, sniff: str) -> str:
         f"image = photo/scan/chart.\n\nFilename: {filename}\n"
         f"First bytes:\n{sniff[:800]}\n\nAnswer with the single word only."
     )
-    reply = asyncio.run(get_llm().complete(
+    # run_sync, not asyncio.run: this process handles many tasks and the
+    # clients it awaits are per-worker singletons. asyncio.run closes the loop
+    # it made, so the second task in a worker meets a dead connection pool and
+    # a semaphore bound to a loop that no longer exists. See plantmind_core.aio.
+    reply = run_sync(get_llm().complete(
         [{"role": "user", "content": prompt}], tier=Tier.CHEAP, max_tokens=5))
     return reply.strip().lower()
 

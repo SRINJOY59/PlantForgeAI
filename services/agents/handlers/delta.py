@@ -2,7 +2,7 @@
 drafts work orders, and updates speculative answer caches.
 """
 
-import asyncio
+from plantmind_core.aio import run_sync
 from plantmind_core.schemas import Answer, Citation, GraphDelta, QueryMode
 from plantmind_core.telemetry import get_logger
 from agents.watchers import FailureWatcher
@@ -32,7 +32,7 @@ class DeltaHandler:
         for trigger in self._failures.detect(delta.touched_node_ids, delta.graph_version):
             if not self._bus.claim_alert(f"failure:{trigger.tag}:{trigger.mode}:{trigger.count}"):
                 continue
-            asyncio.run(self._handle_trigger(trigger))
+            run_sync(self._handle_trigger(trigger))
 
     async def _handle_trigger(self, trigger):
         alert, reasoned = await self._investigator.investigate_reasoned(trigger)

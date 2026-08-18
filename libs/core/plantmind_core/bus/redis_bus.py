@@ -203,10 +203,27 @@ class RedisBus:
     def set_cursor(self, name: str, entry_id: str):
         self._r.set(keys.CURSOR_PREFIX + name, entry_id)
 
-    def claim_alert(self, fingerprint: str) -> bool:
+    def claim_alert(self, fingerprint: str, ttl_seconds: int | None = None) -> bool:
         """First caller wins - one alert per distinct fact, so re-processing
-        a delta or re-ingesting a file doesn't re-raise the same alert."""
-        return bool(self._r.sadd(keys.ALERTED_SET, fingerprint))
+        a delta or re-ingesting a file doesn't re-raise the same alert.
+
+        ttl_seconds re-opens the claim after a while, and exists because
+        "one alert per fact, forever" is only right for facts that happen once.
+        A delta arriving twice is the same event and must not alarm twice. An
+        inspection that is overdue is not an event at all - it is a condition,
+        still true tomorrow - and a permanent claim means the plant is told
+        about it exactly once, on whichever sweep first saw it, and then never
+        again for the life of the redis volume. That is how a standing
+        compliance breach goes quiet.
+
+        A TTL'd claim needs its own key rather than a set member: redis expires
+        keys, not elements, so the fingerprints that should lapse cannot live
+        in ALERTED_SET. The untimed path is unchanged and still uses the set.
+        """
+        if ttl_seconds is None:
+            return bool(self._r.sadd(keys.ALERTED_SET, fingerprint))
+        key = f"{keys.ALERTED_SET}:{fingerprint}"
+        return bool(self._r.set(key, "1", nx=True, ex=ttl_seconds))
 
     # rate limiting -----------------------------------------------------------
     def rate_check(self, bucket: str, limit: int, window_s: int):

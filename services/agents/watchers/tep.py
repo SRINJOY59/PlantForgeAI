@@ -21,6 +21,9 @@ GROUP = "tep-watchers"
 CONSUMER = "tep-watcher-1"
 BLOCK_MS = 10_000
 DEBOUNCE_S = 30
+# the simulator announces a reset here; every open alarm is dropped so the
+# next injected fault alarms again instead of being swallowed as "already open"
+RESET_CHANNEL = "sim:reset"
 
 _REPO_CONFIG = Path(__file__).resolve().parents[3] / "config" / "tep_envelopes.json"
 _CONTAINER_CONFIG = Path("/srv/config/tep_envelopes.json")
@@ -56,12 +59,15 @@ class TepWatcher:
     def _start_limits_listener(self):
         try:
             p = self._bus._r.pubsub()
-            p.subscribe("sim:limits:reload")
+            p.subscribe("sim:limits:reload", RESET_CHANNEL)
             import threading
 
             def _listen():
                 for msg in p.listen():
                     if msg["type"] != "message":
+                        continue
+                    if msg["channel"] == RESET_CHANNEL:
+                        self.rearm_all("simulator reset")
                         continue
                     try:
                         data = json.loads(msg["data"])
@@ -111,33 +117,62 @@ class TepWatcher:
 
         ts = time.time()
         level = self._level_for(value, env)
-        fingerprint = f"{tag_id}:{level}"
+
+        # Open alarms are keyed by TAG, not by tag+level. Keying them by
+        # tag+level is what broke re-arming: the return-to-normal branch has no
+        # level to build that key from, so it looked up "<tag>:None", never
+        # found it, and the entry stayed open for the life of the process. A
+        # tag that alarmed once then recovered could never alarm again, which
+        # is why a second IDV injection produced no alert. Per-tag also gives
+        # escalation for free — H -> HH is a state change on the same alarm.
+        open_alarm = self._open.get(tag_id)
 
         if level is not None:
-            if fingerprint not in self._open:
-                self._open[fingerprint] = {
+            if open_alarm is None or open_alarm["level"] != level:
+                self._open[tag_id] = {
                     "first_seen": ts,
                     "last_seen": ts,
                     "peak_value": value,
-                    "in_breach": True,
                     "tag_id": tag_id,
                     "level": level,
                     "env": env,
+                    "cleared_at": None,
                 }
                 self._fire_alert(tag_id, value, level, env, ts)
-            else:
-                self._open[fingerprint]["last_seen"] = ts
-                self._open[fingerprint]["in_breach"] = True
-                peak = self._open[fingerprint]["peak_value"]
-                if level in ("HH", "H") and value > peak:
-                    self._open[fingerprint]["peak_value"] = value
-                elif level in ("LL", "L") and value < peak:
-                    self._open[fingerprint]["peak_value"] = value
-        else:
-            if fingerprint in self._open:
-                self._open[fingerprint]["in_breach"] = False
-                if ts - self._open[fingerprint]["last_seen"] > DEBOUNCE_S:
-                    del self._open[fingerprint]
+                return
+
+            open_alarm["last_seen"] = ts
+            open_alarm["cleared_at"] = None      # dipped back in, still breached
+            peak = open_alarm["peak_value"]
+            if level in ("HH", "H") and value > peak:
+                open_alarm["peak_value"] = value
+            elif level in ("LL", "L") and value < peak:
+                open_alarm["peak_value"] = value
+            return
+
+        # Back inside the envelope. Re-arm only after the value has stayed in
+        # for DEBOUNCE_S, so a tag chattering across a limit does not produce
+        # one alert per crossing. The clock starts when the breach ended, not
+        # when it was last seen breaching.
+        if open_alarm is None:
+            return
+        if open_alarm["cleared_at"] is None:
+            open_alarm["cleared_at"] = ts
+        elif ts - open_alarm["cleared_at"] >= DEBOUNCE_S:
+            del self._open[tag_id]
+            log.info("TEP alarm cleared and re-armed", tag_id=tag_id,
+                     alarm_level=open_alarm["level"])
+
+    def rearm_all(self, reason: str = "reset"):
+        """Drop every open alarm so the next breach fires fresh.
+
+        Called when the simulator is reset: the process goes back to nominal
+        without the watcher ever seeing an in-envelope sample for the tags that
+        were breaching, so without this the alarms they left open would suppress
+        the alerts from the next fault injected after a reset."""
+        count = len(self._open)
+        self._open.clear()
+        log.info("TEP watcher re-armed", cleared=count, reason=reason)
 
     def _fire_alert(self, tag_id: str, value: float, level: str, env: dict, ts: float):
         unit_area = tag_id.split(".")[0] if "." in tag_id else tag_id

@@ -17,6 +17,11 @@ from plantmind_core.telemetry import get_logger
 
 log = get_logger("gateway.routes.simulation.ws")
 
+# how much of the alert stream a newly connected client is caught up on.
+# generous because one alarm costs two entries here — the alarm and the
+# investigation that answers it — and the Historian needs both to draw a lane.
+ALERT_REPLAY_COUNT = 100
+
 router = APIRouter()
 
 
@@ -89,24 +94,45 @@ async def ws_telemetry(websocket: WebSocket, token: Optional[str] = None, unit: 
     crit_alert_cursor = "$"
     legacy_alert_cursor = "$"
 
-    # Send recent historical alerts on initial connection
-    try:
-        recent_crit = await r_async.xrevrange("alerts:critical", "+", "-", count=30)
-        if recent_crit:
-            for entry_id, fields in reversed(recent_crit):
+    async def replay_recent_alerts():
+        """Send the tail of the alert stream before following it live.
+
+        The Alerts and Historian panels are built from what arrives on this
+        socket, so a socket that only carries alerts raised after it connected
+        shows an empty timeline on every page load and every reconnect — the
+        alarms and the investigations that answered them are still on the
+        stream, the browser just never hears about them.
+
+        The cursor is handed back rather than left at "$": resuming from the
+        newest replayed id is what makes this exactly-once. Starting the tail
+        at "$" instead would drop anything published between this read and the
+        first xread, and replaying from "0" would resend the whole stream.
+        """
+        try:
+            recent = await r_async.xrevrange("alerts:critical", "+", "-",
+                                             count=ALERT_REPLAY_COUNT)
+        except Exception as e:
+            log.warning("Failed to replay recent alerts", error=str(e))
+            return "$"
+
+        if not recent:
+            # empty stream: "0" is safe and closes the gap that "$" would open
+            return "0"
+
+        for entry_id, fields in reversed(recent):
+            try:
                 raw_payload = fields.get("payload", "{}")
                 payload = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
-                msg = {
-                    "type": "alert",
-                    "id": entry_id,
-                    **payload
-                }
-                await websocket.send_text(json.dumps(msg))
-    except Exception as e:
-        log.warning("Failed to send initial recent alerts", error=str(e))
+                await websocket.send_text(json.dumps({
+                    "type": "alert", "id": entry_id, "replay": True, **payload,
+                }))
+            except Exception as e:
+                log.warning("Failed to replay alert", entry_id=entry_id, error=str(e))
+        return recent[0][0]
 
     async def send_alerts():
         nonlocal crit_alert_cursor, legacy_alert_cursor
+        crit_alert_cursor = await replay_recent_alerts()
         while True:
             try:
                 reply = await r_async.xread(

@@ -19,40 +19,74 @@ Three outcomes, all deterministic, no second LLM call:
 
 import re
 
-# Matches [doc:ID], [doc:ID p4], [ID], or [ID p4]
-DOC_RE = re.compile(r"\[(?:doc:)?([a-zA-Z0-9_-]{6,})(?:\s*p\d+)?\]")
+# [doc:7bb5d5e5e90aaeac], or [doc:7bb5d5e5e90aaeac p4] with the page attached.
+#
+# Any id is accepted after the prefix, because the prefix is the model stating
+# outright that this is a citation - there is nothing to disambiguate. A single
+# pattern that also had to cover the bare form below was given a 6-character
+# minimum to keep it off markdown footnotes, and that minimum silently applied
+# here too: every document whose id was shorter than six characters stopped
+# being read as a citation at all, so answers that cited correctly were graded
+# "general" and listed no sources.
+DOC_RE = re.compile(r"\[doc:([^\]\s]+?)(?:\s+p\d+)?\]")
+
+# A bare [7bb5d5e5e90aaeac], which some models emit instead of the prefixed
+# form. This one is genuinely ambiguous with markdown footnotes and list
+# markers, so it has to look like a document hash - long, and hex. [4], [note]
+# and [see below] are not citations.
+BARE_DOC_RE = re.compile(r"\[([a-f0-9]{6,})(?:\s+p\d+)?\]", re.I)
+
+# The same hash sitting in prose or backticks rather than brackets.
 HEX_WORD_RE = re.compile(r"\b([a-f0-9]{6,16})\b", re.I)
+
+# Below this, a "prefix" is a coincidence rather than a truncated hash: with
+# ids as short as a couple of characters, prefix matching would let one
+# document absorb every citation in the answer.
+MIN_PREFIX = 6
 
 Grounding = str            # "documents" | "general" | "unverified"
 
 
-def cited_docs(text: str, evidence: list = None) -> set:
-    """Extract cited document IDs, resolving prefixes against evidence if available."""
-    raw_cites = set(DOC_RE.findall(text or ""))
-    
-    if not evidence:
-        return raw_cites
-        
-    available = {e.doc_id for e in evidence if e.doc_id}
-    
-    # Also check standalone hex words if enclosed in backticks or markdown
-    for match in HEX_WORD_RE.findall(text or ""):
-        for a in available:
-            if a.startswith(match.lower()) and len(match) >= 6:
-                raw_cites.add(a)
+def _resolve(cited: str, available: set) -> str | None:
+    """The document `cited` refers to, or None if it refers to none of them.
 
-    resolved = set()
-    for c in raw_cites:
-        matched = False
-        for a in available:
-            if a == c or a.startswith(c) or c.startswith(a):
-                resolved.add(a)
-                matched = True
-                break
-        if not matched:
-            resolved.add(c)
-            
-    return resolved
+    Models truncate: asked to cite 7bb5d5e5e90aaeac they will often write
+    7bb5d5e5. So an exact match is tried first, then the available id that this
+    is a prefix of - never the other way round for short ids, which is how a
+    document called "a" would otherwise claim every citation beginning with an
+    'a'."""
+    if cited in available:
+        return cited
+    if len(cited) >= MIN_PREFIX:
+        for doc_id in sorted(available):
+            if doc_id.startswith(cited):
+                return doc_id
+    # the reverse: the model wrote more than the id. Rare, and only trusted
+    # when the id itself is long enough for the overlap to mean something.
+    for doc_id in sorted(available):
+        if len(doc_id) >= MIN_PREFIX and cited.startswith(doc_id):
+            return doc_id
+    return None
+
+
+def cited_docs(text: str, evidence: list = None) -> set:
+    """The document ids this answer claims to have used.
+
+    Without evidence this is what the text literally says. With it, truncated
+    ids are resolved onto the documents actually retrieved, so a citation the
+    UI can turn into a link comes back as the full id.
+    """
+    text = text or ""
+    raw = set(DOC_RE.findall(text)) | set(BARE_DOC_RE.findall(text))
+
+    if not evidence:
+        return raw
+
+    available = {e.doc_id for e in evidence if e.doc_id}
+    raw |= {h for h in HEX_WORD_RE.findall(text)
+            if any(a.startswith(h.lower()) for a in available)}
+
+    return {_resolve(c, available) or c for c in raw}
 
 
 def classify(text: str, evidence: list) -> tuple:
@@ -60,19 +94,14 @@ def classify(text: str, evidence: list) -> tuple:
     available = {e.doc_id for e in evidence if e.doc_id}
     cited = cited_docs(text, evidence)
 
-    # Check if any cited document is completely absent/fabricated
-    fabricated = {c for c in cited if not any(a == c or a.startswith(c) or c.startswith(a) for a in available)}
-    
-    if fabricated:
+    if any(_resolve(c, available) is None for c in cited):
         # naming a document that was never in the context means the id came out
         # of the model, not out of retrieval
         return "unverified", "low"
 
-    valid_cites = cited & available
-    if not valid_cites:
+    if not cited:
         return "general", "medium"
 
     # confidence tracks corroboration - how many distinct documents the
     # answer actually leaned on
-    return "documents", "high" if len(valid_cites) >= 2 else "medium"
-
+    return "documents", "high" if len(cited) >= 2 else "medium"

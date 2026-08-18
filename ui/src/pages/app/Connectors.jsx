@@ -1,5 +1,9 @@
 import { FolderSync, Database, Cloud, Plus, RefreshCw, CheckCircle2, Clock, AlertCircle, ExternalLink } from "lucide-react";
 
+// Every card here is a source type the registry can actually build. SAP Plant
+// Maintenance and the OSIsoft PI historian sat here as "available" for a while
+// after their connectors were removed, offering an integration nothing behind
+// the page could honour.
 const CONNECTORS = [
   {
     id: "inbox", name: "Local Inbox", type: "Folder Watch", icon: FolderSync,
@@ -10,16 +14,6 @@ const CONNECTORS = [
     id: "gdrive-docs", name: "Engineering Docs", type: "Google Drive", icon: Cloud,
     status: "active", every: "10 min",
     color: "#4285f4", lastSync: "Just now", docsIngested: 0,
-  },
-  {
-    id: "sap-pm", name: "SAP Maintenance", type: "SAP Plant Maintenance", icon: Database,
-    status: "available", every: "—",
-    color: "#00ccf5", lastSync: null, docsIngested: 0,
-  },
-  {
-    id: "pi-historian", name: "PI Historian", type: "OSIsoft PI Historian", icon: Database,
-    status: "available", every: "—",
-    color: "#b44dff", lastSync: null, docsIngested: 0,
   },
   {
     id: "sharepoint", name: "SharePoint", type: "SharePoint / OneDrive", icon: Database,
