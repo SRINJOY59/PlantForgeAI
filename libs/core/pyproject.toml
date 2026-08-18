@@ -11,6 +11,7 @@ dependencies = [
     "redis>=5.0",
     "minio>=7.2",
     "fastembed>=0.4",
+    "google-auth>=2.20",
 ]
 
 

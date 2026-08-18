@@ -45,6 +45,34 @@ TASK_LEGACY = ("Equipment {tag} has just logged failure mode '{mode}'. Sibling "
                "Investigate and advise.")
 
 
+def _diagnosis_prior(diagnosis: dict | None) -> str:
+    """Fold the statistical diagnosis into the task as a prior to test, not a
+    conclusion to repeat. It carries what the deterministic pipeline already
+    found - the matched fault mode and the cascade order - so the model reasons
+    from evidence the plant produced rather than from a bare tag. The wording is
+    deliberately 'confirm or refute': the grounding check still holds every tag
+    the model names to the graph, so a wrong prior cannot launder itself into a
+    verified claim."""
+    if not diagnosis:
+        return ""
+    matched = diagnosis.get("matched_fault")
+    if not matched:
+        return ""
+    conf = diagnosis.get("confidence")
+    conf_pct = f"{round(conf * 100)}%" if isinstance(conf, (int, float)) else "n/a"
+    cascade = " -> ".join(
+        f"{d.get('tag')}{'↑' if d.get('direction') == 'high' else '↓'}"
+        for d in (diagnosis.get("cascade") or [])
+    )
+    return (
+        f"\n\nStatistical diagnosis (deterministic, pre-computed - a prior to "
+        f"confirm or refute, not ground truth): the live signature most "
+        f"resembles known fault {matched} "
+        f"({diagnosis.get('matched_label') or '?'}) at {conf_pct} confidence. "
+        f"Observed cascade (first mover first): {cascade or 'n/a'}."
+    )
+
+
 def task(trigger, alert_context: dict | None = None) -> str:
     if alert_context:
         idvs = alert_context.get("active_idvs", [])
@@ -57,6 +85,7 @@ def task(trigger, alert_context: dict | None = None) -> str:
             f"Active IDV faults: {[f'IDV-{i}: {d}' for i,d in zip(idvs, idv_descs)] or 'none'}.\n"
             f"Message: {alert_context.get('message', '')}"
         )
+        alarm_details += _diagnosis_prior(alert_context.get("diagnosis"))
         siblings_str = ", ".join(
             s.get("tag", "") for s in trigger.siblings
         ) if trigger.siblings else "none found"

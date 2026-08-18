@@ -26,6 +26,17 @@ NOTE_KEYS = ("cause", "wo_id", "date", "next_due", "result",
 DIGEST_WORDS = ("overdue", "statutory", "inspection", "compliance",
                 "most frequent", "most common", "how many", "which equipment")
 
+from retrieval.answerer import Answerer, _resolve_persona
+
+
+def _cacheable(alert_context, persona) -> bool:
+    if alert_context:
+        return False
+    # Only cache the generic engineer persona. Tone-shifted personas (worker,
+    # operator, instrumentation, process, planner, inspection, hse, admin)
+    # always generate fresh answers reflecting their specific register and focus.
+    return _resolve_persona(persona) == "engineer"
+
 
 @dataclass
 class Prepared:
@@ -73,12 +84,15 @@ class RetrievalService:
                    bus=RedisBus.from_settings(),
                    cache=AnswerCache.from_settings())
 
-    async def ask(self, question: str, history: list | None = None, alert_context: str | None = None) -> Answer:
+    async def ask(self, question: str, history: list | None = None,
+                  alert_context: str | None = None,
+                  persona: str | None = None) -> Answer:
         question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
         
-        # Bypass cache on alert-scoped chat
-        cached = None if alert_context else await asyncio.to_thread(self._cache_get, embedding)
+        # Bypass cache on alert-scoped chat and for tone-shifted personas
+        cacheable = _cacheable(alert_context, persona)
+        cached = await asyncio.to_thread(self._cache_get, embedding) if cacheable else None
         if cached:
             # name here too: entries cached before filenames existed, and every
             # future cache-format change, would otherwise surface as raw hashes
@@ -89,7 +103,7 @@ class RetrievalService:
         # run it off the event loop - otherwise every user's reads block every
         # other user's request, LLM streams included
         prepared = await asyncio.to_thread(self._prepare, question, embedding)
-        
+
         context_to_use = prepared.context
         if alert_context:
             context_to_use = f"CURRENT ALERT CONTEXT:\n{alert_context}\n\n" + context_to_use
@@ -97,13 +111,16 @@ class RetrievalService:
         version = await asyncio.to_thread(self._graph_version)
         answer = await self._answerer.answer(
             question, context_to_use, prepared.evidence, prepared.mode,
-            version, prepared.corrections)
+            version, prepared.corrections, persona=persona)
         await asyncio.to_thread(self._name_citations, answer)
-        await asyncio.to_thread(
-            self._cache_put, question, embedding, answer, prepared.cited)
+        if cacheable:
+            await asyncio.to_thread(
+                self._cache_put, question, embedding, answer, prepared.cited)
         return answer
 
-    async def ask_stream(self, question: str, history: list | None = None, alert_context: str | None = None):
+    async def ask_stream(self, question: str, history: list | None = None,
+                         alert_context: str | None = None,
+                         persona: str | None = None):
         """Yields ('token', text) deltas while generating, then a final
         ('done', Answer). A cache hit streams the cached text so the client
         path is identical."""
@@ -112,8 +129,9 @@ class RetrievalService:
         question = await self._condenser.condense(question, history or [])
         embedding = await self._embed(question)
         
-        # Bypass cache on alert-scoped chat
-        cached = None if alert_context else await asyncio.to_thread(self._cache_get, embedding)
+        # Bypass cache on alert-scoped chat and for tone-shifted personas
+        cacheable = _cacheable(alert_context, persona)
+        cached = await asyncio.to_thread(self._cache_get, embedding) if cacheable else None
         if cached:
             await asyncio.to_thread(self._name_citations, cached)
             yield "token", cached.text
@@ -128,7 +146,8 @@ class RetrievalService:
             context_to_use = f"CURRENT ALERT CONTEXT:\n{alert_context}\n\n" + context_to_use
 
         chunks = []
-        async for delta in self._answerer.stream(question, context_to_use):
+        async for delta in self._answerer.stream(question, context_to_use,
+                                                 persona=persona):
             chunks.append(delta)
             yield "token", delta
         # the finished text, not an empty envelope: grounding is read out of
@@ -138,8 +157,9 @@ class RetrievalService:
             "".join(chunks), prepared.evidence, prepared.mode,
             version, prepared.corrections)
         await asyncio.to_thread(self._name_citations, answer)
-        await asyncio.to_thread(
-            self._cache_put, question, embedding, answer, prepared.cited)
+        if cacheable:
+            await asyncio.to_thread(
+                self._cache_put, question, embedding, answer, prepared.cited)
         yield "done", answer
 
     def _name_citations(self, answer: Answer):
@@ -172,9 +192,16 @@ class RetrievalService:
                 mode = QueryMode.VECTOR
                 context, evidence = self._vector_context(embedding)
 
-        digest = self._plant_digest(question)
+        digest, digest_evidence = self._plant_digest(question)
         if digest:
             context = digest + "\n\n" + context
+            # The digest cites documents (inspection records, work-order tables)
+            # that no chunk carries. Without adding them to evidence, their
+            # citations can't be resolved to a filename and the answer grades
+            # "unverified" - so fold them in, skipping any doc already present.
+            seen = {e.doc_id for e in evidence}
+            evidence = evidence + [e for e in digest_evidence
+                                   if e.doc_id and e.doc_id not in seen]
 
         corrections = self._corrections(evidence)
         if corrections:
@@ -212,6 +239,45 @@ class RetrievalService:
             + e.context + e.text for e in evidence)
         return context, evidence
 
+    def _seed_history(self, seeds: list) -> tuple[str, list[Evidence]]:
+        """Pull detailed failure history, work orders, actions taken, and
+        exact document mentions for all seed equipment. Ensures Ask has full
+        recall on root causes, symptoms, and maintenance events."""
+        if not seeds:
+            return "", []
+        blocks, evidence, seen_docs = [], [], set()
+
+        for seed in seeds:
+            wos = self._reader.equipment_work_orders(seed.node_id)
+            failures = self._reader.equipment_failures(seed.node_id)
+            if not wos and not failures:
+                continue
+
+            lines = [f"MAINTENANCE & FAILURE HISTORY FOR {seed.surface}:"]
+            if failures:
+                for f in failures:
+                    causes = f" (causes noted: {', '.join(f['causes'])})" if f.get("causes") else ""
+                    lines.append(f"  • Failure Mode: {f['mode']} — Total occurrences in graph: {f['count']}{causes}")
+            if wos:
+                lines.append(f"  • Chronological Work Orders ({len(wos)} events):")
+                for w in wos:
+                    doc_id = w.get("doc_id")
+                    cite = f" [doc:{doc_id}]" if doc_id else ""
+                    action = f" | Action Taken: {w['action_taken']}" if w.get("action_taken") else ""
+                    downtime = f" ({w['downtime_hours']}h downtime)" if w.get("downtime_hours") else ""
+                    tech = f" (Tech: {w['technician']})" if w.get("technician") else ""
+                    wo_line = f"    - {w.get('date', 'Unknown date')} [{w['wo_id']}]: {w.get('description', '')}{action}{downtime}{tech}{cite}"
+                    lines.append(wo_line)
+                    if doc_id and doc_id not in seen_docs:
+                        seen_docs.add(doc_id)
+                        evidence.append(Evidence(
+                            doc_id=doc_id, text=wo_line.strip(),
+                            page=1, chunk_id=f"wo:{w['wo_id']}:{doc_id}"))
+
+            blocks.append("\n".join(lines))
+
+        return "\n\n".join(blocks), evidence
+
     def _local_context(self, seed, embedding: list):
         relations = self._reader.relations_of(seed.node_id, LOCAL_TYPES)
         rel_lines, edge_evidence, seen = [], [], set()
@@ -232,6 +298,8 @@ class RetrievalService:
                     page=r["props"].get("page"),
                     chunk_id=f"edge:{doc_id}:{r['type']}"))
 
+        hist_text, hist_ev = self._seed_history([seed])
+
         # hybrid: exact-text mentions AND semantic matches - the chunk that
         # answers may never name the tag (e.g. torque steps inside its SOP)
         chunks = {c["id"]: c for c in self._reader.chunks_containing(seed.surface)}
@@ -242,9 +310,11 @@ class RetrievalService:
                                    page=c.get("page"), chunk_id=c["id"])
                           for c in chunks.values()]
 
-        evidence = (chunk_evidence + edge_evidence)[:10]
+        evidence = (hist_ev + chunk_evidence + edge_evidence)[:15]
         context = (f"EVERYTHING THE GRAPH KNOWS ABOUT {seed.surface}:\n"
                    + "\n".join(rel_lines))
+        if hist_text:
+            context = hist_text + "\n\n" + context
         if chunk_evidence:
             context += "\n\nSOURCE PASSAGES:\n\n" + "\n\n".join(
                 f"[{e.doc_id}]\n" + e.context + e.text[:600]
@@ -259,38 +329,77 @@ class RetrievalService:
         log.info("paths", candidates=len(paths), kept=len(kept))
         context, evidence = self._assembler.build(kept)
 
-        # structure alone isn't enough: the narrative behind the topology
-        # (incident timelines, SOP steps) lives in chunks
+        # Asset history enrichment: ensure work orders, failure counts, and
+        # symptom narratives are visible during causal/root-cause reasoning
+        hist_text, hist_ev = self._seed_history(seeds)
+        if hist_text:
+            context = hist_text + "\n\n" + context
+            evidence = hist_ev + evidence
+
+        # Exact text matches for seed tags (incident reports, emails, procedures)
         seen = {e.chunk_id for e in evidence}
-        extra = [Evidence(doc_id=_doc_of(c["id"]), text=c["text"],
-                          context=c.get("context") or "",
-                          page=c.get("page"), chunk_id=c["id"])
-                 for c in self._reader.vector_chunks(embedding, k=3)
-                 if c["id"] not in seen]
+        seed_chunks = []
+        for s in seeds[:2]:
+            for c in self._reader.chunks_containing(s.surface, limit=4):
+                if c["id"] not in seen:
+                    seen.add(c["id"])
+                    seed_chunks.append(Evidence(
+                        doc_id=_doc_of(c["id"]), text=c["text"],
+                        context=c.get("context") or "",
+                        page=c.get("page"), chunk_id=c["id"]))
+
+        vector_chunks = [Evidence(doc_id=_doc_of(c["id"]), text=c["text"],
+                                  context=c.get("context") or "",
+                                  page=c.get("page"), chunk_id=c["id"])
+                         for c in self._reader.vector_chunks(embedding, k=3)
+                         if c["id"] not in seen]
+
+        extra = seed_chunks + vector_chunks
         if extra:
             context += "\n\nRELATED PASSAGES:\n\n" + "\n\n".join(
                 f"[{e.doc_id}]\n" + e.context + e.text[:600] for e in extra)
             evidence = evidence + extra
         return context, evidence
 
-    def _plant_digest(self, question: str) -> str:
+    def _plant_digest(self, question: str) -> tuple[str, list]:
+        """-> (digest_text, digest_evidence).
+
+        The evidence is the second return, not a side effect, because the docs
+        the digest names (inspection tables, work-order rows) are cited in the
+        answer but live in table-derived edges no chunk carries. Returning them
+        as Evidence lets the citation pipeline resolve them to filenames and
+        grade the answer grounded, instead of leaving raw hashes and "unverified".
+        """
         if not any(w in question.lower() for w in DIGEST_WORDS):
-            return ""
+            return "", []
         from datetime import date
-        lines = []
+        lines, evidence = [], []
         overdue = self._reader.overdue_inspections(date.today().isoformat())
         if overdue:
             lines.append("Inspections past their due date:")
-            lines += [f"  {r['equipment']}: {r['inspection_type']} per "
-                      f"{r['standard']}, was due {r['next_due']} "
-                      f"[doc:{r['doc_id']}]" for r in overdue]
+            for r in overdue:
+                line = (f"  {r['equipment']}: {r['inspection_type']} per "
+                        f"{r['standard']}, was due {r['next_due']} "
+                        f"[doc:{r['doc_id']}]")
+                lines.append(line)
+                if r.get("doc_id"):
+                    evidence.append(Evidence(
+                        doc_id=r["doc_id"], text=line.strip(),
+                        page=r.get("page"), chunk_id=f"digest:{r['doc_id']}"))
         counts = self._reader.failure_mode_counts()
         if counts:
             lines.append("Failure modes by work-order count:")
-            lines += [f"  {r['mode']}: {r['n']} (on {', '.join(r['equipment'])})"
-                      for r in counts]
-        return "PLANT DIGEST (live graph queries):\n" + "\n".join(lines) \
-            if lines else ""
+            for r in counts:
+                lines.append(f"  {r['mode']}: {r['n']} "
+                             f"(on {', '.join(r['equipment'])})"
+                             + (f" [doc:{r['doc_id']}]" if r.get("doc_id") else ""))
+                if r.get("doc_id"):
+                    evidence.append(Evidence(
+                        doc_id=r["doc_id"], text=f"{r['mode']}: {r['n']}",
+                        chunk_id=f"digest:{r['doc_id']}"))
+        if not lines:
+            return "", []
+        return "PLANT DIGEST (live graph queries):\n" + "\n".join(lines), evidence
 
     def graph_snapshot(self, limit: int = 400) -> dict:
         return self._reader.graph_snapshot(limit)

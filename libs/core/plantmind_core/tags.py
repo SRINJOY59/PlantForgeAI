@@ -3,7 +3,7 @@ to find tags in text and by the resolver to canonicalise them."""
 
 import re
 
-TAG_RE = re.compile(r"\b([A-Z]{1,4})-(\d{2,5})\s?([A-Z]?)\b")
+TAG_RE = re.compile(r"\b([A-Za-z]{1,4})[-\s]?(\d{2,5})\s*([A-Za-z]?)\b")
 
 # ISA instrument letter codes: first letter = measured variable,
 # rest = function. Anything else (P, K, V, T, E...) is plant equipment.

@@ -6,10 +6,17 @@ Auth is off when SUPABASE_JWT_SECRET is unset, so local dev and the demo run
 open. That is a deliberate escape hatch, and it announces itself in the logs.
 
 Role model (app_role claim, stamped by the custom_jwt_claims Supabase hook):
+  worker    – Field Copilot only (mobile field persona, own shell)
   operator  – Ask, Alerts, Documents read             (new-user default)
   planner   – + Connectors read
   engineer  – + Graph, Compliance, MoC, Interview, document upload
   admin     – full access + Connectors write, role management
+
+'worker' sits at the bottom of the rank so require_role("operator") and above
+naturally exclude it, but it is a *separate persona*: workers are routed to
+their own /field surface and never see the engineer console. A missing or
+unknown role still defaults to 'operator', never 'worker' - a field account is
+provisioned deliberately, never fallen into.
 """
 
 import jwt
@@ -23,8 +30,9 @@ log = get_logger("gateway.auth")
 _warned = False
 
 # Ordered from least to most privileged. Used by require_role() to support
-# "engineer or above" comparisons without enumerating every tier.
-ROLE_HIERARCHY = ["operator", "planner", "engineer", "admin"]
+# "engineer or above" comparisons without enumerating every tier. 'worker' is
+# rank 0: below operator, so every operator+ gate excludes it.
+ROLE_HIERARCHY = ["worker", "operator", "planner", "engineer", "admin"]
 
 
 def auth_enabled() -> bool:

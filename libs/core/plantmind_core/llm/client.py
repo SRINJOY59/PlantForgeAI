@@ -1,7 +1,8 @@
 import asyncio
-import re
 import json
+import os
 import random
+import re
 from enum import Enum
 from typing import Type, TypeVar
 
@@ -105,23 +106,30 @@ class Tier(str, Enum):
 
 
 class LLMClient:
-    def __init__(self):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None,
+                 models: dict[Tier, str] | None = None, max_concurrency: int | None = None,
+                 max_rps: float | None = None, max_retries: int | None = None,
+                 timeout_s: float | None = None):
         s = get_settings()
-        # max_retries=0: the SDK's built-in retry would bypass our semaphore
-        self._client = AsyncOpenAI(
-            api_key=s.openrouter_api_key,
-            base_url=s.openrouter_base_url,
-            timeout=s.llm_timeout_s,
-            max_retries=0,
-        )
-        self._models = {
+        self._provider = getattr(s, "llm_provider", "openrouter")
+        self._api_key = api_key or s.openrouter_api_key
+        self._base_url = base_url or s.openrouter_base_url
+        self._models = models or {
             Tier.CHEAP: s.llm_cheap,
             Tier.MID: s.llm_mid,
             Tier.VISION: s.llm_vision,
         }
-        self._sem = asyncio.Semaphore(s.llm_max_concurrency)
-        self._limiter = AsyncRateLimiter(max_rps=getattr(s, "llm_max_rps", 3.0))
-        self._max_retries = s.llm_max_retries
+        self._timeout_s = timeout_s or s.llm_timeout_s
+        self._max_retries = max_retries if max_retries is not None else s.llm_max_retries
+        # max_retries=0: the SDK's built-in retry would bypass our semaphore
+        self._client = AsyncOpenAI(
+            api_key=self._api_key or "missing-key",
+            base_url=self._base_url,
+            timeout=self._timeout_s,
+            max_retries=0,
+        )
+        self._sem = asyncio.Semaphore(max_concurrency or s.llm_max_concurrency)
+        self._limiter = AsyncRateLimiter(max_rps=max_rps or getattr(s, "llm_max_rps", 3.0))
         self.meter = TokenMeter()
 
     async def _create(self, messages, tier, max_tokens, temperature=0.0,
@@ -275,11 +283,19 @@ class LLMClient:
         so this is not on the answer path - only a watcher that runs on a slow
         clock calls it.
         """
-        resp = await self._create(
-            [{"role": "user", "content": prompt}], tier, max_tokens,
-            tools=[{"type": "web_search"}])
-        message = resp.choices[0].message
-        return message.content or "", _url_citations(message)
+        try:
+            resp = await self._create(
+                [{"role": "user", "content": prompt}], tier, max_tokens,
+                tools=[{"type": "web_search"}])
+            message = resp.choices[0].message
+            return message.content or "", _url_citations(message)
+        except Exception as e:
+            # Fallback for providers where openrouter-specific web_search tool is unavailable
+            log.warning("web_search tool call unavailable on provider; falling back to direct prompt",
+                        error=str(e))
+            text = await self.complete([{"role": "user", "content": prompt}],
+                                       tier=tier, max_tokens=max_tokens)
+            return text, []
 
     async def vision(self, prompt: str, images_b64: list[str],
                      max_tokens=4096) -> str:
@@ -302,6 +318,136 @@ class LLMClient:
             })
         return await self.structured([{"role": "user", "content": content}],
                                      schema, tier=Tier.VISION, max_tokens=max_tokens)
+
+
+class GeminiClient(LLMClient):
+    """Specialized LLM client for Google Gemini models via Gemini's OpenAI-compatible endpoint."""
+
+    def __init__(self, api_key: str | None = None, base_url: str | None = None,
+                 models: dict[Tier, str] | None = None, max_concurrency: int | None = None,
+                 max_rps: float | None = None, max_retries: int | None = None,
+                 timeout_s: float | None = None):
+        s = get_settings()
+        gemini_key = (
+            api_key
+            or s.gemini_api_key
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GOOGLE_GENAI_API_KEY")
+            or s.openrouter_api_key
+        )
+        gemini_models = models or {
+            Tier.CHEAP: getattr(s, "gemini_llm_cheap", "gemini-3.5-flash"),
+            Tier.MID: getattr(s, "gemini_llm_mid", "gemini-3.7-flash"),
+            Tier.VISION: getattr(s, "gemini_llm_vision", "gemini-3.5-flash"),
+        }
+        super().__init__(
+            api_key=gemini_key,
+            base_url=base_url or getattr(s, "gemini_base_url", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+            models=gemini_models,
+            max_concurrency=max_concurrency,
+            max_rps=max_rps,
+            max_retries=max_retries,
+            timeout_s=timeout_s,
+        )
+        self._provider = "gemini"
+
+
+class VertexLLMClient(LLMClient):
+    """Gemini via Vertex AI using Application Default Credentials (gcloud auth).
+
+    Tokens are refreshed automatically via google-auth — no API key needed.
+    The Vertex AI OpenAI-compatible endpoint accepts the same request shape
+    as the AI Studio endpoint but uses Bearer token auth and GCP project routing.
+    """
+
+    def __init__(self, models: dict[Tier, str] | None = None,
+                 max_concurrency: int | None = None, max_rps: float | None = None,
+                 max_retries: int | None = None, timeout_s: float | None = None):
+        s = get_settings()
+        project = getattr(s, "gcp_project", "") or os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+        region = getattr(s, "vertex_region", "") or os.environ.get("VERTEX_REGION", "us-central1")
+        base_url = (
+            f"https://{region}-aiplatform.googleapis.com/v1beta1"
+            f"/projects/{project}/locations/{region}/endpoints/openapi/"
+        )
+        vertex_models = models or {
+            Tier.CHEAP: getattr(s, "vertex_llm_cheap", "google/gemini-2.5-flash"),
+            Tier.MID: getattr(s, "vertex_llm_mid", "google/gemini-2.5-pro"),
+            Tier.VISION: getattr(s, "vertex_llm_vision", "google/gemini-2.5-flash"),
+        }
+        super().__init__(
+            api_key="vertex-adc",
+            base_url=base_url,
+            models=vertex_models,
+            max_concurrency=max_concurrency,
+            max_rps=max_rps,
+            max_retries=max_retries,
+            timeout_s=timeout_s,
+        )
+        self._provider = "vertex"
+        self._creds = None
+        self._creds_lock = asyncio.Lock()
+        # Which token self._client was last built with, so a call only rebuilds
+        # the client when the token actually rotated - not on every request, and
+        # not racing two rebuilds against each other in the steady state.
+        self._built_with = None
+
+    def _load_creds(self):
+        import google.auth
+        s = get_settings()
+        project = getattr(s, "gcp_project", "") or os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+        creds, _ = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            quota_project_id=project or None,
+        )
+        return creds
+
+    async def _get_token(self) -> str:
+        import google.auth.transport.requests
+        async with self._creds_lock:
+            if self._creds is None:
+                self._creds = await asyncio.get_event_loop().run_in_executor(
+                    None, self._load_creds)
+            if not self._creds.valid:
+                req = google.auth.transport.requests.Request()
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self._creds.refresh, req)
+        return self._creds.token
+
+    async def _refresh_client(self):
+        """Ensure self._client carries a live ADC bearer token.
+
+        This is the one thing that must run before ANY provider call - not just
+        _create. The base class was built for a static api_key: complete() goes
+        through _create, but stream() and the tool path hit self._client
+        directly. If only _create refreshed the token, streaming would still be
+        sending the 'vertex-adc' placeholder and Vertex would reject it
+        (ACCESS_TOKEN_TYPE_UNSUPPORTED). So every entry point calls this, and it
+        rebuilds only when the cached token has rotated.
+        """
+        token = await self._get_token()
+        if token == self._built_with:
+            return
+        self._client = AsyncOpenAI(
+            api_key=token,
+            base_url=str(self._client.base_url),
+            timeout=self._timeout_s,
+            max_retries=0,
+        )
+        self._built_with = token
+
+    async def _create(self, messages, tier, max_tokens, temperature=0.0, **extra):
+        await self._refresh_client()
+        return await super()._create(messages, tier, max_tokens, temperature, **extra)
+
+    async def stream(self, messages, tier=Tier.MID, max_tokens=2048, temperature=0.0):
+        # The Ask path streams, and the base stream() talks to self._client
+        # directly - so the token must be refreshed here too, or every streamed
+        # answer 401s on the placeholder key.
+        await self._refresh_client()
+        async for delta in super().stream(messages, tier, max_tokens, temperature):
+            yield delta
 
 
 def _url_citations(message) -> list:
@@ -330,5 +476,22 @@ _client = None
 def get_llm() -> LLMClient:
     global _client
     if _client is None:
-        _client = LLMClient()
+        s = get_settings()
+        provider = getattr(s, "llm_provider", "openrouter")
+        if provider == "vertex":
+            _client = VertexLLMClient()
+        elif provider == "gemini":
+            _client = GeminiClient()
+        else:
+            gemini_key = (
+                s.gemini_api_key
+                or os.environ.get("GEMINI_API_KEY")
+                or os.environ.get("GOOGLE_API_KEY")
+                or os.environ.get("GOOGLE_GENAI_API_KEY")
+            )
+            if not s.openrouter_api_key and gemini_key:
+                _client = GeminiClient()
+            else:
+                _client = LLMClient()
     return _client
+

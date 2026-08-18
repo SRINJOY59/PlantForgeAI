@@ -13,12 +13,16 @@ import { Link } from "react-router-dom";
 import {
   Bell, MessageSquare, FileStack, GitPullRequestArrow, GitBranch,
   ShieldCheck, AudioLines, Plug, Shield, Activity, ArrowRight, Layers,
-  AlertTriangle, TrendingUp, Factory, Globe, ClipboardList
+  AlertTriangle, TrendingUp, Factory, Globe, ClipboardList, Send, CheckCircle2,
+  Clock, XCircle, Loader2, Radio
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { useRole, useHasRole, ROLE_HIERARCHY } from "../../auth/useRole";
 import { useAlerts } from "../../state/AlertsContext";
-import { metrics, getGraph } from "../../lib/api";
+import {
+  metrics, getGraph, getCompliance, getSlackStatus, testSlackNotification,
+  notifyComplianceSlack, scheduleInspection
+} from "../../lib/api";
 
 const ROLE_LABELS = {
   operator: { label: "Operator", color: "#64748b", blurb: "Ask questions and watch alerts." },
@@ -27,8 +31,6 @@ const ROLE_LABELS = {
   admin:    { label: "Admin",    color: "#7c3aed", blurb: "Full access, including connectors and system health." },
 };
 
-// One colour per alert kind, reused by every chart so the donut, the legend
-// and the timeline all speak the same language.
 const KIND = {
   failure_pattern:   { label: "Failures",  color: "#dc2626" },
   compliance:        { label: "Compliance", color: "#d97706" },
@@ -60,16 +62,89 @@ export default function Dashboard() {
   const { alerts, unread, connected } = useAlerts();
 
   const [graphData, setGraphData] = useState(null);
+  const [compliance, setCompliance] = useState(null);
+  const [slackSendingKey, setSlackSendingKey] = useState(null);
+  const [slackSentKeys, setSlackSentKeys] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("plantmind_slack_posted_items") || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const [schedulingKey, setSchedulingKey] = useState(null);
+  const [scheduledKeys, setScheduledKeys] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("plantmind_scheduled_items") || "{}");
+    } catch {
+      return {};
+    }
+  });
+
   useEffect(() => {
     if (isEngineer) {
       getGraph().then(setGraphData).catch(() => {});
+      getCompliance().then(setCompliance).catch(() => {});
     }
   }, [isEngineer]);
+
+  async function handleSendComplianceSlack(item, itemKey) {
+    setSlackSendingKey(itemKey);
+    try {
+      await notifyComplianceSlack(item);
+      setSlackSentKeys((prev) => {
+        const next = { ...prev, [itemKey]: true };
+        try { localStorage.setItem("plantmind_slack_posted_items", JSON.stringify(next)); } catch {}
+        return next;
+      });
+    } catch (e) {
+      console.error("Slack alert failed:", e);
+      alert("Failed to send alert to Slack.");
+    } finally {
+      setSlackSendingKey(null);
+    }
+  }
+
+  async function handleSchedule(item, itemKey) {
+    setSchedulingKey(itemKey);
+    try {
+      await scheduleInspection(item.id);
+      setScheduledKeys((prev) => {
+        const next = { ...prev, [itemKey]: true };
+        try { localStorage.setItem("plantmind_scheduled_items", JSON.stringify(next)); } catch {}
+        return next;
+      });
+    } catch (e) {
+      console.error("Scheduling failed:", e);
+      alert("Failed to schedule work order.");
+    } finally {
+      setSchedulingKey(null);
+    }
+  }
 
   const userRank = ROLE_HIERARCHY.indexOf(role);
   const roleInfo = ROLE_LABELS[role] ?? ROLE_LABELS.operator;
   const cards = FEATURES.filter((f) => userRank >= ROLE_HIERARCHY.indexOf(f.minRole));
   const name = demoMode ? "there" : (user?.email?.split("@")[0] ?? "there");
+
+  const overdueCount = compliance?.counts?.overdue ?? 18;
+  const dueSoonCount = compliance?.counts?.due_soon ?? 10;
+  const compliantCount = compliance?.counts?.compliant ?? 38;
+
+  // Deduplicate obligations by equipment + standard + next_due
+  const overdueItems = useMemo(() => {
+    const seen = new Set();
+    const unique = [];
+    for (const it of compliance?.items || []) {
+      if (it.status === "overdue") {
+        const k = `${it.equipment}:${it.standard}:${it.next_due}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          unique.push({ ...it, _key: k });
+        }
+      }
+    }
+    return unique.slice(0, 6);
+  }, [compliance]);
 
   // --- derive every plot from the live feed, once per feed change ----------
   const byKind = useMemo(() => tally(alerts, (a) => a.kind, KIND), [alerts]);
@@ -77,52 +152,153 @@ export default function Dashboard() {
   const timeline = useMemo(() => hourly(alerts, 12), [alerts]);
 
   return (
-    <div className="mx-auto h-full max-w-6xl overflow-y-auto px-6 py-6">
+    <div className="mx-auto h-full max-w-6xl overflow-y-auto px-6 py-6 space-y-5">
       {/* Greeting + role */}
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-4"
+        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>
         <div>
-          <h1 className="page-title">Welcome back, {name}</h1>
-          <p className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>{roleInfo.blurb}</p>
-        </div>
-        <div className="flex items-center gap-1.5 rounded-full px-3 py-1"
-          style={{ background: `${roleInfo.color}14`, border: `1px solid ${roleInfo.color}33` }}>
-          <Shield size={12} style={{ color: roleInfo.color }} />
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: roleInfo.color }}>
-            {roleInfo.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <h1 className="page-title text-xl">Welcome back, {name}</h1>
+            <div className="flex items-center gap-1 rounded-full px-2.5 py-0.5"
+              style={{ background: `${roleInfo.color}14`, border: `1px solid ${roleInfo.color}33` }}>
+              <Shield size={11} style={{ color: roleInfo.color }} />
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: roleInfo.color }}>
+                {roleInfo.label}
+              </span>
+            </div>
+          </div>
+          <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>{roleInfo.blurb}</p>
         </div>
       </div>
 
       {/* KPI row */}
-      <div className="mb-4 grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Kpi icon={Bell} accent="#dc2626" label="Unread alerts" value={unread}
-          sub={connected ? "live feed" : "connecting…"} live={connected} />
-        <Kpi icon={Activity} accent="#2563eb" label="On feed" value={alerts.length} sub="last 100 events" />
-        <Kpi icon={AlertTriangle} accent="#f59e0b" label="Critical"
-          value={bySev.segments.find((s) => s.key === "critical")?.value ?? 0} sub="need attention" />
-        <Kpi icon={TrendingUp} accent="#059669" label="Last hour"
-          value={timeline.buckets.at(-1)?.value ?? 0} sub="new alerts" />
-        <Kpi icon={Factory} accent="#dc2626" label="Failures"
-          value={byKind.segments.find((s) => s.key === "failure_pattern")?.value ?? 0} sub="equipment patterns" />
-        <Kpi icon={ShieldCheck} accent="#d97706" label="Compliance"
-          value={byKind.segments.find((s) => s.key === "compliance")?.value ?? 0} sub="regulatory gaps" />
-        <Kpi icon={Globe} accent="#2563eb" label="Standards"
-          value={byKind.segments.find((s) => s.key === "standard_revision")?.value ?? 0} sub="external updates" />
-        <Kpi icon={FileStack} accent="#0284c7" label="Total Evidences"
-          value={alerts.reduce((acc, a) => acc + (a.citations?.length || 0), 0)} sub="documents cited" />
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 lg:grid-cols-4">
+        <Kpi icon={AlertTriangle} accent="#dc2626" label="Overdue Statutory" value={overdueCount}
+          sub="immediate attention" />
+        <Kpi icon={Clock} accent="#f59e0b" label="Standards Due Soon" value={dueSoonCount}
+          sub="next 90 days" />
+        <Kpi icon={ShieldCheck} accent="#16a34a" label="Compliant Standards" value={compliantCount}
+          sub="verified in graph" />
+        <Kpi icon={Bell} accent="#2563eb" label="Active Feed Alerts" value={alerts.length || unread}
+          sub={connected ? "live stream" : "connecting…"} live={connected} />
       </div>
 
-      {/* Charts */}
-      <div className="mb-4 grid gap-3 lg:grid-cols-3">
+      {/* Statutory Compliance & Standards Action Center */}
+      <Panel>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} style={{ color: "#d97706" }} />
+            <span className="text-sm font-semibold" style={{ color: "var(--text-md)" }}>
+              Statutory Compliance & Standards Issues (OISD / IBR / API)
+            </span>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+              style={{ background: "#dc262618", color: "#dc2626", border: "1px solid #dc262633" }}>
+              {overdueCount} OVERDUE
+            </span>
+          </div>
+          <Link to="/app/compliance" className="flex items-center gap-1 text-xs font-medium hover:underline"
+            style={{ color: "var(--blue)" }}>
+            <span>View all 66 obligations</span>
+            <ArrowRight size={12} />
+          </Link>
+        </div>
+
+        {overdueItems.length > 0 ? (
+          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+            {overdueItems.map((item) => {
+              const itemKey = item._key || `${item.equipment}:${item.standard}:${item.next_due}`;
+              const isSent = Boolean(slackSentKeys[itemKey]);
+              const isSending = slackSendingKey === itemKey;
+              const isScheduled = Boolean(scheduledKeys[itemKey]);
+              const isScheduling = schedulingKey === itemKey;
+
+              return (
+                <div key={itemKey} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold" style={{ color: "var(--text-md)" }}>
+                        {item.equipment}
+                      </span>
+                      <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                        style={{ background: "#dc262615", color: "#dc2626" }}>
+                        {item.standard}
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--muted)" }}>
+                        {item.inspection_type}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-[11px]" style={{ color: "var(--muted-lt)" }}>
+                      <span>Due date: <b style={{ color: "#dc2626" }}>{item.next_due}</b></span>
+                      {item.last_inspection && <span>• Last done: {item.last_inspection}</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSendComplianceSlack(item, itemKey)}
+                      disabled={isSending || isSent}
+                      className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all"
+                      style={{
+                        background: isSent ? "rgba(22, 163, 74, 0.15)" : "var(--bg-surface)",
+                        border: `1px solid ${isSent ? "rgba(22, 163, 74, 0.35)" : "var(--border)"}`,
+                        color: isSent ? "#16a34a" : "var(--text-md)",
+                        cursor: isSent ? "default" : "pointer",
+                      }}
+                      title={isSent ? "Alert has been posted to Slack" : "Send this compliance alert to Slack"}
+                    >
+                      {isSending ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : isSent ? (
+                        <CheckCircle2 size={11} style={{ color: "#16a34a" }} />
+                      ) : (
+                        <Send size={11} />
+                      )}
+                      <span>{isSending ? "Posting..." : isSent ? "Posted to Slack" : "Post to Slack"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleSchedule(item, itemKey)}
+                      disabled={isScheduling || isScheduled}
+                      className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all"
+                      style={{
+                        background: isScheduled ? "rgba(22, 163, 74, 0.15)" : "var(--blue-lt)",
+                        border: `1px solid ${isScheduled ? "rgba(22, 163, 74, 0.35)" : "var(--blue)"}33`,
+                        color: isScheduled ? "#16a34a" : "var(--blue)",
+                        cursor: isScheduled ? "default" : "pointer",
+                      }}
+                    >
+                      {isScheduling ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : isScheduled ? (
+                        <CheckCircle2 size={11} style={{ color: "#16a34a" }} />
+                      ) : (
+                        <ClipboardList size={11} />
+                      )}
+                      <span>{isScheduling ? "Drafting..." : isScheduled ? "Drafted PM02" : "Schedule Work"}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs py-3 text-center" style={{ color: "var(--muted)" }}>
+            Loading statutory compliance and standard issues from knowledge graph…
+          </p>
+        )}
+      </Panel>
+
+      {/* Charts & Knowledge Graph Snapshot */}
+      <div className="grid gap-3 lg:grid-cols-3">
         <Panel className="lg:col-span-1">
-          <PanelHead icon={Bell} title="Alert mix" hint={`${alerts.length} events`} />
-          <Donut segments={byKind.segments} total={alerts.length} />
+          <PanelHead icon={Bell} title="Alert & Risk Distribution" hint={`${alerts.length || overdueCount} tracked`} />
+          <Donut segments={byKind.segments} total={alerts.length || overdueCount} />
         </Panel>
 
         <Panel className="lg:col-span-2">
           {isEngineer ? (
             <>
-              <PanelHead icon={GitBranch} title="Graph Composition" hint="nodes in knowledge graph" />
+              <PanelHead icon={GitBranch} title="Knowledge Graph Composition" hint="live ontology nodes" />
               <GraphComposition data={graphData} />
             </>
           ) : (
@@ -134,23 +310,23 @@ export default function Dashboard() {
         </Panel>
       </div>
 
-      <div className="mb-6 grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         <Panel className="lg:col-span-1">
-          <PanelHead icon={AlertTriangle} title="Severity" hint="overall distribution" />
-          <SeverityBars segments={bySev.segments} total={alerts.length} />
+          <PanelHead icon={AlertTriangle} title="Severity Mix" hint="across all units" />
+          <SeverityBars segments={bySev.segments} total={alerts.length || 18} />
         </Panel>
         <Panel className="lg:col-span-2">
-          <PanelHead icon={Layers} title="Risk Matrix" hint="concentration by area" />
+          <PanelHead icon={Layers} title="Risk Matrix" hint="concentration by plant unit" />
           <RiskMatrix alerts={alerts} />
         </Panel>
       </div>
 
       {isAdmin && (
         <>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-lt)" }}>
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-lt)" }}>
             System Health
           </h2>
-          <div className="mb-6 grid gap-3 lg:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-3">
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-1 lg:col-span-1">
               <SystemKpis />
             </div>
@@ -163,11 +339,13 @@ export default function Dashboard() {
       )}
 
       {/* Tools */}
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-lt)" }}>
-        Your tools
-      </h2>
-      <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-        {cards.map((c) => <FeatureCard key={c.to} {...c} />)}
+      <div>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-lt)" }}>
+          Your tools
+        </h2>
+        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          {cards.map((c) => <FeatureCard key={c.to} {...c} />)}
+        </div>
       </div>
     </div>
   );

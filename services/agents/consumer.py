@@ -17,6 +17,7 @@ from plantmind_core.telemetry import get_logger
 
 from agents.handlers import DeltaHandler, ProcessLimitHandler, TepAlarmHandler
 from agents.reader import AgentReader
+from agents.watchers import Trigger, family_of
 from agents.usecases import (
     ComplianceScanner,
     InvestigatorAgent,
@@ -29,6 +30,7 @@ log = get_logger("agents.consumer")
 
 CURSOR = "agents-deltas"
 ALARM_CURSOR = "agents-tep-alerts-cursor"
+RCA_REQUEST_CURSOR = "agents-rca-requests-cursor"
 # alarms investigated per tick. They run concurrently, so this is the width
 # of one batch rather than a serial cost.
 ALARM_BATCH = 5
@@ -54,9 +56,14 @@ class AgentsRuntime:
         standards_interval=STANDARDS_INTERVAL_S,
         block_ms=500,
         drafter=None,
+        auto_rca=False,
     ):
         self._bus = bus
         self._reader = reader
+        # whether a simulator's process-limit alarm auto-spends an LLM RCA.
+        # Off by default; the diagnostics service answers alarms deterministically
+        # and LLM RCA is requested per-episode instead. See _route_alarm.
+        self._auto_rca = auto_rca
         self._investigator = investigator or InvestigatorAgent(reader)
         self._drafter = drafter or WorkOrderDrafter()
         self._compliance = ComplianceScanner(reader)
@@ -97,9 +104,10 @@ class AgentsRuntime:
 
         bus = RedisBus.from_settings()
         reader = AgentReader.from_settings()
+        settings = get_settings()
         standards = (
             StandardsWatcher(reader, bus, WebRevisionSource(get_llm()))
-            if get_settings().standards_watch_enabled
+            if settings.standards_watch_enabled
             else None
         )
         return cls(
@@ -108,6 +116,7 @@ class AgentsRuntime:
             cache=AnswerCache.from_settings(),
             embedder=get_embedder(),
             standards=standards,
+            auto_rca=settings.auto_rca_enabled,
         )
 
     def run(self):
@@ -126,7 +135,10 @@ class AgentsRuntime:
         # 2. Live telemetry alarms (RCA) from alerts:critical stream
         self.tick_alarms()
 
-        # 3. Periodic tasks
+        # 3. On-demand LLM RCA an operator asked for on one diagnosis
+        self.tick_rca_requests()
+
+        # 4. Periodic tasks
         if time.time() - self._last_compliance >= self._interval:
             self.run_compliance()
         if self._standards and (time.time() - self._last_standards >= self._standards_interval):
@@ -188,6 +200,11 @@ class AgentsRuntime:
             return None                      # our own answer, not a question
         if payload.get("kind") != "process_limit":
             return None                      # compliance / failure / standards
+        if not self._auto_rca:
+            # a simulator alarm is answered by the diagnostics service now -
+            # signature + library match, deterministic and free. An LLM RCA is
+            # spent only when an operator asks for one on a specific episode.
+            return None
         if payload.get("rule"):
             return self._process_limit_handler.handle_process_limit(entry_id, payload)
         if payload.get("tag_id"):
@@ -212,6 +229,122 @@ class AgentsRuntime:
                 log.warning("RCA: investigation failed", entry_id=entry_id,
                             error_type=type(result).__name__,
                             error=str(result)[:200])
+
+    # --- on-demand RCA -----------------------------------------------------
+    def tick_rca_requests(self):
+        """Run the LLM RCA an operator explicitly asked for on one diagnosis.
+
+        This is the deliberate, per-episode spend that replaces auto-investigating
+        every alarm. The investigation is grounded in the diagnosis the plant
+        already produced - the matched fault mode and the observed cascade - so
+        the model confirms or refutes a stated prior rather than starting cold.
+        """
+        cursor = self._bus.get_cursor(RCA_REQUEST_CURSOR) or "0-0"
+        try:
+            entries = self._bus.read_rca_requests(cursor, block_ms=0)
+        except Exception as e:
+            log.warning("on-demand RCA: failed to read request stream", error=str(e))
+            return
+        if not entries:
+            return
+
+        pending, last_id = [], None
+        for entry_id, payload_str in entries:
+            last_id = entry_id
+            try:
+                req = json.loads(payload_str) if payload_str else {}
+            except (ValueError, TypeError):
+                continue
+            diag_id = req.get("diagnosis_id")
+            if not diag_id or not self._bus.claim_rca_request(diag_id):
+                continue                      # no id, or already in flight / done
+            diag_json = self._bus.get_indexed_diagnosis(diag_id)
+            if not diag_json:
+                log.warning("on-demand RCA: diagnosis not found", diagnosis_id=diag_id)
+                self._bus.release_rca_request(diag_id)
+                continue
+            try:
+                diag = json.loads(diag_json)
+            except (ValueError, TypeError):
+                self._bus.release_rca_request(diag_id)
+                continue
+            pending.append((diag_id, self._investigate_diagnosis(diag)))
+
+        if last_id:
+            self._bus.set_cursor(RCA_REQUEST_CURSOR, last_id)
+        if pending:
+            run_sync(self._run_rca_batch(pending))
+
+    async def _run_rca_batch(self, pending: list):
+        results = await asyncio.gather(*(coro for _, coro in pending),
+                                       return_exceptions=True)
+        for (diag_id, _), result in zip(pending, results):
+            if isinstance(result, BaseException):
+                # free the claim so the operator can ask again after a failure
+                self._bus.release_rca_request(diag_id)
+                log.warning("on-demand RCA failed", diagnosis_id=diag_id,
+                            error_type=type(result).__name__,
+                            error=str(result)[:200])
+
+    async def _investigate_diagnosis(self, diag: dict):
+        diag_id = diag.get("id", "")
+        trigger_tag = diag.get("trigger_tag", "")
+        unit_area = trigger_tag.split(".")[0] if "." in trigger_tag else trigger_tag
+        level = diag.get("trigger_level") or "H"
+        sig = diag.get("signature") or {}
+        devs = sig.get("deviations") or []
+        matches = diag.get("matches") or []
+        top = matches[0] if matches else {}
+
+        family = family_of(unit_area)
+        siblings = self._reader.family_history(family, level, exclude_tag=unit_area)
+        trigger = Trigger(
+            tag=unit_area, mode=f"{level} anomaly: {trigger_tag}",
+            count=1, family=family, siblings=siblings, graph_version=0,
+        )
+        alert_context = {
+            "tag_id": trigger_tag,
+            "unit_area": unit_area,
+            "alarm_level": level,
+            "message": f"Live diagnosis {diag_id}",
+            "plant": "Tennessee Eastman Process (TEP)",
+            "diagnosis": {
+                "matched_fault": top.get("cause_id"),
+                "matched_label": top.get("cause_label"),
+                "confidence": top.get("confidence"),
+                "cascade": [
+                    {"tag": d.get("tag_id"), "direction": d.get("direction"),
+                     "z": d.get("magnitude"), "rank": d.get("first_mover_rank")}
+                    for d in devs
+                ],
+                "candidates": [
+                    {"cause_id": m.get("cause_id"), "label": m.get("cause_label"),
+                     "confidence": m.get("confidence")} for m in matches
+                ],
+            },
+        }
+
+        log.info("on-demand RCA starting", diagnosis_id=diag_id, tag=trigger_tag,
+                 matched=top.get("cause_id"))
+        alert_obj, _ = await self._investigator.investigate_reasoned(
+            trigger, alert_context=alert_context)
+        self._reader.name_citations(alert_obj.citations)
+
+        investigation_payload = {
+            "type": "investigation",
+            "diagnosis_id": diag_id,
+            "alert_ref": diag_id,
+            "summary": alert_obj.body,
+            "affected_equipment": [unit_area],
+            "unit_area": unit_area,
+            "tag_id": trigger_tag,
+            "matched_fault": top.get("cause_id"),
+            "verified": alert_obj.verified,
+            "citations": [c.model_dump() for c in alert_obj.citations],
+            "timestamp": time.time(),
+        }
+        self._bus.publish_alert(json.dumps(investigation_payload))
+        log.info("on-demand RCA published", diagnosis_id=diag_id)
 
     def run_compliance(self):
         self._last_compliance = time.time()

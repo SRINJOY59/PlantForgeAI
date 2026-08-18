@@ -9,6 +9,8 @@ GRAPH_VERSION = "graph:version"          # INCR on every committed batch
 DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
 ALERT_STREAM = "alerts:critical"         # agents & watchers publish, UI/gateway tail
 DIAGNOSES_STREAM = "diagnoses:live"      # diagnostics publishes, Diagnose view tails
+DIAGNOSES_INDEX = "diagnoses:index"      # prefix diagnoses:index:<id> -> Diagnosis json (TTL'd)
+RCA_REQUESTS_STREAM = "rca:requests"     # UI asks for LLM RCA on one diagnosis; agents run it
 DRAFT_WORK_ORDERS_STREAM = "work_orders:drafts"
 # <stream entry id> -> {decision, by, at}. Beside the stream, not in it: the
 # draft is immutable (it is what the agent produced at one graph version), the

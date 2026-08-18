@@ -8,6 +8,7 @@ import EvidencePanel from "../../components/ask/EvidencePanel";
 import HistoryPanel from "../../components/ask/HistoryPanel";
 import { ConfidencePill, ModeBadge } from "../../components/ask/badges";
 import { useAuth } from "../../auth/AuthProvider";
+import { useProfile } from "../../state/ProfileContext";
 import {
   createConversation, deleteConversation, listConversations, loadTurns,
   saveTurn, titleFor,
@@ -22,6 +23,7 @@ const SUGGESTIONS = [
 
 export default function Ask() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [turns, setTurns] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -98,10 +100,11 @@ export default function Ask() {
 
     try {
       let streamed = "";
+      const persona = profile?.job_title || profile?.app_role;
       const done = await askStream(question, delta => {
         streamed += delta;
         setTurns(t => { const c = [...t]; c[idx] = { ...c[idx], text: c[idx].text + delta }; return c; });
-      }, history);
+      }, history, null, null, persona);
       setTurns(t => { const c = [...t]; c[idx] = { ...c[idx], answer: done }; return c; });
       // only once the answer is whole - a half-streamed turn is never written
       saveTurn(conversationId.current, question, streamed, done)

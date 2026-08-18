@@ -9,19 +9,28 @@
 // until the user re-logs with a hook-minted token.
 //
 // Role hierarchy (least → most privileged):
+//   worker    → Field Copilot only (separate mobile persona, own /field shell)
 //   operator  → Ask, Alerts, Documents read
 //   planner   → + Connectors read
 //   engineer  → + Graph, Compliance, MoC, Interview, doc upload
 //   admin     → full access + Connectors write, user management
+//
+// 'worker' is rank 0 so operator+ gates exclude it, but it is a *separate
+// persona*: a worker is routed to /field, never the engineer /app console.
+// Kept in sync with services/gateway/auth.py ROLE_HIERARCHY.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { supabase, supabaseEnabled } from "../lib/supabase";
 
-export const ROLE_HIERARCHY = ["operator", "planner", "engineer", "admin"];
+export const ROLE_HIERARCHY = ["worker", "operator", "planner", "engineer", "admin"];
+
+// The field persona. Kept as its own predicate rather than a rank check because
+// "is this a worker" is a routing question (which shell), not a privilege one.
+export const WORKER_ROLE = "worker";
 
 /** Decode the app_role from a raw JWT string. Returns null if not present. */
-function roleFromJwt(token) {
+export function roleFromJwt(token) {
   try {
     const payload = token.split(".")[1];
     const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
@@ -89,4 +98,13 @@ export function useHasRole(minRole) {
   const userRank = ROLE_HIERARCHY.indexOf(role);
   const minRank = ROLE_HIERARCHY.indexOf(minRole);
   return userRank >= minRank;
+}
+
+/**
+ * True when the current user is a field worker — the persona that belongs on
+ * the /field shell rather than the /app engineer console. Used by the route
+ * guards to send each persona to its own home.
+ */
+export function useIsWorker() {
+  return useRole() === WORKER_ROLE;
 }

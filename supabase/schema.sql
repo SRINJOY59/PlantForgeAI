@@ -12,11 +12,16 @@
 -- and which corner of the graph matter to this person.
 --
 -- app_role drives both the frontend (which nav items are visible) and the
--- gateway (which endpoints are callable). The four tiers:
+-- gateway (which endpoints are callable). The tiers:
+--   worker    - Field Copilot only (mobile field persona, its own /field shell)
 --   operator  - Ask, Alerts, Documents read  (default for every new signup)
 --   planner   - + Connectors read
 --   engineer  - + Graph, Compliance, MoC, Interview, document upload
 --   admin     - full access + Connectors write, role management
+--
+-- 'worker' is a separate persona, not a privilege tier: it is provisioned
+-- deliberately (field job titles below, or an admin setting it), never the
+-- default a missing role falls back to.
 --
 -- NOTE: app_role is NOT given an inline CHECK in CREATE TABLE.
 -- The DO block below owns the constraint so there is only ever one copy,
@@ -51,7 +56,27 @@ begin
     ) then
         alter table public.profiles
             add constraint profiles_app_role_check
-            check (app_role in ('operator','planner','engineer','admin'));
+            check (app_role in ('worker','operator','planner','engineer','admin'));
+    end if;
+end;
+$$;
+
+-- Migration: widen the CHECK to admit 'worker' on databases where the
+-- constraint already exists with the older four-role definition. The guard
+-- above only ADDS a missing constraint; it never alters an existing one, so
+-- this drop-and-recreate is what actually lets 'worker' through on upgrade.
+do $$
+begin
+    if exists (
+        select 1 from pg_constraint
+         where conname = 'profiles_app_role_check'
+           and conrelid = 'public.profiles'::regclass
+           and pg_get_constraintdef(oid) not like '%worker%'
+    ) then
+        alter table public.profiles drop constraint profiles_app_role_check;
+        alter table public.profiles
+            add constraint profiles_app_role_check
+            check (app_role in ('worker','operator','planner','engineer','admin'));
     end if;
 end;
 $$;
@@ -88,8 +113,16 @@ declare
 begin
     job_t := nullif(new.raw_user_meta_data ->> 'job_title', '');
 
-    -- Map job title to app role automatically
-    if job_t ilike '%engineer%' or job_t ilike '%engg%' then
+    -- Map job title to app role automatically. Order matters: the field-worker
+    -- titles are checked first so a "Field Technician" does not fall through to
+    -- some broader match. Engineers/planners/managers keep the console; the
+    -- hands-on field trades get the mobile Field Copilot persona instead.
+    if job_t ilike '%worker%' or job_t ilike '%technician%' or job_t ilike '%fitter%'
+       or job_t ilike '%mechanic%' or job_t ilike '%field oper%'
+       or job_t ilike '%operative%' or job_t ilike '%rigger%'
+       or job_t ilike '%electrician%' or job_t ilike '%welder%' then
+        mapped_role := 'worker';
+    elsif job_t ilike '%engineer%' or job_t ilike '%engg%' then
         mapped_role := 'engineer';
     elsif job_t ilike '%planner%' or job_t ilike '%scheduler%' then
         mapped_role := 'planner';
@@ -165,7 +198,8 @@ begin
     role_val := coalesce(role_val, 'operator');
 
     -- Reject unknown values: a bad DB row must not silently elevate privileges.
-    if role_val not in ('operator', 'planner', 'engineer', 'admin') then
+    -- 'worker' is admitted but is the lowest persona, so this never elevates.
+    if role_val not in ('worker', 'operator', 'planner', 'engineer', 'admin') then
         role_val := 'operator';
     end if;
 

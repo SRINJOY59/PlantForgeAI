@@ -51,8 +51,10 @@ def plant(monkeypatch):
                                         "hh": 145.0}}
 
     inv = RecordingInvestigator()
+    # this suite exercises the auto-RCA path itself, which is opt-in now
     runtime = AgentsRuntime(bus, FakeAgentReader(), investigator=inv,
-                            compliance_interval=10_000, block_ms=0)
+                            compliance_interval=10_000, block_ms=0,
+                            auto_rca=True)
 
     # the handler asks the simulator which IDVs are active; there is no
     # simulator here, and the handler is meant to carry on without one

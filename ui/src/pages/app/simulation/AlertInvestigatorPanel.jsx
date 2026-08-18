@@ -92,7 +92,12 @@ export default function AlertInvestigatorPanel({ alerts = [], investigations = [
 
   const renderRcaBlock = (alert) => {
     const inv = getInvestigation(alert.fingerprint || alert.id);
-    const affected = inv?.affected_equipment || [];
+    // Root-cause analysis is on-demand now (the "Investigate with AI" button on
+    // the Diagnose tab), not automatic - so there is no perpetual "investigating…"
+    // spinner here. The synthesis renders only once an investigation actually
+    // exists for this alert; otherwise the block is absent.
+    if (!inv) return null;
+    const affected = inv.affected_equipment || [];
 
     return (
       <div className="rounded-lg p-3 border mt-2" style={{ background: "rgba(241,245,249,0.3)", borderColor: "var(--border)" }}>
@@ -100,20 +105,12 @@ export default function AlertInvestigatorPanel({ alerts = [], investigations = [
           <div className="font-bold text-slate-800 text-[10px] uppercase tracking-wider">
             🤖 Agent Grounded RCA Synthesis
           </div>
-          {inv && (
-            <div className="text-[9px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-              Grounding: Grounded
-            </div>
-          )}
+          <div className="text-[9px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+            Grounding: Grounded
+          </div>
         </div>
 
-        {!inv ? (
-          <div className="flex items-center gap-2 py-2 text-slate-500 font-medium text-xs">
-            <Loader2 size={12} className="animate-spin" />
-            Investigator Agent traversing topology to resolve root-cause...
-          </div>
-        ) : (
-          <div className="space-y-3">
+        <div className="space-y-3">
             <div className="prose prose-sm max-w-none text-xs text-slate-700">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{inv.summary || inv.text || ""}</ReactMarkdown>
             </div>
@@ -170,7 +167,6 @@ export default function AlertInvestigatorPanel({ alerts = [], investigations = [
               </div>
             )}
           </div>
-        )}
       </div>
     );
   };

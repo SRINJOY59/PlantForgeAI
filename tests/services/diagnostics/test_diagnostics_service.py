@@ -36,6 +36,7 @@ class FakeBus:
         self._cursors = {}
         self._inbox = []            # entries the next read_alerts returns
         self.published = []         # diagnosis JSON strings published
+        self.indexed = {}           # id -> diagnosis JSON, for on-demand lookup
 
     def queue(self, *payloads):
         base = len(self._inbox)
@@ -61,6 +62,9 @@ class FakeBus:
     def publish_diagnosis(self, diagnosis_json):
         self.published.append(diagnosis_json)
         return f"pub-{len(self.published)}"
+
+    def index_diagnosis(self, diag_id, diagnosis_json):
+        self.indexed[diag_id] = diagnosis_json
 
 
 class FakeDiag:

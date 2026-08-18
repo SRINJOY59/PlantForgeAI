@@ -42,7 +42,11 @@ class GraphReader:
     # ------------------------------------------------------------- linking
     def entity_by_surface(self, surface: str):
         records = self._run(
-            "MATCH (e:Entity) WHERE e.surface_form = $surface "
+            "MATCH (e:Entity) "
+            "WHERE (toLower(e.surface_form) = toLower($surface) "
+            "   OR e.id = 'equip:' + $surface "
+            "   OR e.id = 'inst:' + $surface "
+            "   OR e.id = $surface) "
             "AND NOT e:Chunk AND NOT e:Section AND NOT e:Document "
             "RETURN e.id AS id, e.surface_form AS surface, "
             "[l IN labels(e) WHERE l <> 'Entity'][0] AS label LIMIT 1",
@@ -142,6 +146,26 @@ class GraphReader:
             "fix.text AS correction, "
             "coalesce(fix.author, c.corrected_by, 'an engineer') AS author",
             doc_ids=list(doc_ids))
+
+    def equipment_work_orders(self, node_id: str, limit: int = 20) -> list:
+        """All work orders logged against an equipment node, ordered by date."""
+        return self._run(
+            "MATCH (e:Equipment {id: $id})-[m:MENTIONED_IN]->(w:WorkOrder) "
+            "RETURN DISTINCT w.wo_id AS wo_id, w.date AS date, "
+            "w.description AS description, w.action_taken AS action_taken, "
+            "w.downtime_hours AS downtime_hours, w.technician AS technician, "
+            "w.doc_id AS doc_id "
+            "ORDER BY w.date DESC LIMIT $limit",
+            id=node_id, limit=limit)
+
+    def equipment_failures(self, node_id: str) -> list:
+        """Failure modes, occurrences and causes for an equipment node."""
+        return self._run(
+            "MATCH (e:Equipment {id: $id})-[h:HAS_FAILURE]->(f:FailureMode) "
+            "RETURN f.surface_form AS mode, count(h) AS count, "
+            "[x IN collect(DISTINCT h.cause) WHERE x <> ''] AS causes, "
+            "collect(DISTINCT h.doc_id) AS doc_ids",
+            id=node_id)
 
     # -------------------------------------------------- plant-wide digests
     def overdue_inspections(self, today: str):
@@ -248,7 +272,10 @@ class GraphReader:
             "       f.signature_json AS signature_json, "
             "       f.lead_tag AS lead_tag, f.deviation_tags AS deviation_tags, "
             "       f.severity AS severity, f.source AS source, "
-            "       p.id AS procedure_id, p.surface_form AS procedure_name "
+            # seeded SOP nodes carry .name; document-ingested ones carry
+            # .surface_form - coalesce so a linked procedure is never nameless
+            "       p.id AS procedure_id, "
+            "       coalesce(p.surface_form, p.name) AS procedure_name "
             "ORDER BY f.cause_id")
 
     def close(self):

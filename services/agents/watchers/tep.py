@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 from plantmind_core.bus import RedisBus
+from plantmind_core.notify import SlackNotifier
 from plantmind_core.telemetry import get_logger
 
 log = get_logger("watchers.tep")
@@ -41,6 +42,12 @@ class TepWatcher:
         self._envelopes = self._load_initial_envelopes()
         self._prev: dict[str, tuple[float, float]] = {}
         self._open: dict[str, dict] = {}
+        # Important-only Slack. Shares the bus's redis client so the per-episode
+        # dedup is coordinated across every process that might send. Off unless a
+        # webhook is configured; a Slack outage never touches the alarm loop.
+        self._slack = SlackNotifier.from_settings(redis_client=bus._r)
+        if self._slack.enabled:
+            log.info("slack alarm notifications enabled")
 
     @classmethod
     def from_settings(cls) -> "TepWatcher":
@@ -106,6 +113,14 @@ class TepWatcher:
 
     def _check_message(self, fields: dict):
         tag_id = fields.get("tag_id", "")
+        # Actuator positions are not process variables. A control valve driving
+        # to 0% or 100% is the controller doing its job under a disturbance, not
+        # a breach - alarming on it turns every saturation into a CRITICAL alert
+        # (the reactor coolant valve opening fully when the reactor runs hot is
+        # correct control, not a fault). The watcher's domain is PVs; MV.* tags
+        # are skipped regardless of any envelope still configured for them.
+        if tag_id.startswith("MV."):
+            return
         env = self._envelopes.get(tag_id)
         if env is None:
             return
@@ -222,6 +237,12 @@ class TepWatcher:
             log.warning("TEP alarm fired", tag_id=tag_id, alarm_level=level, value=value)
         except Exception as e:
             log.error("failed to publish TEP alarm", error=str(e))
+
+        # Important-only Slack: post_alarm self-gates on enabled + severity +
+        # dedup and never raises, so this is safe to call on every alarm - only
+        # critical, first-of-episode breaches actually leave the building.
+        if self._slack.post_alarm(payload):
+            log.info("slack alarm sent", tag_id=tag_id, alarm_level=level)
 
     def run(self):
         self._ensure_group()

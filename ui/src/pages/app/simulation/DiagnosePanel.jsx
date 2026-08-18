@@ -10,8 +10,11 @@
  * Deliberately not the Alerts feed. An alert is an event to acknowledge; this is
  * a hypothesis to weigh — a resemblance to known fault knowledge, never a verdict.
  */
-import React from "react";
-import { Stethoscope, ArrowUp, ArrowDown, Clock } from "lucide-react";
+import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Stethoscope, ArrowUp, ArrowDown, Clock, Sparkles, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import { investigateDiagnosis } from "../../../lib/api";
 
 function confColor(c) {
   if (c >= 0.75) return "#16a34a";      // green — a strong resemblance
@@ -93,7 +96,87 @@ function Deviation({ dev }) {
   );
 }
 
-function DiagnosisCard({ d }) {
+function InvestigateBlock({ diagId, investigation }) {
+  const [requested, setRequested] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function onClick() {
+    setError(null);
+    setRequested(true);
+    try {
+      await investigateDiagnosis(diagId);
+    } catch (e) {
+      setError("Could not start investigation.");
+      setRequested(false);
+    }
+  }
+
+  // the RCA arrived over the socket
+  if (investigation) {
+    const verified = investigation.verified !== false;
+    return (
+      <div className="mt-2.5 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide"
+          style={{ color: "var(--muted)" }}>
+          <Sparkles size={11} /> AI Root-Cause Analysis
+          {verified ? (
+            <span className="flex items-center gap-0.5" style={{ color: "#16a34a" }}>
+              <ShieldCheck size={11} /> grounded
+            </span>
+          ) : (
+            <span className="flex items-center gap-0.5" style={{ color: "#f59e0b" }}>
+              <ShieldAlert size={11} /> unverified
+            </span>
+          )}
+        </div>
+        <div className="prose prose-sm max-w-none dark:prose-invert text-xs leading-relaxed prose-p:my-1 prose-headings:my-1.5 prose-headings:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-table:text-xs"
+          style={{ color: "var(--text-md)" }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {investigation.summary || investigation.text || investigation.body || ""}
+          </ReactMarkdown>
+        </div>
+        {investigation.citations?.length > 0 && (
+          <div className="mt-2 text-[10px] space-y-1">
+            <div className="font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+              Grounding Citations ({investigation.citations.length})
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {investigation.citations.map((c, idx) => (
+                <span key={idx} className="rounded border px-1.5 py-0.5 font-mono text-[9px]"
+                  style={{ background: "var(--bg-subtle, rgba(148,163,184,0.12))", color: "var(--muted)", borderColor: "var(--border)" }}>
+                  {typeof c === "string" ? c : c.doc_id || c.source || JSON.stringify(c)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (requested) {
+    return (
+      <div className="mt-2.5 pt-2 border-t flex items-center gap-1.5 text-xs"
+        style={{ borderColor: "var(--border)", color: "var(--muted)" }}>
+        <Loader2 size={12} className="animate-spin" />
+        Investigating with AI… grounding against plant documents.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2.5 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+      <button onClick={onClick}
+        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
+        style={{ background: "var(--blue)", color: "#fff" }}>
+        <Sparkles size={12} /> Investigate with AI
+      </button>
+      {error && <span className="ml-2 text-[10px]" style={{ color: "#dc2626" }}>{error}</span>}
+    </div>
+  );
+}
+
+function DiagnosisCard({ d, investigation }) {
   const matches = d.matches || [];
   const devs = d.signature?.deviations || [];
   return (
@@ -143,11 +226,19 @@ function DiagnosisCard({ d }) {
           </div>
         </div>
       )}
+
+      {/* the deliberate, per-episode LLM spend */}
+      <InvestigateBlock diagId={d.id} investigation={investigation} />
     </div>
   );
 }
 
-export default function DiagnosePanel({ diagnoses = [] }) {
+export default function DiagnosePanel({ diagnoses = [], investigations = [] }) {
+  // match each investigation back to the diagnosis it answers
+  const byDiag = {};
+  for (const inv of investigations) {
+    if (inv.diagnosis_id) byDiag[inv.diagnosis_id] = inv;
+  }
   return (
     <div className="rounded-xl p-4 shadow-sm"
       style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>
@@ -176,7 +267,7 @@ export default function DiagnosePanel({ diagnoses = [] }) {
       ) : (
         <div className="space-y-2.5 max-h-[70vh] overflow-y-auto">
           {diagnoses.map((d, i) => (
-            <DiagnosisCard key={d.id || i} d={d} />
+            <DiagnosisCard key={d.id || i} d={d} investigation={byDiag[d.id]} />
           ))}
         </div>
       )}

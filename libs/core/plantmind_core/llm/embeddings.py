@@ -59,19 +59,44 @@ def _hash_embed(text: str, dim: int = 1536) -> List[float]:
     return vec
 
 
+import os
+
+
 class EmbeddingClient:
-    def __init__(self):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None,
+                 model: str | None = None, target_dim: int | None = None):
         s = get_settings()
-        self._target_dim = s.embedding_dim
-        self._model = s.embedding_model
+        self._target_dim = target_dim or s.embedding_dim
+
+        gemini_key = (
+            s.gemini_api_key
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GOOGLE_GENAI_API_KEY")
+        )
+        is_gemini = (
+            getattr(s, "embedding_provider", "openrouter") == "gemini"
+            or (getattr(s, "llm_provider", "openrouter") == "gemini" and not s.embedding_api_key and not s.openrouter_api_key)
+        )
+
+        if is_gemini and not model:
+            self._model = getattr(s, "gemini_embedding_model", "text-embedding-004")
+            self._base_url = base_url or getattr(s, "gemini_base_url", "https://generativelanguage.googleapis.com/v1beta/openai/")
+            self._api_key = api_key or s.embedding_api_key or gemini_key or "missing-key"
+        else:
+            self._model = model or s.embedding_model
+            self._base_url = base_url or (s.embedding_base_url if s.embedding_base_url != "local" else "https://openrouter.ai/api/v1")
+            self._api_key = api_key or s.embedding_api_key or s.openrouter_api_key or "local"
+
         self._is_local = (
             self._model.startswith("fastembed")
             or self._model == "local"
             or s.embedding_base_url == "local"
+            or getattr(s, "embedding_provider", "openrouter") == "local"
         )
         self._client = AsyncOpenAI(
-            api_key=s.embedding_api_key or s.openrouter_api_key or "local",
-            base_url=s.embedding_base_url if s.embedding_base_url != "local" else "https://openrouter.ai/api/v1",
+            api_key=self._api_key,
+            base_url=self._base_url,
             timeout=60.0,
             max_retries=0,
         )

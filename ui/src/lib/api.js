@@ -54,6 +54,19 @@ export async function ask(question, history = []) {
   return res.json();
 }
 
+// Ask for an LLM root-cause analysis of one live diagnosis. Fire-and-forget:
+// the agents runtime runs it and the result arrives over the telemetry
+// WebSocket as a { type: "investigation", diagnosis_id } message.
+export async function investigateDiagnosis(diagId) {
+  const res = await fetchWithAuth(
+    `${BASE}/diagnostics/${encodeURIComponent(diagId)}/investigate`, {
+      method: "POST",
+      headers: { ...(await authHeaders()) },
+    });
+  if (!res.ok) throw new Error(`investigate failed: ${res.status}`);
+  return res.json();
+}
+
 export async function uploadDocument(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -81,11 +94,11 @@ export async function uploadDocument(file) {
 
 // Streams the answer. Calls onToken(text) for each delta and returns the
 // final answer object (citations, mode, confidence) from the 'done' event.
-export async function askStream(question, onToken, history = [], alertContext = null, signal = null) {
+export async function askStream(question, onToken, history = [], alertContext = null, signal = null, persona = null) {
   const res = await fetchWithAuth(`${BASE}/ask/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify({ question, history, alert_context: alertContext }),
+    body: JSON.stringify({ question, history, alert_context: alertContext, persona }),
     signal,
   });
   if (!res.ok) throw new Error(`stream failed: ${res.status}`);
@@ -114,11 +127,16 @@ export async function askStream(question, onToken, history = [], alertContext = 
 
 // after=0 replays the alerts already on the stream before following live
 // ones; the default ('$') would only ever show alerts raised after connecting,
-// so a freshly opened feed would look empty.
-//
-// fetch instead of EventSource so the JWT rides in a header. EventSource
-// reconnects on its own; here we do it explicitly, resuming from the last
-// alert id so a dropped connection doesn't replay or skip.
+export async function getInitialAlerts() {
+  try {
+    const res = await fetchWithAuth(`${BASE}/initial-alerts`, { headers: await authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export function subscribeAlerts(onAlert, after = "0") {
   const control = new AbortController();
   let cursor = after;
@@ -339,6 +357,31 @@ export async function scheduleInspection(itemId) {
   return res.json();
 }
 
+export async function notifyComplianceSlack(item) {
+  const res = await fetchWithAuth(`${BASE}/compliance/notify-slack`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new Error(`notify-slack failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getSlackStatus() {
+  const res = await fetchWithAuth(`${BASE}/system/slack/status`, { headers: await authHeaders() });
+  if (!res.ok) return { enabled: false, configured: false };
+  return res.json();
+}
+
+export async function testSlackNotification() {
+  const res = await fetchWithAuth(`${BASE}/system/slack/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+  });
+  if (!res.ok) throw new Error(`test-slack failed: ${res.status}`);
+  return res.json();
+}
+
 // Approve or reject a drafted work order. The approver is not sent - the
 // gateway takes it off the verified token, the same way a correction's author
 // is established rather than asserted.
@@ -509,4 +552,62 @@ export async function fetchFaultLibrary() {
   const res = await fetchWithAuth(`${BASE}/diagnostics/library`, { headers });
   if (!res.ok) throw new Error(`Fault library fetch failed: ${res.status}`);
   return res.json();
+}
+
+// --------------------------------------------------------------- field copilot
+// The worker persona's endpoints. Asset scoping + live state + a multilingual,
+// asset-aware grounded answer that reuses the same SSE shape as askStream.
+
+export async function fieldAssets() {
+  const res = await fetchWithAuth(`${BASE}/field/assets`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`field assets failed: ${res.status}`);
+  const data = await res.json();
+  return data.assets ?? [];
+}
+
+export async function fieldAssetContext(tag) {
+  const res = await fetchWithAuth(
+    `${BASE}/field/asset/${encodeURIComponent(tag)}/context`,
+    { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`field asset context failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fieldLanguages() {
+  const res = await fetchWithAuth(`${BASE}/field/languages`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`field languages failed: ${res.status}`);
+  const data = await res.json();
+  return data.languages ?? [];
+}
+
+// Streams an asset-scoped answer in the worker's language. Same SSE contract as
+// askStream: onToken(delta) per chunk, resolves to the final answer object.
+export async function fieldAskStream(question, onToken, { asset = null, lang = "en", history = [], signal = null } = {}) {
+  const res = await fetchWithAuth(`${BASE}/field/ask/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ question, asset, lang, history }),
+    signal,
+  });
+  if (!res.ok) throw new Error(`field ask failed: ${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let done = null;
+
+  while (true) {
+    const { value, done: finished } = await reader.read();
+    if (finished) break;
+    buffer += decoder.decode(value, { stream: true });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || "";
+    for (const frame of frames) {
+      const event = parseSse(frame);
+      if (!event) continue;
+      if (event.name === "token") onToken(event.data.text);
+      else if (event.name === "done") done = event.data;
+    }
+  }
+  return done;
 }

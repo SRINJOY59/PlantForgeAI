@@ -103,3 +103,13 @@ def test_unknown_tag_and_unparseable_value_are_ignored(watcher):
     watcher._check_message({"tag_id": "NOT.A.TAG", "value": "999"})
     watcher._check_message({"tag_id": "REACTOR.T", "value": "n/a"})
     assert fired(watcher) == []
+
+
+def test_actuator_tags_never_alarm(watcher):
+    """A control valve at 100% is the controller working, not a breach. MV.*
+    tags are skipped even if an envelope is still configured for them."""
+    watcher._envelopes["MV.REACTOR-COOL"] = {"ll": 0.0, "l": 10.0, "h": 90.0,
+                                             "hh": 100.0, "setpoint": 50.0}
+    for _ in range(5):
+        sample(watcher, 100.0, tag="MV.REACTOR-COOL")   # valve fully open
+    assert fired(watcher) == []

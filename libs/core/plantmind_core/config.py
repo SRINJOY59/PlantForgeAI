@@ -63,7 +63,8 @@ class Settings(BaseSettings):
     historian_flush_ms: int = 2000        # ...or after this long, whichever first
     historian_retention_days: int = 90    # retention policy, applied only on timescaledb
 
-    # --- LLM via OpenRouter (OpenAI-compatible) ---
+    # --- LLM Provider Selection & Settings ---
+    llm_provider: str = "openrouter"              # "openrouter" | "gemini"
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     llm_cheap: str = "qwen/qwen3.6-flash"         # classify, verify, ER adjudication
@@ -74,10 +75,30 @@ class Settings(BaseSettings):
     llm_max_retries: int = 5
     llm_timeout_s: float = 120.0
 
-    # --- embeddings (any OpenAI-compatible /embeddings endpoint) ---
+    # --- Google Gemini (AI Studio endpoint, API key auth) ---
+    gemini_api_key: str = ""                         # falls back to GEMINI_API_KEY / GOOGLE_API_KEY env
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    gemini_llm_cheap: str = "gemini-3.6-flash"
+    gemini_llm_mid: str = "gemini-3.7-flash"
+    gemini_llm_vision: str = "gemini-3.6-flash"
+
+    # --- Vertex AI (Gemini via GCP project, ADC / gcloud auth) ---
+    # Set llm_provider="vertex" to route through Vertex AI instead of AI Studio.
+    # Requires: gcloud auth application-default login (or a service account).
+    gcp_project: str = ""          # GCP project ID; falls back to GOOGLE_CLOUD_PROJECT env
+    vertex_region: str = "us-central1"
+    # MID answers the streaming Ask path; flash (not the pro thinking model)
+    # keeps time-to-first-token low. See .env for the rationale.
+    vertex_llm_cheap: str = "google/gemini-2.5-flash-lite"
+    vertex_llm_mid: str = "google/gemini-2.5-flash"
+    vertex_llm_vision: str = "google/gemini-2.5-flash"
+
+    # --- embeddings (OpenRouter, Gemini, or local) ---
+    embedding_provider: str = "openrouter"           # "openrouter" | "gemini" | "local"
     embedding_base_url: str = "https://openrouter.ai/api/v1"
-    embedding_api_key: str = ""                      # falls back to openrouter key
+    embedding_api_key: str = ""                      # falls back to openrouter or gemini key
     embedding_model: str = "openai/text-embedding-3-small"
+    gemini_embedding_model: str = "text-embedding-004"
     embedding_dim: int = 1536      # what the model emits; index must match
 
     # --- pipeline tuning ---
@@ -98,6 +119,25 @@ class Settings(BaseSettings):
     # reaches the public internet, it bills per search on top of tokens, and a
     # plant OT network usually has no route out at all.
     standards_watch_enabled: bool = False
+
+    # Whether a process-limit alarm from a simulator auto-spends an LLM RCA.
+    # Off by default: the diagnostics service now answers every alarm
+    # deterministically (signature + library match), for free and in seconds, so
+    # an automatic LLM investigation of every breach is cost with little signal.
+    # LLM RCA becomes a deliberate, per-episode request instead (rca:requests).
+    auto_rca_enabled: bool = False
+
+    # --- Slack notifications (important-only) ---
+    # Off unless a webhook is set. Deliberately narrow: only high-signal events
+    # reach Slack (critical process alarms today; confirmed-fault diagnoses and
+    # RCA verdicts are the planned next triggers), deduped per fault episode so a
+    # channel does not get muted into uselessness. See plantmind_core.notify.
+    slack_enabled: bool = False
+    slack_webhook_url: str = ""              # Slack Incoming Webhook URL
+    slack_min_severity: str = "critical"     # "critical" | "warning"
+    # A given alarm fingerprint is not re-sent within this window, so a tag that
+    # chatters across a limit produces one Slack message, not one per crossing.
+    slack_dedup_ttl_s: int = 1800
 
 
 @lru_cache
