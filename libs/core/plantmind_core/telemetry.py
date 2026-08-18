@@ -22,7 +22,12 @@ class _JsonFormatter(logging.Formatter):
         }
         extra = getattr(record, "kv", None)
         if extra:
-            payload.update(extra)
+            for key, value in extra.items():
+                # the envelope wins: a field the caller happens to call "level"
+                # or "msg" must not overwrite the record's real severity or
+                # message, or a line reads {"level": "HH"} and every log filter
+                # looking for WARNING silently stops matching it
+                payload[f"kv_{key}" if key in payload else key] = value
         return json.dumps(payload, default=str)
 
 
@@ -32,13 +37,19 @@ class _KVLogger:
     def __init__(self, logger: logging.Logger) -> None:
         self._logger = logger
 
-    def _log(self, level: int, msg: str, **kv) -> None:
+    # level and msg are positional-only, so a caller may log a field called
+    # "level" or "msg". Without the '/' they collide with these parameters and
+    # the logging call raises TypeError - inside whatever handler was logging,
+    # which is the last place anyone looks for a crash. An alarm handler
+    # logging level="HH" died on that line for every alarm it was given, and
+    # the only trace was its caller reporting "failed to process alert".
+    def _log(self, level: int, msg: str, /, **kv) -> None:
         self._logger.log(level, msg, extra={"kv": kv} if kv else None)
 
-    def debug(self, msg: str, **kv) -> None:   self._log(logging.DEBUG, msg, **kv)
-    def info(self, msg: str, **kv) -> None:    self._log(logging.INFO, msg, **kv)
-    def warning(self, msg: str, **kv) -> None: self._log(logging.WARNING, msg, **kv)
-    def error(self, msg: str, **kv) -> None:   self._log(logging.ERROR, msg, **kv)
+    def debug(self, msg: str, /, **kv) -> None:   self._log(logging.DEBUG, msg, **kv)
+    def info(self, msg: str, /, **kv) -> None:    self._log(logging.INFO, msg, **kv)
+    def warning(self, msg: str, /, **kv) -> None: self._log(logging.WARNING, msg, **kv)
+    def error(self, msg: str, /, **kv) -> None:   self._log(logging.ERROR, msg, **kv)
 
 
 _configured = False

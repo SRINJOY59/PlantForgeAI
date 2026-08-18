@@ -104,3 +104,33 @@ async def test_grounding_survives_the_streaming_path():
     assert kind == "done"
     assert answer.text.strip() == "the answer [doc:a]"
     assert answer.grounding == "documents"
+
+
+# -- what counts as a citation ------------------------------------------------
+# The prefixed form is the model saying outright "this is a citation", so it is
+# read whatever the id looks like. The bare form is guesswork and has to earn
+# it. Collapsing the two into one pattern with a length floor is what made
+# short ids invisible: correctly cited answers were graded "general".
+
+def test_a_prefixed_citation_is_read_however_short_the_id_is():
+    assert cited_docs("one [doc:a] and two [doc:ab]") == {"a", "ab"}
+
+
+def test_a_bare_hash_is_read_as_a_citation():
+    assert cited_docs("see [7bb5d5e5e90aaeac] for the step") == {"7bb5d5e5e90aaeac"}
+
+
+def test_bare_brackets_that_are_not_hashes_are_not_citations():
+    # markdown footnotes, list markers and asides share the syntax
+    assert cited_docs("step [4], see [note] and [see below]") == set()
+
+
+def test_a_truncated_hash_resolves_onto_the_document_retrieved():
+    full = "7bb5d5e5e90aaeac"
+    assert cited_docs(f"per [doc:7bb5d5e5]", ev(full)) == {full}
+
+
+def test_a_short_id_does_not_absorb_unrelated_citations():
+    # "a" is a prefix of "abcdef" as a string; it is not a truncation of it
+    how, _ = classify("torque 45 Nm [doc:abcdef].", ev("a"))
+    assert how == "unverified"

@@ -1,5 +1,4 @@
-import asyncio
-
+from plantmind_core.aio import run_sync
 from plantmind_core.celeryapp import WorkerApp
 from plantmind_core.config import get_settings
 from plantmind_core.queues import Routes
@@ -39,4 +38,8 @@ def flush_write_buffer():
 
 @worker.task(Routes.denoise)
 def run_denoise():
-    return asyncio.run(_denoise_instance().run())
+    # run_sync, not asyncio.run: this process handles many tasks and the
+    # clients it awaits are per-worker singletons. asyncio.run closes the loop
+    # it made, so the second task in a worker meets a dead connection pool and
+    # a semaphore bound to a loop that no longer exists. See plantmind_core.aio.
+    return run_sync(_denoise_instance().run())

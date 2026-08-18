@@ -368,8 +368,10 @@ export default function AlertInvestigatorPanel({ alerts = [], investigations = [
                   {isExpanded && (
                     <div className="border-t p-3 text-xs leading-relaxed space-y-3" style={{ borderColor: "var(--border)" }}>
                       <div>
-                        <div className="font-semibold text-slate-500 uppercase tracking-wider text-[9px] mb-1">Process Breach Summary</div>
-                        <p style={{ color: "var(--text-md)" }}>{alert.body}</p>
+                        <div className="font-semibold text-slate-500 uppercase tracking-wider text-[9px] mb-1.5">Process Breach Summary</div>
+                        <div className="prose prose-sm max-w-none text-xs leading-relaxed dark:prose-invert" style={{ color: "var(--text-md)" }}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{alert.body || alert.message || ""}</ReactMarkdown>
+                        </div>
                       </div>
                       {renderRcaBlock(alert)}
                     </div>

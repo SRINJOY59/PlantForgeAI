@@ -531,9 +531,9 @@ export default function TepPnidCanvas({ activeNode, onNodeClick, telemetry, aler
   }, []);
 
   const alarmSet = new Set(
-    alerts.flatMap(a => {
-      const area = a.tag_id ? a.tag_id.split(".")[0] : a.unit;
-      return area ? [area] : [];
+    (alerts || []).flatMap(a => {
+      const area = a.unit || (a.tag_id ? a.tag_id.split(".")[0] : null);
+      return area && NODES.some(n => n.id === area) ? [area] : [];
     })
   );
 

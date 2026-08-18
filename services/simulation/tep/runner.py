@@ -66,6 +66,8 @@ class TepRunner(BaseSimulationRunner):
         active = bool(req.get("active", True))
         if idv < 1 or idv > 21:
             raise HTTPException(400, f"IDV must be 1-21, got {idv}")
+        if not self._running:
+            await self.sim_start()
         description = self.bank.inject_idv(idv, active)
         return {
             "status": "idv_injected" if active else "idv_cleared",

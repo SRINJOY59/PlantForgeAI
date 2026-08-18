@@ -8,6 +8,9 @@ from agents.watchers import Trigger, family_of
 
 log = get_logger("agents.handlers.process_limit")
 
+# covers a redelivery of the same stream entry, and no longer
+RCA_CLAIM_TTL_S = 3600
+
 
 class ProcessLimitHandler:
     def __init__(self, bus, reader, investigator):
@@ -20,8 +23,12 @@ class ProcessLimitHandler:
         rule = payload.get("rule")
         fingerprint = payload.get("fingerprint")
 
-        rca_claim_key = f"rca:claimed:{fingerprint}"
-        if not self._bus._r.set(rca_claim_key, "1", ex=86400, nx=True):
+        # Claimed per alarm occurrence, not per fingerprint - see the note in
+        # tep_alarm.py. A day-long claim on the fingerprint meant a tag that
+        # breached, recovered and breached again got its alert without an
+        # investigation for the rest of the day.
+        rca_claim_key = f"rca:claimed:{entry_id}:{fingerprint}"
+        if not self._bus._r.set(rca_claim_key, "1", ex=RCA_CLAIM_TTL_S, nx=True):
             return
 
         family = family_of(tag)
@@ -54,4 +61,6 @@ class ProcessLimitHandler:
             self._bus.publish_alert(json.dumps(investigation_payload))
             log.info("RCA: Investigation compiled and published", fingerprint=fingerprint)
         except Exception as e:
-            log.error("RCA: Investigation failed", tag=tag, error=str(e))
+            self._bus._r.delete(rca_claim_key)      # so a redelivery can retry
+            log.error("RCA: Investigation failed", tag=tag,
+                      error_type=type(e).__name__, error=str(e)[:300])
