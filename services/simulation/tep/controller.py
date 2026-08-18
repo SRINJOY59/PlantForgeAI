@@ -65,6 +65,12 @@ class TepControllerBank(BaseControllerBank):
         # Active IDV indices
         self._active_idvs: set[int] = set()
 
+        # Preload the loops to hold their nominal valves from the very first
+        # tick. A cold start hits the same trap a reset did — integrators at
+        # zero, process at setpoint, so every loop outputs ~0 and shuts its
+        # valve — so both paths go through the one bumpless routine.
+        self.reset_pids()
+
     def step(self, state: dict, dt: float) -> None:
         """Run all regulatory PID loops and update MV positions.
 
@@ -177,9 +183,27 @@ class TepControllerBank(BaseControllerBank):
         result["_active_idvs"] = sorted(self._active_idvs)
         return result
 
+    # Which valve each regulatory loop drives — and therefore the nominal
+    # position each loop must resume holding after a reset. Mirrors the
+    # assignments in step(); kept beside them so a new loop is registered here
+    # too rather than silently reset to zero.
+    _LOOP_VALVE = {
+        "REACTOR.T":      "REACTOR-COOL",
+        "REACTOR.P":      "PURGE",
+        "REACTOR.Level":  "D-FEED",
+        "SEPARATOR.P":    "COMP-RECYCLE",
+        "SEPARATOR.Level": "SEP-LIQ-OUT",
+        "STRIPPER.Level": "STRIP-LIQ-IN",
+    }
+
     def reset_pids(self) -> None:
-        for pid in self._pids.values():
-            pid.reset()
+        # Restore every valve to nominal, then reset each loop bumplessly so it
+        # holds that nominal position from the first tick instead of driving the
+        # valve to zero — which is what filled the board with low-flow alarms on
+        # every reset. See PIDController.reset.
+        self._mv = dict(NOMINAL_VALVES)
+        for tag, pid in self._pids.items():
+            pid.reset(hold_output=NOMINAL_VALVES[self._LOOP_VALVE[tag]])
 
     def get_fault_state(self) -> dict:
         """Return fault dict for passing into model ODE."""
