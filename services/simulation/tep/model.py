@@ -240,6 +240,13 @@ def _odes(t: float, y: np.ndarray, mv: dict, fault: dict) -> np.ndarray:
     return dy
 
 
+# Any state component past this magnitude is divergence, not a fault. Normal
+# operation and every IDV sit far below it (pressure, the largest, is ~3e3), so
+# this only ever trips on a runaway integration - and it trips while the values
+# are still finite, before they grow large enough to stall the LSODA solver.
+STATE_SANE_MAX = 1e6
+
+
 class TepProcessModel(BaseProcessModel):
     """Reduced-order Tennessee Eastman Process ODE model."""
 
@@ -248,6 +255,7 @@ class TepProcessModel(BaseProcessModel):
         self._fault: dict = {}
         # OU noise state for feeds
         self._ou_noise = np.zeros(4)  # A, D, E, AC feeds
+        self._diverged = False
 
     def _nominal_state(self) -> np.ndarray:
         y0 = np.zeros(N_STATE)
@@ -270,9 +278,27 @@ class TepProcessModel(BaseProcessModel):
         self._state = self._nominal_state()
         self._fault = {}
         self._ou_noise = np.zeros(4)
+        self._diverged = False
+
+    def is_healthy(self) -> bool:
+        """False once the state has diverged - non-finite, past physical
+        bounds, or a solve that refused its own result. The runner polls this
+        after every tick and resets to nominal when it trips; that is what stops
+        a runaway integration from reaching the solver and stalling it."""
+        return (not self._diverged
+                and bool(np.all(np.isfinite(self._state)))
+                and float(np.max(np.abs(self._state))) < STATE_SANE_MAX)
 
     def step(self, dt: float, mv: dict) -> None:
         """Integrate one dt step (dt in seconds)."""
+        # Never hand LSODA a diverged or non-finite state: the adaptive stiff
+        # solver answers by collapsing its step size and can spin for minutes
+        # inside one call, freezing the whole async sim loop. Hold instead and
+        # let the runner reset us to nominal.
+        if not self.is_healthy():
+            self._diverged = True
+            return
+
         # Update OU noise for feed disturbances
         dt_h = dt / 3600.0
         noise = np.random.randn(4) * OU_SIGMA_FEED
@@ -288,8 +314,14 @@ class TepProcessModel(BaseProcessModel):
             rtol=1e-4,
             atol=1e-6,
         )
-        if sol.success:
+        # Accept a finite result even if it is out of bounds - is_healthy() then
+        # trips on the bounds and the runner resets before the next step inherits
+        # it. A non-finite or failed solve is refused and flagged, so LSODA is
+        # never re-entered on a NaN.
+        if sol.success and np.all(np.isfinite(sol.y[:, -1])):
             self._state = sol.y[:, -1]
+        else:
+            self._diverged = True
 
     def state_dict(self, mv: dict) -> dict:
         """Return all tags as a flat dict with sensor noise applied."""

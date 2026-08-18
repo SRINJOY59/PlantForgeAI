@@ -15,6 +15,7 @@ class NodeType(str, Enum):
     CHUNK = "Chunk"
     WORK_ORDER = "WorkOrder"
     FAILURE_MODE = "FailureMode"
+    FAULT_MODE = "FaultMode"         # a learned fault fingerprint (the memory layer)
     PROCEDURE = "Procedure"
     REGULATION_CLAUSE = "RegulationClause"
     PERSON = "Person"
@@ -37,6 +38,9 @@ class EdgeType(str, Enum):
     CORRECTED_BY = "CORRECTED_BY"    # a human/outcome overturned a claim
     SHARES_HEADER = "SHARES_HEADER"  # sharing a utility header (CSTR siblings)
     FEEDS = "FEEDS"                  # cross-unit feed direction (CSTR -> Column)
+    # the memory layer: learned fault fingerprints and how the plant answers them
+    EXHIBITS_FAULT = "EXHIBITS_FAULT"  # equipment -> FaultMode it can show
+    RESPONDS_WITH = "RESPONDS_WITH"    # FaultMode -> Procedure that answers it
 
 
 class Source(str, Enum):
@@ -177,6 +181,81 @@ class Alert(BaseModel):
     # evidence? unverified alerts are shown but marked, never trusted blindly
     verified: bool = True
     unverified_claims: list[str] = Field(default_factory=list)
+
+
+# --- fault knowledge (the memory layer) ------------------------------------
+# The seam between the statistical world and the knowledge world. The signal
+# side produces a FaultSignature; the graph side stores it as a FaultMode and,
+# at diagnosis time, matches a live signature against the stored ones. Neither
+# side depends on the other - only on these shapes.
+
+class TagDeviation(BaseModel):
+    """One tag's part in a fault: how it moved, how far, and - the part that
+    carries causality - when it moved relative to the others."""
+    tag_id: str
+    direction: Literal["high", "low"]
+    magnitude: float                 # peak deviation from baseline, in std units (z)
+    onset_offset_s: float            # seconds from fault onset to first breach
+    first_mover_rank: int            # 0 = moved first; the cascade's ordering
+
+
+class FaultSignature(BaseModel):
+    """The distilled fingerprint of one fault episode.
+
+    Produced with a known cause from a simulated IDV run (the labelled case
+    that seeds the library), or without one from a live plant anomaly (the
+    query that gets matched against the library). The fingerprint is the same
+    shape either way - that symmetry is what lets sim knowledge diagnose the
+    real plant."""
+    deviations: list[TagDeviation] = Field(default_factory=list)
+    window_s: float                                  # length of the episode window
+    severity: Literal["info", "warning", "critical"] = "warning"
+    source: Literal["sim", "plant"] = "sim"
+    cause_id: Optional[str] = None                   # e.g. "IDV-4"; None for a live anomaly
+    cause_label: str = ""                            # human description of the cause
+
+
+class FaultMode(BaseModel):
+    """A FaultSignature as it lives in the graph: the fingerprint plus the
+    knowledge hung off it - the equipment it touches, its cause, and the
+    procedure that answers it. This is what the agent cites when a live anomaly
+    matches, exactly as it cites a document."""
+    id: str                                          # e.g. "faultmode:IDV-4"
+    cause_id: Optional[str] = None
+    cause_label: str = ""
+    unit_areas: list[str] = Field(default_factory=list)
+    signature: FaultSignature
+    procedure_id: Optional[str] = None               # linked SOP, when one exists
+
+
+class DiagnosisMatch(BaseModel):
+    """One candidate the matcher returns for a live anomaly: which known fault
+    it resembles and how strongly. Ranked, never asserted - the confidence is
+    the whole point, and a low one is still worth showing."""
+    fault_mode_id: str
+    cause_id: Optional[str] = None
+    cause_label: str = ""
+    confidence: float                                # 0..1 similarity to the stored signature
+    unit_areas: list[str] = Field(default_factory=list)
+
+
+class Diagnosis(BaseModel):
+    """A live diagnosis, emitted on the diagnoses:live stream when the plant
+    breaches a limit: the signature it actually showed, and the known faults
+    that signature resembles, ranked.
+
+    The standalone counterpart to an Alert, and deliberately not one. An Alert
+    is an event to acknowledge; a diagnosis is a hypothesis to weigh - a ranked
+    resemblance to fault knowledge the simulator generated, evidence for the
+    engineer (and later for narration), never a verdict. It rides its own stream
+    and its own view so it never crowds the Alerts feed."""
+    id: str                                          # stable key for the UI (fingerprint)
+    onset: str                                       # ISO-8601 UTC of the episode onset
+    trigger_tag: str = ""                            # the alarm tag that armed it
+    trigger_level: str = ""                          # HH / H / L / LL
+    signature: FaultSignature                        # what the plant actually did
+    matches: list[DiagnosisMatch] = Field(default_factory=list)
+    graph_version: int = 0
 
 
 class ChangeProposal(BaseModel):

@@ -502,3 +502,11 @@ export function subscribeSimTelemetry(onMessage, unit = null) {
   };
 }
 
+
+// ---------------------------------------------------------------- diagnostics
+export async function fetchFaultLibrary() {
+  const headers = await authHeaders();
+  const res = await fetchWithAuth(`${BASE}/diagnostics/library`, { headers });
+  if (!res.ok) throw new Error(`Fault library fetch failed: ${res.status}`);
+  return res.json();
+}

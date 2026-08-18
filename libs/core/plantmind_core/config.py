@@ -51,6 +51,18 @@ class Settings(BaseSettings):
     minio_user: str = "plantmind"
     minio_password: str = "change_me"
 
+    # --- historian (time-series system of record) ---
+    # A plain Postgres DSN. Point it at Timescale Cloud for full hypertable +
+    # compression + retention, or at Supabase / any Postgres for the plain
+    # fallback - the client detects the timescaledb extension and adapts, so
+    # nothing else changes. Empty disables the historian: the sink idles and
+    # the rest of the stack runs untouched. Never commit a real DSN; set it in
+    # .env (it carries the password).
+    timescale_dsn: str = ""
+    historian_batch_rows: int = 500       # flush a batch once it reaches this
+    historian_flush_ms: int = 2000        # ...or after this long, whichever first
+    historian_retention_days: int = 90    # retention policy, applied only on timescaledb
+
     # --- LLM via OpenRouter (OpenAI-compatible) ---
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
@@ -58,6 +70,7 @@ class Settings(BaseSettings):
     llm_mid: str = "deepseek/deepseek-v4-pro"     # text extraction, answering
     llm_vision: str = "qwen/qwen3.7-plus"         # P&ID extraction (image input)
     llm_max_concurrency: int = 32                    # global in-process semaphore
+    llm_max_rps: float = 3.0                         # max requests per second client-side rate limit
     llm_max_retries: int = 5
     llm_timeout_s: float = 120.0
 

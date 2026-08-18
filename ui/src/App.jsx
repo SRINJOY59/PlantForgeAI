@@ -24,6 +24,7 @@ const Reports = React.lazy(() => import("./pages/app/Reports"));
 const Permits = React.lazy(() => import("./pages/app/Permits"));
 const WorkOrders = React.lazy(() => import("./pages/app/WorkOrders"));
 const Simulation = React.lazy(() => import("./pages/app/Simulation"));
+const FaultLibrary = React.lazy(() => import("./pages/app/FaultLibrary"));
 
 const Suspended = ({ children }) => (
   <Suspense fallback={<div className="flex h-full items-center justify-center p-8 text-slate-500">Loading...</div>}>
@@ -58,6 +59,9 @@ export default function App() {
         } />
         <Route path="simulation" element={
           <RoleRoute minRole="engineer"><Suspended><Simulation /></Suspended></RoleRoute>
+        } />
+        <Route path="fault-library" element={
+          <RoleRoute minRole="engineer"><Suspended><FaultLibrary /></Suspended></RoleRoute>
         } />
         <Route path="graph" element={
           <RoleRoute minRole="engineer"><Suspended><GraphExplorer /></Suspended></RoleRoute>

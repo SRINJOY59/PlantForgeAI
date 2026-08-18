@@ -8,6 +8,7 @@ FLUSH_LOCK = "graphd:flush_lock"
 GRAPH_VERSION = "graph:version"          # INCR on every committed batch
 DELTA_STREAM = "graph:deltas"            # XADD GraphDelta after each commit
 ALERT_STREAM = "alerts:critical"         # agents & watchers publish, UI/gateway tail
+DIAGNOSES_STREAM = "diagnoses:live"      # diagnostics publishes, Diagnose view tails
 DRAFT_WORK_ORDERS_STREAM = "work_orders:drafts"
 # <stream entry id> -> {decision, by, at}. Beside the stream, not in it: the
 # draft is immutable (it is what the agent produced at one graph version), the

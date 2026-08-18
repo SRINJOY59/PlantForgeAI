@@ -54,6 +54,13 @@ class ObjectStore:
             resp.close()
             resp.release_conn()
 
+    def exists(self, key: str) -> bool:
+        try:
+            self._client.stat_object(BUCKET, key)
+            return True
+        except Exception:
+            return False
+
     def move(self, src: str, dst: str):
         from minio.commonconfig import CopySource
         self._client.copy_object(BUCKET, dst, CopySource(BUCKET, src))

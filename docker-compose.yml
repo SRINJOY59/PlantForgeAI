@@ -240,8 +240,7 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       SIM_PORT: "8012"
-    # NOT exposed to the host: accessed only via the gateway proxy
-    ports: []
+    ports: ["8012:8012"]
     depends_on:
       redis: { condition: service_healthy }
     restart: unless-stopped
@@ -273,6 +272,31 @@ services:
     volumes:
       - ./config:/srv/config:ro
     command: python -m agents.watchers.tep
+
+  # tails plant:telemetry into the time-series historian. No database container
+  # of its own: it connects OUT to a managed instance (Timescale Cloud) via
+  # TIMESCALE_DSN in .env. With that var unset the sink idles harmlessly, so the
+  # stack still comes up for anyone who has not provisioned the historian yet.
+  historian:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: historian }
+    command: python -m historian.sink
+
+  # the standalone diagnosis signal: tails the alarm stream, reads the episode
+  # window back out of the historian, matches it against the learned fault
+  # library, and publishes a Diagnosis on diagnoses:live for the Diagnose view.
+  # Needs the historian (TIMESCALE_DSN); with it unset the runtime disables
+  # itself and exits cleanly, so the stack still comes up without one.
+  diagnostics:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: diagnostics }
+    command: python -m diagnostics.service
 
 volumes:
   neo4j_data:

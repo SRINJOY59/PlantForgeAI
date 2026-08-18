@@ -234,5 +234,22 @@ class GraphReader:
                 paths.append(Path(nodes=nodes, steps=steps))
         return paths
 
+    # --------------------------------------------------- fault-mode library
+    def fault_library(self) -> list:
+        """Every stored FaultMode, for the Library view. The retrieval-side
+        mirror of FaultLibraryStore.all() — same Cypher, same shape, but owned
+        by the service that already has a Neo4j driver and serves every other
+        graph read."""
+        return self._run(
+            "MATCH (f:FaultMode) "
+            "OPTIONAL MATCH (f)-[:RESPONDS_WITH]->(p:Procedure) "
+            "RETURN f.id AS id, f.cause_id AS cause_id, "
+            "       f.cause_label AS cause_label, f.unit_areas AS unit_areas, "
+            "       f.signature_json AS signature_json, "
+            "       f.lead_tag AS lead_tag, f.deviation_tags AS deviation_tags, "
+            "       f.severity AS severity, f.source AS source, "
+            "       p.id AS procedure_id, p.surface_form AS procedure_name "
+            "ORDER BY f.cause_id")
+
     def close(self):
         self._driver.close()

@@ -122,6 +122,12 @@ class RedisBus:
     def read_alerts(self, after_id: str = "0", block_ms: int = 15000) -> list:
         return self._read_stream(keys.ALERT_STREAM, after_id, block_ms)
 
+    def last_alert_id(self) -> str | None:
+        """The newest entry id on the alert stream, or None if empty. Lets a
+        fresh consumer start at the tail instead of replaying all of history."""
+        reply = self._r.xrevrange(keys.ALERT_STREAM, "+", "-", count=1)
+        return reply[0][0] if reply else None
+
     async def read_alerts_async(self, after_id: str = "0",
                                 block_ms: int = 15000) -> list:
         """read_alerts for callers living on an event loop - the SSE fan-out.
@@ -134,6 +140,25 @@ class RedisBus:
         self._check_block(block_ms)
         kwargs = {"block": block_ms} if block_ms else {}
         reply = await self._async().xread({keys.ALERT_STREAM: after_id},
+                                          **kwargs)
+        return self._entries(reply)
+
+    # streams: diagnoses produced by the diagnostics runtime, UI tails ---------
+    def publish_diagnosis(self, diagnosis_json: str) -> str:
+        return self._r.xadd(keys.DIAGNOSES_STREAM, {"payload": diagnosis_json},
+                            maxlen=5000, approximate=True)
+
+    def read_diagnoses(self, after_id: str = "0", block_ms: int = 15000) -> list:
+        return self._read_stream(keys.DIAGNOSES_STREAM, after_id, block_ms)
+
+    async def read_diagnoses_async(self, after_id: str = "0",
+                                   block_ms: int = 15000) -> list:
+        """read_diagnoses for the SSE/WS fan-out - awaited, not threaded, for
+        the same reason as read_alerts_async: a parked await is free, a parked
+        thread is not."""
+        self._check_block(block_ms)
+        kwargs = {"block": block_ms} if block_ms else {}
+        reply = await self._async().xread({keys.DIAGNOSES_STREAM: after_id},
                                           **kwargs)
         return self._entries(reply)
 
