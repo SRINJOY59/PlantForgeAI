@@ -1,0 +1,33 @@
+# The standards deviation scan, now a real CronJob instead of the sleep-loop.
+# Runs daily; each run scans every governing standard for a revision move and
+# emits standard_revision alerts the UI's Standards tab shows. Forbid overlap so
+# a slow scan never stacks on the next tick.
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: standards-scan, namespace: plantmind }
+spec:
+  schedule: "0 6 * * *"            # 06:00 daily (UTC)
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          serviceAccountName: plantmind-sa
+          restartPolicy: Never
+          containers:
+            - name: standards-scan
+              image: plantmind-agents:latest
+              command: ["python", "-m", "agents.usecases.standards_watch.scan"]
+              envFrom:
+                - configMapRef: { name: plantmind-config }
+                - secretRef: { name: plantmind-secrets }
+              volumeMounts:
+                - { name: hf-cache, mountPath: /tmp/fastembed_cache }
+              resources: { requests: { cpu: "200m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+          volumes:
+            - { name: hf-cache, emptyDir: {} }

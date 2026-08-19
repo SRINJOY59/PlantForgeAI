@@ -1,0 +1,48 @@
+# Deploy everything with:  kubectl apply -k k8s/
+# (after building/pushing images and creating the Secret — see README.md).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: plantmind
+
+resources:
+  - 00-namespace.yaml
+  - 01-config.yaml
+  - 50-serviceaccount.yaml
+  - 10-neo4j.yaml
+  - 11-redis.yaml
+  - 12-minio.yaml
+  - 20-app-http.yaml
+  - 21-app-workers.yaml
+  - 22-celery-workers.yaml
+  - 23-ui.yaml
+  - 30-standards-cronjob.yaml
+  - 40-init-jobs.yaml
+  - 51-ingress.yaml
+  - 60-hpa.yaml
+  - 70-coturn.yaml
+  # NOTE: the Secret and the three file-backed ConfigMaps (plantmind-envelopes,
+  # plantmind-connectors, plantmind-neo4j-init) are created out-of-band from the
+  # repo files at deploy time — see README §5. They are intentionally NOT
+  # generated here: kustomize refuses file sources outside the k8s/ directory,
+  # and creating them with `kubectl create configmap --from-file` keeps the
+  # source of truth in config/, connectors.json, and infra/neo4j/ without
+  # copying them into k8s/.
+
+# Rewrite the bare image names to your Artifact Registry. Either edit REGISTRY
+# below, or run: `cd k8s && kustomize edit set image plantmind-gateway=REG/plantmind-gateway:TAG` (per image).
+# REGISTRY example: us-central1-docker.pkg.dev/my-project/plantmind
+images:
+  - { name: plantmind-gateway,     newName: REGISTRY/plantmind-gateway,     newTag: latest }
+  - { name: plantmind-retrieval,   newName: REGISTRY/plantmind-retrieval,   newTag: latest }
+  - { name: plantmind-agents,      newName: REGISTRY/plantmind-agents,      newTag: latest }
+  - { name: plantmind-diagnostics, newName: REGISTRY/plantmind-diagnostics, newTag: latest }
+  - { name: plantmind-historian,   newName: REGISTRY/plantmind-historian,   newTag: latest }
+  - { name: plantmind-ingestion,   newName: REGISTRY/plantmind-ingestion,   newTag: latest }
+  - { name: plantmind-extraction,  newName: REGISTRY/plantmind-extraction,  newTag: latest }
+  - { name: plantmind-resolution,  newName: REGISTRY/plantmind-resolution,  newTag: latest }
+  - { name: plantmind-graphd,      newName: REGISTRY/plantmind-graphd,      newTag: latest }
+  - { name: plantmind-connectors,  newName: REGISTRY/plantmind-connectors,  newTag: latest }
+  - { name: plantmind-interview,   newName: REGISTRY/plantmind-interview,   newTag: latest }
+  - { name: plantmind-simulation,  newName: REGISTRY/plantmind-simulation,  newTag: latest }
+  - { name: plantmind-seed,        newName: REGISTRY/plantmind-seed,        newTag: latest }
+  - { name: plantmind-ui,          newName: REGISTRY/plantmind-ui,          newTag: latest }

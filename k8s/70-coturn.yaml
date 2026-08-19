@@ -1,0 +1,58 @@
+# coturn TURN server for the voice interview's WebRTC media relay.
+#
+# WHY hostNetwork: TURN needs its control port (3478) AND a range of UDP relay
+# ports reachable from the public internet. An L7 Ingress carries none of that,
+# and a LoadBalancer Service can't express a wide UDP port range cleanly. Binding
+# the node's network directly is the standard, reliable coturn-in-k8s pattern.
+#
+# REQUIREMENTS (see README "Voice interview / TURN"):
+#   1. A Standard node (Autopilot forbids hostNetwork) labelled:
+#        kubectl label node <NODE> plantmind.io/coturn=true
+#      That node must have an EXTERNAL IP.
+#   2. A firewall rule allowing from 0.0.0.0/0 to that node:
+#        udp:3478, tcp:3478, udp:49160-49200
+#   3. TURN_EXTERNAL_IP (below, in 01-config.yaml) = that node's external IP,
+#      and TURN_URL = turn:<that ip or its DNS>:3478.
+#   4. TURN_SECRET in the Secret (shared with the interview backend, which mints
+#      the time-limited credentials the browser and bot present).
+#
+# Alternative: skip coturn and point TURN_URL/TURN_SECRET at a managed TURN
+# service (Twilio, Cloudflare Calls, Metered). Same app wiring; delete this file.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: coturn, namespace: plantmind }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: coturn } }
+  template:
+    metadata: { labels: { app: coturn } }
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        plantmind.io/coturn: "true"
+      containers:
+        - name: coturn
+          image: coturn/coturn:4.6
+          env:
+            - name: TURN_SECRET
+              valueFrom: { secretKeyRef: { name: plantmind-secrets, key: TURN_SECRET } }
+            - name: TURN_EXTERNAL_IP
+              valueFrom: { configMapKeyRef: { name: plantmind-config, key: TURN_EXTERNAL_IP } }
+          command: ["sh", "-c"]
+          args:
+            - >
+              turnserver -n --log-file=stdout --fingerprint
+              --use-auth-secret --static-auth-secret="$TURN_SECRET"
+              --realm=plantmind.turn
+              --listening-port=3478
+              --min-port=49160 --max-port=49200
+              --external-ip="$TURN_EXTERNAL_IP"
+              --no-cli --no-tlsv1 --no-tlsv1_1
+          ports:
+            - { containerPort: 3478, protocol: UDP, hostPort: 3478 }
+            - { containerPort: 3478, protocol: TCP, hostPort: 3478 }
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits:   { memory: "256Mi" }

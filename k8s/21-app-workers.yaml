@@ -1,0 +1,92 @@
+# Long-running background processes, no HTTP port. All are single-replica: each
+# holds in-process cursor/alarm/session state that a second copy would double up
+# (the consumer tails one delta stream; the watcher holds open-alarm state).
+# ---------------------------------------------------------------- agents (consumer)
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: agents, namespace: plantmind }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: agents } }
+  template:
+    metadata: { labels: { app: agents } }
+    spec:
+      serviceAccountName: plantmind-sa
+      containers:
+        - name: agents
+          image: plantmind-agents:latest
+          command: ["python", "-m", "agents.consumer"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          volumeMounts:
+            - { name: hf-cache, mountPath: /tmp/fastembed_cache }
+          resources: { requests: { cpu: "200m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes:
+        - { name: hf-cache, emptyDir: {} }
+---
+# ---------------------------------------------------------------- diagnostics
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: diagnostics, namespace: plantmind }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: diagnostics } }
+  template:
+    metadata: { labels: { app: diagnostics } }
+    spec:
+      serviceAccountName: plantmind-sa
+      containers:
+        - name: diagnostics
+          image: plantmind-diagnostics:latest
+          command: ["python", "-m", "diagnostics.service"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          resources: { requests: { cpu: "200m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+---
+# ---------------------------------------------------------------- historian
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: historian, namespace: plantmind }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: historian } }
+  template:
+    metadata: { labels: { app: historian } }
+    spec:
+      containers:
+        - name: historian
+          image: plantmind-historian:latest
+          command: ["python", "-m", "historian.sink"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          resources: { requests: { cpu: "100m", memory: "256Mi" }, limits: { memory: "512Mi" } }
+---
+# ---------------------------------------------------------------- tep-watcher
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: tep-watcher, namespace: plantmind }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: tep-watcher } }
+  template:
+    metadata: { labels: { app: tep-watcher } }
+    spec:
+      containers:
+        - name: tep-watcher
+          image: plantmind-agents:latest
+          command: ["python", "-m", "agents.watchers.tep"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          volumeMounts:
+            - { name: envelopes, mountPath: /srv/config }
+          resources: { requests: { cpu: "100m", memory: "256Mi" }, limits: { memory: "512Mi" } }
+      volumes:
+        - { name: envelopes, configMap: { name: plantmind-envelopes } }

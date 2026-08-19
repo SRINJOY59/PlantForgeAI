@@ -1,0 +1,154 @@
+# Celery workers off the Redis broker. ingestion / extraction / resolution can
+# scale horizontally (see the HPAs in 60-hpa.yaml). graphd and connectors run an
+# embedded beat scheduler (-B) and MUST stay at replicas: 1 - graphd is also the
+# single graph writer (-c 1), guarded here and in the app.
+# ---------------------------------------------------------------- ingestion
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ingestion, namespace: plantmind }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: ingestion } }
+  template:
+    metadata: { labels: { app: ingestion } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: ingestion
+          image: plantmind-ingestion:latest
+          command: ["celery", "-A", "ingestion.tasks", "worker", "-Q", "q_classify", "-c", "4"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
+          resources: { requests: { cpu: "200m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+      volumes: [{ name: hf-cache, emptyDir: {} }]
+---
+# ---------------------------------------------------------------- extraction-wo
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: extraction-wo, namespace: plantmind }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: extraction-wo } }
+  template:
+    metadata: { labels: { app: extraction-wo } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: extraction
+          image: plantmind-extraction:latest
+          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_parse_wo", "-c", "8"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
+          resources: { requests: { cpu: "250m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes: [{ name: hf-cache, emptyDir: {} }]
+---
+# ---------------------------------------------------------------- extraction-pnid
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: extraction-pnid, namespace: plantmind }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: extraction-pnid } }
+  template:
+    metadata: { labels: { app: extraction-pnid } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: extraction
+          image: plantmind-extraction:latest
+          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_extract_pnid", "-c", "4"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
+          resources: { requests: { cpu: "250m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes: [{ name: hf-cache, emptyDir: {} }]
+---
+# ---------------------------------------------------------------- extraction-text
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: extraction-text, namespace: plantmind }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: extraction-text } }
+  template:
+    metadata: { labels: { app: extraction-text } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: extraction
+          image: plantmind-extraction:latest
+          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_extract_text", "-c", "32"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
+          resources: { requests: { cpu: "500m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes: [{ name: hf-cache, emptyDir: {} }]
+---
+# ---------------------------------------------------------------- resolution
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: resolution, namespace: plantmind }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: resolution } }
+  template:
+    metadata: { labels: { app: resolution } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: resolution
+          image: plantmind-resolution:latest
+          command: ["celery", "-A", "resolution.tasks", "worker", "-Q", "q_resolve", "-c", "4"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
+          resources: { requests: { cpu: "250m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes: [{ name: hf-cache, emptyDir: {} }]
+---
+# ---------------------------------------------------------------- graphd (single writer + beat)
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: graphd, namespace: plantmind }
+spec:
+  replicas: 1                 # MUST stay 1: single graph writer, embedded beat
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: graphd } }
+  template:
+    metadata: { labels: { app: graphd } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: graphd
+          image: plantmind-graphd:latest
+          command: ["celery", "-A", "graphd.tasks", "worker", "-Q", "q_write", "-c", "1", "-B", "--loglevel=info"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          resources: { requests: { cpu: "200m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+---
+# ---------------------------------------------------------------- connectors (beat)
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: connectors, namespace: plantmind }
+spec:
+  replicas: 1                 # MUST stay 1: embedded beat scheduler
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: connectors } }
+  template:
+    metadata: { labels: { app: connectors } }
+    spec:
+      serviceAccountName: plantmind-sa
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: connectors
+          image: plantmind-connectors:latest
+          command: ["celery", "-A", "connectors.tasks", "worker", "-Q", "q_connectors", "-c", "2", "-B", "--loglevel=info"]
+          envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
+          volumeMounts:
+            - { name: connectors-cfg, mountPath: /srv/connectors.json, subPath: connectors.json }
+            - { name: inbox, mountPath: /srv/data/inbox }
+          resources: { requests: { cpu: "100m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+      volumes:
+        - { name: connectors-cfg, configMap: { name: plantmind-connectors } }
+        - { name: inbox, emptyDir: {} }
