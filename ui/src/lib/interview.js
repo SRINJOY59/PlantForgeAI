@@ -84,8 +84,24 @@ export async function sendDebugText(sessionId, text) {
 // onUserTranscript({text, final}), onBotTranscript({text}), onError(msg).
 // Returns { disconnect, setMuted }.
 export async function startVoice(sessionId, callbacks = {}) {
+  // Fetch the ICE servers (STUN + TURN with a fresh, time-limited credential).
+  // The browser's media must relay through the same TURN as the bot's, or —
+  // behind a load balancer with no direct path — the two never connect. If the
+  // fetch fails we fall back to a public STUN so local/direct networks still work.
+  let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+  try {
+    const res = await fetch(`${BASE}/api/turn`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.iceServers) && data.iceServers.length) {
+        iceServers = data.iceServers;
+      }
+    }
+  } catch { /* keep the STUN fallback */ }
+
   const transport = new SmallWebRTCTransport({
     connectionUrl: `${BASE}/api/offer?session_id=${sessionId}`,
+    iceServers,
   });
   const client = new PipecatClient({
     transport,

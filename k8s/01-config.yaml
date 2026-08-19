@@ -1,0 +1,54 @@
+# Non-secret configuration shared by every app pod. The service hostnames match
+# the k8s Service names in this namespace, so the same URLs the compose network
+# used (bolt://neo4j, http://retrieval, ...) resolve unchanged inside the
+# cluster. Anything sensitive (keys, passwords, DSNs, JWT secret) lives in the
+# Secret, NOT here — see 02-secret.example.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plantmind-config
+  namespace: plantmind
+data:
+  # --- internal service wiring (k8s DNS = Service names) ---
+  NEO4J_URI: "bolt://neo4j:7687"
+  NEO4J_USER: "neo4j"
+  REDIS_URL: "redis://redis:6379/0"
+  MINIO_ENDPOINT: "http://minio:9000"
+  MINIO_USER: "plantmind"
+  RETRIEVAL_URL: "http://retrieval:8001"
+  AGENTS_URL: "http://agents-api:8002"
+
+  # --- GCP / Vertex (auth comes from Workload Identity, not a key) ---
+  GCP_PROJECT: "REPLACE_WITH_GCP_PROJECT_ID"
+  GOOGLE_CLOUD_PROJECT: "REPLACE_WITH_GCP_PROJECT_ID"
+  VERTEX_REGION: "us-central1"
+  LLM_PROVIDER: "vertex"
+  VERTEX_LLM_CHEAP: "google/gemini-2.5-flash-lite"
+  VERTEX_LLM_MID: "google/gemini-2.5-flash"
+  VERTEX_LLM_VISION: "google/gemini-2.5-flash"
+  LLM_MAX_CONCURRENCY: "32"
+  LLM_MAX_RPS: "4.0"
+
+  # --- embeddings (local FastEmbed, no key) ---
+  EMBEDDING_BASE_URL: "local"
+
+  # --- feature flags / intervals ---
+  STANDARDS_WATCH_ENABLED: "false"    # the CronJob owns the scan, not the consumer loop
+  SLACK_MIN_SEVERITY: "critical"
+
+  # --- MinIO public endpoint: the browser fetches presigned URLs from here, so
+  #     it must be the gateway's public origin path to MinIO. Set after you know
+  #     the Ingress host (see README). Left as the in-cluster endpoint until then. ---
+  MINIO_PUBLIC_ENDPOINT: "http://minio:9000"
+
+  # --- CORS: the browser origin(s) allowed to call the gateway. Set to your
+  #     UI's public URL once DNS/TLS is up (see README). ---
+  CORS_ORIGINS: "https://REPLACE_WITH_UI_DOMAIN"
+
+  # --- TURN (voice interview WebRTC relay). Set after coturn is up (README).
+  #     TURN_URL is what the browser + bot dial; TURN_EXTERNAL_IP is the coturn
+  #     node's public IP (coturn advertises it as the relay address). Leave the
+  #     placeholders and the interview falls back to STUN-only (direct paths). ---
+  STUN_URL: "stun:stun.l.google.com:19302"
+  TURN_URL: "turn:REPLACE_WITH_TURN_HOST_OR_IP:3478"
+  TURN_EXTERNAL_IP: "REPLACE_WITH_COTURN_NODE_EXTERNAL_IP"

@@ -1,0 +1,166 @@
+# HTTP services. Each pulls all env from the shared ConfigMap + Secret, runs as
+# the Workload-Identity ServiceAccount (so Vertex ADC works with no key), and
+# mounts an emptyDir for the FastEmbed cache (re-downloaded on pod restart).
+# ---------------------------------------------------------------- gateway
+apiVersion: v1
+kind: Service
+metadata: { name: gateway, namespace: plantmind }
+spec:
+  selector: { app: gateway }
+  ports: [{ name: http, port: 8000, targetPort: 8000 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: gateway, namespace: plantmind }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: gateway } }
+  template:
+    metadata: { labels: { app: gateway } }
+    spec:
+      serviceAccountName: plantmind-sa
+      containers:
+        - name: gateway
+          image: plantmind-gateway:latest
+          command: ["uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          ports: [{ containerPort: 8000 }]
+          readinessProbe: { httpGet: { path: /health, port: 8000 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          volumeMounts:
+            - { name: envelopes, mountPath: /srv/config }
+            - { name: hf-cache, mountPath: /tmp/fastembed_cache }
+          resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+      volumes:
+        - { name: envelopes, configMap: { name: plantmind-envelopes } }
+        - { name: hf-cache, emptyDir: {} }
+---
+# ---------------------------------------------------------------- retrieval
+apiVersion: v1
+kind: Service
+metadata: { name: retrieval, namespace: plantmind }
+spec:
+  selector: { app: retrieval }
+  ports: [{ name: http, port: 8001, targetPort: 8001 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: retrieval, namespace: plantmind }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: retrieval } }
+  template:
+    metadata: { labels: { app: retrieval } }
+    spec:
+      serviceAccountName: plantmind-sa
+      containers:
+        - name: retrieval
+          image: plantmind-retrieval:latest
+          command: ["uvicorn", "retrieval.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          ports: [{ containerPort: 8001 }]
+          readinessProbe: { httpGet: { path: /health, port: 8001 }, initialDelaySeconds: 15, periodSeconds: 10 }
+          volumeMounts:
+            - { name: hf-cache, mountPath: /tmp/fastembed_cache }
+          resources: { requests: { cpu: "500m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes:
+        - { name: hf-cache, emptyDir: {} }
+---
+# ---------------------------------------------------------------- agents-api
+apiVersion: v1
+kind: Service
+metadata: { name: agents-api, namespace: plantmind }
+spec:
+  selector: { app: agents-api }
+  ports: [{ name: http, port: 8002, targetPort: 8002 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: agents-api, namespace: plantmind }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: agents-api } }
+  template:
+    metadata: { labels: { app: agents-api } }
+    spec:
+      serviceAccountName: plantmind-sa
+      containers:
+        - name: agents-api
+          image: plantmind-agents:latest
+          command: ["uvicorn", "agents.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          ports: [{ containerPort: 8002 }]
+          volumeMounts:
+            - { name: hf-cache, mountPath: /tmp/fastembed_cache }
+          resources: { requests: { cpu: "250m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+      volumes:
+        - { name: hf-cache, emptyDir: {} }
+---
+# ---------------------------------------------------------------- interview
+# Single replica: it holds live WebRTC + session state in-process. NOTE: voice
+# (WebRTC media) needs UDP that a plain HTTP Ingress does not carry — see the
+# README "Voice interview" note. Text mode works over HTTP.
+apiVersion: v1
+kind: Service
+metadata: { name: interview, namespace: plantmind }
+spec:
+  selector: { app: interview }
+  ports: [{ name: http, port: 8002, targetPort: 8002 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: interview, namespace: plantmind }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: interview } }
+  template:
+    metadata: { labels: { app: interview } }
+    spec:
+      serviceAccountName: plantmind-sa
+      containers:
+        - name: interview
+          image: plantmind-interview:latest
+          command: ["uvicorn", "interview.main:app", "--host", "0.0.0.0", "--port", "8002"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          ports: [{ containerPort: 8002 }]
+          resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { memory: "1Gi" } }
+---
+# ---------------------------------------------------------------- tep-sim
+apiVersion: v1
+kind: Service
+metadata: { name: tep-sim, namespace: plantmind }
+spec:
+  selector: { app: tep-sim }
+  ports: [{ name: http, port: 8012, targetPort: 8012 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: tep-sim, namespace: plantmind }
+spec:
+  replicas: 1                 # one authoritative simulation
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: tep-sim } }
+  template:
+    metadata: { labels: { app: tep-sim } }
+    spec:
+      containers:
+        - name: tep-sim
+          image: plantmind-simulation:latest
+          command: ["python", "-m", "simulation.run", "--type", "tep"]
+          env:
+            - { name: SIM_PORT, value: "8012" }
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }
+          ports: [{ containerPort: 8012 }]
+          # the integrator is real-time and CPU-bound; give it a full core so it
+          # keeps up and does not stall telemetry (the "sim offline" failure)
+          resources: { requests: { cpu: "1", memory: "512Mi" }, limits: { cpu: "2", memory: "1Gi" } }

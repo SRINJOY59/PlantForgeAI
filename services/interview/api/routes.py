@@ -117,6 +117,17 @@ def reingest(session_id: str,
     return {"staging_key": memory.staging_key}
 
 
+@router.get("/api/turn")
+async def turn():
+    """The ICE servers (STUN + TURN, with a fresh time-limited TURN credential)
+    the browser must use so its media can relay to the bot the same way the
+    bot's does. Both peers need the same relay or, behind a load balancer, they
+    never connect. Safe to expose: it hands out a short-lived credential, never
+    the shared secret."""
+    from interview.voice.turn import ice_config
+    return {"iceServers": ice_config()}
+
+
 @router.post("/api/offer")
 async def offer(request: Request, session_id: str,
                 background_tasks: BackgroundTasks,

@@ -1,0 +1,51 @@
+# Horizontal autoscaling — the k8s-native replacement for the compose
+# `autoscaler` (which scaled workers by Redis queue depth via the docker socket,
+# something a pod cannot and should not do). These scale on CPU, which tracks
+# load well for the LLM/extraction workers. If you want true queue-depth scaling
+# later, add KEDA with a Redis-stream trigger; the deployments are ready for it.
+#
+# graphd and connectors are deliberately NOT here: they run embedded beat and
+# must stay at exactly one replica.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: retrieval, namespace: plantmind }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: retrieval }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: gateway, namespace: plantmind }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: gateway }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: extraction-text, namespace: plantmind }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: extraction-text }
+  minReplicas: 1
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 75 } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: resolution, namespace: plantmind }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: resolution }
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 75 } }

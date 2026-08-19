@@ -1,0 +1,49 @@
+# One-shot bootstrap Jobs. Both are idempotent and wait for Neo4j, so re-running
+# them (kubectl delete job ... then re-apply) is safe.
+# ---------------------------------------------------------------- graph-init
+# Applies constraints + the vector index. Without it, vector search fails.
+apiVersion: batch/v1
+kind: Job
+metadata: { name: graph-init, namespace: plantmind }
+spec:
+  backoffLimit: 20
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: graph-init
+          image: neo4j:5-community
+          env:
+            - name: NEO4J_PASSWORD
+              valueFrom: { secretKeyRef: { name: plantmind-secrets, key: NEO4J_PASSWORD } }
+          command:
+            - bash
+            - -c
+            - |
+              until cypher-shell -a bolt://neo4j:7687 -u neo4j -p "$NEO4J_PASSWORD" 'RETURN 1'; do
+                echo "waiting for neo4j..."; sleep 5;
+              done
+              cypher-shell -a bolt://neo4j:7687 -u neo4j -p "$NEO4J_PASSWORD" -f /init/init.cypher
+              echo "schema applied"
+          volumeMounts:
+            - { name: init, mountPath: /init }
+      volumes:
+        - { name: init, configMap: { name: plantmind-neo4j-init } }
+---
+# ---------------------------------------------------------------- tep-seed
+# Seeds the TEP topology into Neo4j (idempotent).
+apiVersion: batch/v1
+kind: Job
+metadata: { name: tep-seed, namespace: plantmind }
+spec:
+  backoffLimit: 20
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: tep-seed
+          image: plantmind-seed:latest
+          command: ["python", "scripts/seed_tep_topology.py"]
+          envFrom:
+            - configMapRef: { name: plantmind-config }
+            - secretRef: { name: plantmind-secrets }

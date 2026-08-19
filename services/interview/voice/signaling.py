@@ -9,7 +9,7 @@ off the no-voice startup path)."""
 
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 
-ICE_SERVERS = ["stun:stun.l.google.com:19302"]
+from interview.voice.turn import pipecat_ice_servers
 
 
 class WebRTCSignaler:
@@ -27,7 +27,9 @@ class WebRTCSignaler:
                                    restart_pc=body.get("restart_pc", False))
             is_new = False
         else:
-            conn = SmallWebRTCConnection(ice_servers=ICE_SERVERS)
+            # fresh ICE servers per connection: TURN credentials are time-
+            # limited, so they must be minted at negotiate time, not at import
+            conn = SmallWebRTCConnection(ice_servers=pipecat_ice_servers())
             await conn.initialize(sdp=body["sdp"], type=body["type"])
             conns = self._conns
 

@@ -41,6 +41,7 @@ services:
   # ---------- infrastructure ----------
   neo4j:
     image: neo4j:5-community
+    restart: unless-stopped
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
       NEO4J_PLUGINS: '["graph-data-science"]'
@@ -71,6 +72,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports: ["6379:6379"]
     command: redis-server --appendonly yes
     volumes: ["redis_data:/data"]
@@ -82,6 +84,7 @@ services:
 
   minio:
     image: minio/minio
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_USER}
