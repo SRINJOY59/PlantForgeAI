@@ -140,6 +140,13 @@ gcloud compute addresses describe plantmind-ip --global --format='value(address)
 Create **A records** for `ui.example.com` and `api.example.com` pointing at that
 IP. (The managed cert only goes Active once DNS resolves — allow 15–60 min.)
 
+**No domain?** Use [nip.io](https://nip.io) magic DNS — `ui.<IP>.nip.io` and
+`api.<IP>.nip.io` resolve to your IP automatically, so you still get HTTPS with
+zero DNS setup. `scripts/deploy_gke.sh` does this for you when you don't pass
+`UI_DOMAIN`/`API_DOMAIN`. (If Google's managed cert ever refuses a nip.io host,
+fall back to cert-manager + Let's Encrypt, or run HTTP-only by IP for testing —
+but note the browser mic needs HTTPS.)
+
 ---
 
 ## 7. Deploy
