@@ -13,6 +13,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Mic, MicOff, Send, Volume2, Square, ChevronDown, Radio, AlertTriangle, Stethoscope,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { fieldAssets, fieldAssetContext, fieldAskStream, subscribeSimTelemetry } from "../../lib/api";
 import { useFieldLang } from "../../components/field/FieldShell";
 import { t, speechLang } from "../../lib/i18n";
@@ -268,10 +270,14 @@ function TurnCard({ turn, lang, speaking, canSpeak, onSpeak }) {
         <p className="text-sm font-medium" style={{ color: "var(--text)" }}>{turn.question}</p>
       </div>
       <div className="px-4 py-3">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed"
-          style={{ color: turn.error ? "#991b1b" : "var(--text-md)" }}>
-          {turn.text ? cleanForField(turn.text) : <span style={{ color: "var(--muted)" }}>{t("thinking", lang)}</span>}
-        </p>
+        {turn.text ? (
+          <div className="prose prose-sm max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-strong:text-[var(--text)] prose-strong:font-bold prose-headings:font-bold prose-headings:my-2 prose-ol:my-1.5 prose-ol:pl-5 prose-ul:my-1.5 prose-ul:pl-5 prose-li:my-1"
+            style={{ color: turn.error ? "#991b1b" : "var(--text-md)" }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanForField(turn.text)}</ReactMarkdown>
+          </div>
+        ) : (
+          <span style={{ color: "var(--muted)" }}>{t("thinking", lang)}</span>
+        )}
         {canSpeak && turn.text && !turn.error && (
           <button onClick={onSpeak}
             className="btn-ghost mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs">

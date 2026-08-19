@@ -367,6 +367,10 @@ class VertexLLMClient(LLMClient):
         s = get_settings()
         project = getattr(s, "gcp_project", "") or os.environ.get("GOOGLE_CLOUD_PROJECT", "")
         region = getattr(s, "vertex_region", "") or os.environ.get("VERTEX_REGION", "us-central1")
+        # kept for the native generateContent endpoint, which web_search uses for
+        # Google Search grounding (the OpenAI-compat endpoint has no grounding)
+        self._project = project
+        self._region = region
         base_url = (
             f"https://{region}-aiplatform.googleapis.com/v1beta1"
             f"/projects/{project}/locations/{region}/endpoints/openapi/"
@@ -448,6 +452,74 @@ class VertexLLMClient(LLMClient):
         await self._refresh_client()
         async for delta in super().stream(messages, tier, max_tokens, temperature):
             yield delta
+
+    async def web_search(self, prompt: str, tier=Tier.MID,
+                         max_tokens=2048) -> tuple:
+        """Web search via Gemini's Google Search grounding.
+
+        The OpenAI-compatible endpoint the rest of this client speaks has no
+        grounding, so this one method drops to the native generateContent API,
+        which does. Returns (text, [{'url','title'}]) - the same shape the base
+        (OpenRouter) web_search returns, so a caller like the standards watcher
+        never has to know which provider actually ran the search.
+
+        Uses a grounding-capable model (Gemini 2.5 flash by default); flash-lite
+        does not ground, so the tier is bumped to MID rather than trusting the
+        cheap tier. Returns empty on any failure - a watcher on a slow clock
+        should lose one scan, never crash.
+        """
+        import httpx
+        try:
+            token = await self._get_token()
+        except Exception as e:
+            log.warning("vertex web_search: no ADC token", error=str(e)[:120])
+            return "", []
+        model = self._models.get(tier, self._models[Tier.MID]).split("/")[-1]
+        url = (f"https://{self._region}-aiplatform.googleapis.com/v1/projects/"
+               f"{self._project}/locations/{self._region}/publishers/google/"
+               f"models/{model}:generateContent")
+        body = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "tools": [{"googleSearch": {}}],
+            # thinkingBudget 0: a grounded revision lookup wants the model to
+            # search and report, not deliberate - and 2.5 flash otherwise spends
+            # the whole token budget thinking and truncates the JSON mid-string.
+            "generationConfig": {"maxOutputTokens": max_tokens,
+                                 "temperature": 0.0,
+                                 "thinkingConfig": {"thinkingBudget": 0}},
+        }
+        try:
+            async with self._sem:
+                await self._limiter.acquire()
+                async with httpx.AsyncClient(timeout=self._timeout_s) as http:
+                    resp = await http.post(
+                        url, json=body,
+                        headers={"Authorization": f"Bearer {token}"})
+            if resp.status_code >= 300:
+                log.warning("vertex web_search non-2xx",
+                            status=resp.status_code, body=resp.text[:200])
+                return "", []
+            return _gemini_grounded(resp.json())
+        except Exception as e:
+            log.warning("vertex web_search failed", error=str(e)[:160])
+            return "", []
+
+
+def _gemini_grounded(data: dict) -> tuple:
+    """(text, sources) out of a native generateContent grounded response."""
+    cands = data.get("candidates") or []
+    if not cands:
+        return "", []
+    cand = cands[0]
+    parts = (cand.get("content") or {}).get("parts") or []
+    text = "".join(p.get("text", "") for p in parts if isinstance(p, dict))
+    sources = []
+    meta = cand.get("groundingMetadata") or {}
+    for chunk in meta.get("groundingChunks") or []:
+        web = (chunk or {}).get("web") or {}
+        if web.get("uri"):
+            sources.append({"url": web["uri"], "title": web.get("title", "")})
+    return text, sources
 
 
 def _url_citations(message) -> list:

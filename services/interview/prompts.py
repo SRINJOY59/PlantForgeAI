@@ -6,7 +6,7 @@ You are planning a knowledge-capture exit interview with a retiring plant
 employee. Below is their profile and what the plant's knowledge graph already
 records about their equipment and projects.
 
-Produce 10-15 interview topics. Rules:
+Produce 5-7 focused interview topics. Rules:
 - Categories, in rough priority order: role, projects, equipment, tribal,
   procedures, handover. Use only these category values.
 - Ground topics in the ACTUAL facts given: if the graph shows P-101A had six
@@ -17,8 +17,8 @@ Produce 10-15 interview topics. Rules:
   state, tuning values people carry in their heads.
 - Do NOT create topics for things the documents already answer; probe past
   them.
-- Each topic: a short title, the category, one line of rationale, and 2-3
-  concrete seed questions an interviewer could ask out loud.
+- Each topic: a short title, the category, one line of rationale, and 2 concrete
+  seed questions an interviewer could ask out loud.
 - Always include one handover topic (successor advice, open risks) and one
   tribal topic (gotchas nobody wrote down).
 """

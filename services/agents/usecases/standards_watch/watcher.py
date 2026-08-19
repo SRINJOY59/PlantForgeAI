@@ -19,10 +19,28 @@ Two rules hold the line on trust:
     next step is a human fetching it.
 """
 
+import re
+
 from plantmind_core.schemas import Alert, Citation, WebSource
 from plantmind_core.telemetry import get_logger
 
 log = get_logger("agents.standards.watcher")
+
+_MONTH = re.compile(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*",
+                    re.I)
+
+
+def _normalize(revision: str) -> str:
+    """Collapse a free-text revision to a comparable key.
+
+    The web search is non-deterministic: the same edition comes back as
+    "Jul, 2012" one day and "July 2012" the next. Comparing the raw strings
+    turns every rephrasing into a false 'the standard moved' alert. This folds
+    month words to a stem and drops case, spaces and punctuation, so trivial
+    rewordings compare equal; anything the model genuinely worded differently
+    still differs and gets the equivalence check upstream."""
+    s = _MONTH.sub(lambda m: m.group(1).lower(), revision or "")
+    return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
 class StandardsWatcher:
@@ -53,19 +71,29 @@ class StandardsWatcher:
             log.info("no revision established", standard=standard)
             return None
 
-        known = self._bus.known_revision(standard)
+        prior = self._bus.known_revision(standard)
+        # Always advance the stored revision to the latest wording, so the next
+        # scan compares against what we last saw, not an ever-staler baseline.
         self._bus.set_known_revision(standard, found)
 
-        if known is None:
+        if prior is None:
             # first sight of this standard. We have no idea whether that
             # revision is new or ten years old, so this is a baseline, not news.
             log.info("standards baseline recorded", standard=standard,
                      revision=found)
             return None
-        if known == found:
+        if _normalize(prior) == _normalize(found):
+            return None
+        # Normalized strings differ - could be a real move, or a paraphrase the
+        # normaliser can't catch ("5th Ed." vs "5th Edition with Addendum 1").
+        # Ask the model whether they name the same revision before raising: a
+        # false revision alert is the fastest way to get this feed muted.
+        if await self._source.same_revision(prior, found):
+            log.info("revision reworded, not moved", standard=standard,
+                     prior=prior, found=found)
             return None
 
-        return self._alert(row, known, found, published, graph_version)
+        return self._alert(row, prior, found, published, graph_version)
 
     @staticmethod
     def _alert(row, known, found, published, graph_version) -> Alert:

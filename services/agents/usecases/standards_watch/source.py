@@ -15,9 +15,24 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, Field
 
+from plantmind_core.llm import Tier
 from plantmind_core.telemetry import get_logger
 
 log = get_logger("agents.standards.source")
+
+_SAME_PROMPT = """\
+Do these two descriptors refer to the SAME published revision/edition of an \
+engineering standard, or to different ones?
+
+A: "{a}"
+B: "{b}"
+
+They are the SAME if they name the same edition/revision even when worded \
+differently (e.g. "Jul 2012" and "July 2012", or "5th Ed." and "5th Edition"). \
+They are DIFFERENT only if the edition, revision number, or effective date \
+actually changed.
+
+Answer with one word: "same" or "different"."""
 
 
 class Revision(BaseModel):
@@ -42,6 +57,13 @@ class RevisionSource(ABC):
     @abstractmethod
     async def current(self, standard: str) -> Published:
         ...
+
+    async def same_revision(self, a: str, b: str) -> bool:
+        """Whether two free-text revision descriptors name the same revision.
+        Default: treat as same (conservative - a missed move is caught next
+        scan, a false 'moved' spams the feed now). Subclasses with an LLM
+        override this with a real judgement."""
+        return True
 
 
 PROMPT = """\
@@ -71,6 +93,19 @@ class WebRevisionSource(RevisionSource):
                         standard=standard, error=str(e)[:120])
             return Published(revision=Revision(), sources=sources)
         return Published(revision=revision, sources=sources)
+
+    async def same_revision(self, a: str, b: str) -> bool:
+        """A cheap, no-search judgement on whether two revision descriptors mean
+        the same thing. Defaults to same on any failure - never invents a move."""
+        try:
+            text = await self._llm.complete(
+                [{"role": "user", "content": _SAME_PROMPT.format(a=a, b=b)}],
+                tier=Tier.CHEAP, max_tokens=64)
+        except Exception as e:
+            log.warning("same_revision check failed; treating as same",
+                        error=str(e)[:120])
+            return True
+        return "different" not in (text or "").strip().lower()
 
 
 def _json_of(text: str) -> str:

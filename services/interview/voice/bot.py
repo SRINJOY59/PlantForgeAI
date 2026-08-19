@@ -36,6 +36,43 @@ from interview.domain import Interviewer, Notetaker, SessionMemory
 
 log = get_logger("interview.voice.bot")
 
+
+def _build_llm(settings, cfg) -> OpenAILLMService:
+    """The realtime interviewer LLM, pointed at the configured provider.
+
+    On Vertex (the default for this deployment) it mints a fresh ADC token per
+    session and talks to the Vertex OpenAI-compatible endpoint - the same
+    provider the rest of PlantMind uses, so the interview stops depending on a
+    separate OpenRouter balance. The token lasts about an hour, which covers an
+    interview; a session running longer would need a reconnect. Falls back to
+    OpenRouter when that is the configured provider (or Vertex has no ADC)."""
+    provider = getattr(settings, "llm_provider", "openrouter")
+    if provider == "vertex":
+        try:
+            import os
+            import google.auth
+            import google.auth.transport.requests
+            project = (getattr(settings, "gcp_project", "")
+                       or os.environ.get("GOOGLE_CLOUD_PROJECT", ""))
+            region = (getattr(settings, "vertex_region", "")
+                      or os.environ.get("VERTEX_REGION", "us-central1"))
+            creds, _ = google.auth.default(
+                scopes=["https://www.googleapis.com/auth/cloud-platform"])
+            creds.refresh(google.auth.transport.requests.Request())
+            base_url = (f"https://{region}-aiplatform.googleapis.com/v1beta1"
+                        f"/projects/{project}/locations/{region}"
+                        f"/endpoints/openapi/")
+            model = getattr(settings, "vertex_llm_mid", "google/gemini-2.5-flash")
+            log.info("interview LLM on Vertex", model=model, region=region)
+            return OpenAILLMService(api_key=creds.token, base_url=base_url,
+                                    model=model)
+        except Exception as e:
+            log.warning("Vertex LLM setup failed; falling back to OpenRouter",
+                        error=str(e)[:160])
+    return OpenAILLMService(api_key=settings.openrouter_api_key,
+                            base_url=settings.openrouter_base_url,
+                            model=cfg.llm_model)
+
 BRAIN_TICK_S = 3           # fast loop: pick up the background agenda promptly
 BRAIN_INTERVAL_S = 20      # digest cadence
 DIGEST_EVERY = BRAIN_INTERVAL_S // BRAIN_TICK_S   # ticks between digests
@@ -81,13 +118,15 @@ class VoiceBot:
                                  sample_rate=AUDIO_IN_RATE,
                                  addons={"language": "en"})
         tts = self._make_tts(cfg)
-        llm = OpenAILLMService(api_key=settings.openrouter_api_key,
-                               base_url=settings.openrouter_base_url,
-                               model=cfg.llm_model)
+        llm = _build_llm(settings, cfg)
 
         context = OpenAILLMContext(
-            messages=[{"role": "system",
-                       "content": self._interviewer.system_prompt()}],
+            messages=[
+                {"role": "system",
+                 "content": self._interviewer.system_prompt()},
+                {"role": "user",
+                 "content": "Please introduce yourself and start the interview."}
+            ],
             tools=self._tools_schema())
         aggregator = llm.create_context_aggregator(context)
 
@@ -202,6 +241,8 @@ class VoiceBot:
         is the no-repeat guarantee, and appending instead would grow forever."""
         messages = context.get_messages()
         rest = [m for m in messages if m.get("role") != "system"]
+        if not rest:
+            rest = [{"role": "user", "content": "Please start the interview."}]
         context.set_messages(
             [{"role": "system",
               "content": self._interviewer.system_prompt()}] + rest)

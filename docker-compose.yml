@@ -226,6 +226,8 @@ services:
     volumes:
       - ./data/interviews:/srv/data/interviews
       - ${APPDATA:-~}/gcloud:/root/.config/gcloud:ro
+      - ./services/interview:/srv/interview
+      - ./libs/core:/srv/libs/core
 
   # watches queue depth and scales the worker services to match. It is the one
   # service that talks to the docker daemon rather than to redis alone, which
@@ -315,6 +317,23 @@ services:
       dockerfile: infra/docker/service.Dockerfile
       args: { SERVICE: diagnostics }
     command: python -m diagnostics.service
+
+  # Standards deviation cron. Runs the web-vs-graph revision scan on a slow
+  # clock (default daily) and emits standard_revision alerts the UI's Standards
+  # tab shows. Sleep-loop rather than a cron daemon: it runs once on start, so
+  # deviations appear on the first pass, then repeats. Web search needs an
+  # OpenRouter key (see scan.py); the scan self-disables to a no-op otherwise.
+  standards-cron:
+    <<: *svc
+    build:
+      context: .
+      dockerfile: infra/docker/service.Dockerfile
+      args: { SERVICE: agents }
+    command: >
+      sh -c 'while true; do
+        python -m agents.usecases.standards_watch.scan || true;
+        sleep ${STANDARDS_SCAN_INTERVAL_S:-86400};
+      done'
 
 volumes:
   neo4j_data:
