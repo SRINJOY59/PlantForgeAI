@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useOutletContext } from "react-router-dom";
-import { Globe, LogOut, HardHat, Gauge, MessageSquare } from "lucide-react";
+import { Globe, LogOut, HardHat, Gauge, MessageSquare, FileSignature } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { LANGUAGES, t } from "../../lib/i18n";
 
@@ -83,6 +83,7 @@ export default function FieldShell() {
         style={{ background: "var(--bg-panel)", borderTop: "1px solid var(--border)" }}>
         <FieldTab to="/field" end icon={Gauge} label={t("tab_copilot", lang)} />
         <FieldTab to="/field/ask" icon={MessageSquare} label={t("tab_ask", lang)} />
+        <FieldTab to="/field/permit" icon={FileSignature} label={t("tab_permit", lang)} />
       </nav>
     </div>
   );

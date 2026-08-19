@@ -19,7 +19,13 @@ log = get_logger("gateway.routes.simulation.envelopes")
 
 router = APIRouter()
 
-_ENVELOPE_PATH = Path(__file__).resolve().parents[4] / "config" / "tep_envelopes.json"
+# Container-then-repo, the same precedence the TEP watcher uses. parents[4]
+# resolves to '/config' inside the image (the code lives at /srv/gateway/...),
+# which does not exist - the config is mounted at /srv/config - so the mounted
+# path is tried first and the repo path is the local-dev fallback.
+_CONTAINER_ENVELOPE = Path("/srv/config/tep_envelopes.json")
+_REPO_ENVELOPE = Path(__file__).resolve().parents[4] / "config" / "tep_envelopes.json"
+_ENVELOPE_PATH = _CONTAINER_ENVELOPE if _CONTAINER_ENVELOPE.exists() else _REPO_ENVELOPE
 
 
 def get_default_four_level_limits() -> dict:

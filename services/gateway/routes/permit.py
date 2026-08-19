@@ -16,9 +16,13 @@ from gateway.deps import get_agents_http, require_role
 from gateway.ratelimit import rate_limit
 
 router = APIRouter()
-# PTW requires engineer role and is rate-limited — every call is a billed,
-# multi-tool LLM round-trip that also carries a safety obligation.
-metered = [require_role("engineer"), Depends(rate_limit("permit"))]
+# Drafting a permit is a REQUEST, not an authorization - the draft explicitly
+# says the permit authority reviews and signs, and this system never approves.
+# So it is open to the field persona (require_role("worker") admits worker and
+# everyone above): a worker standing at the asset can request a permit for the
+# job in front of them, and a supervisor/engineer still authorizes it out of
+# band. Still rate-limited - every call is a billed, multi-tool LLM round-trip.
+metered = [require_role("worker"), Depends(rate_limit("permit"))]
 
 
 @router.post("/permit/draft", dependencies=metered)
