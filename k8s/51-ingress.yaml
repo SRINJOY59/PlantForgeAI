@@ -3,7 +3,7 @@
 # records at the static IP you reserve in the README, then Google issues the
 # cert automatically (can take ~15-60 min to go Active).
 #
-# Replace ui.example.com / api.example.com with your real domains, and set the
+# Replace ui.8.233.53.227.nip.io / api.8.233.53.227.nip.io with your real domains, and set the
 # same values in 01-config.yaml (CORS_ORIGINS) and the UI build args.
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
@@ -12,8 +12,8 @@ metadata:
   namespace: plantmind
 spec:
   domains:
-    - ui.example.com
-    - api.example.com
+    - ui.8.233.53.227.nip.io
+    - api.8.233.53.227.nip.io
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -27,13 +27,13 @@ metadata:
     networking.gke.io/managed-certificates: "plantmind-cert"
 spec:
   rules:
-    - host: ui.example.com
+    - host: ui.8.233.53.227.nip.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend: { service: { name: ui, port: { number: 80 } } }
-    - host: api.example.com
+    - host: api.8.233.53.227.nip.io
       http:
         paths:
           - path: /

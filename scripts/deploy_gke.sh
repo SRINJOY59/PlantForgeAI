@@ -87,20 +87,19 @@ stage_images() {
   VITE_SUPABASE_ANON_KEY="$VITE_SUPABASE_ANON_KEY" \
   VITE_INTERVIEW_URL="https://$API_DOMAIN" \
     ./k8s/build-and-push.sh
-  ( cd k8s
-    for i in gateway retrieval agents diagnostics historian ingestion extraction \
-             resolution graphd connectors interview simulation seed ui; do
-      kustomize edit set image "plantmind-$i=$REGISTRY/plantmind-$i:$TAG"
-    done )
+  # image pinning moved to stage_config (a sed, no standalone `kustomize` needed)
 }
 
 stage_config() {
   resolve_domains
-  echo "== [4/5] fill manifest placeholders =="
+  echo "== [4/5] fill manifest placeholders + pin images =="
   sed -i "s#REPLACE_WITH_GCP_PROJECT_ID#$PROJECT#g" k8s/01-config.yaml k8s/50-serviceaccount.yaml
   sed -i "s#https://REPLACE_WITH_UI_DOMAIN#https://$UI_DOMAIN#g" k8s/01-config.yaml
   sed -i "s#MINIO_PUBLIC_ENDPOINT: .*#MINIO_PUBLIC_ENDPOINT: \"https://$API_DOMAIN\"#" k8s/01-config.yaml
   sed -i "s#ui.example.com#$UI_DOMAIN#g; s#api.example.com#$API_DOMAIN#g" k8s/51-ingress.yaml
+  # point the kustomization images at your registry + tag (idempotent: works
+  # on the REGISTRY/latest placeholders AND on already-set values)
+  sed -i "s#newName: [^,]*/plantmind-#newName: $REGISTRY/plantmind-#g; s#newTag: [^ }]*#newTag: $TAG#g" k8s/kustomization.yaml
 }
 
 stage_secrets() {
@@ -112,8 +111,21 @@ stage_secrets() {
     echo "   generated TURN_SECRET in .env"
   fi
   kubectl create namespace plantmind --dry-run=client -o yaml | kubectl apply -f -
-  kubectl -n plantmind create secret generic plantmind-secrets --from-env-file=.env \
+  # Sanitize .env before making the Secret: kubectl --from-env-file keeps the
+  # WHOLE value after '=', including any inline `# comment`, so "DIM=1536 # note"
+  # becomes the literal "1536 # note" and pydantic can't parse the int. Strip
+  # trailing " # ..." (only when preceded by whitespace, so a '#' inside a value
+  # is left alone). Local dev is unaffected — python-dotenv strips these itself.
+  # Also drop the infra URLs: .env carries localhost ones for local dev, and the
+  # Secret is layered OVER the ConfigMap in each pod's envFrom, so a localhost
+  # REDIS_URL/NEO4J_URI/MINIO_ENDPOINT here would override the correct in-cluster
+  # service names. Those three come from 01-config.yaml only.
+  env_clean="$(mktemp)"
+  sed 's/[[:space:]]\{1,\}#.*$//' .env \
+    | grep -vE '^(NEO4J_URI|REDIS_URL|MINIO_ENDPOINT|RETRIEVAL_URL|AGENTS_URL)=' > "$env_clean"
+  kubectl -n plantmind create secret generic plantmind-secrets --from-env-file="$env_clean" \
     --dry-run=client -o yaml | kubectl apply -f -
+  rm -f "$env_clean"
   kubectl -n plantmind create configmap plantmind-envelopes  --from-file=tep_envelopes.json=config/tep_envelopes.json \
     --dry-run=client -o yaml | kubectl apply -f -
   kubectl -n plantmind create configmap plantmind-connectors --from-file=connectors.json=connectors.json \

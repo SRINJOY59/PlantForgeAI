@@ -68,6 +68,11 @@ chunk_index refers to the [chunk N] markers below.
 
 {chunks}"""
 
+# One batch of manual chunks can assert a lot of relations, and the whole batch
+# is lost if the answer does not fit - so this call gets a bigger budget than
+# structured()'s 4096 default (which doubles it again on a parse failure).
+BATCH_MAX_TOKENS = 8192
+
 
 def ensure_tag_node(nodes: dict, tag: str) -> None:
     node_type = NodeType.INSTRUMENT if tags.is_instrument(tag) \
@@ -88,11 +93,26 @@ class RelationExtractor:
         for i in range(0, len(chunks), self._batch_size):
             batch = chunks[i:i + self._batch_size]
             listing = "\n\n".join(f"[chunk {c.index}]\n{c.text}" for c in batch)
-            findings = await self._llm.structured(
-                [{"role": "user", "content": PROMPT.format(
-                    filename=filename, tag_list=", ".join(known_tags) or "none",
-                    chunks=listing)}],
-                BatchFindings, tier=Tier.MID)
+            try:
+                findings = await self._llm.structured(
+                    [{"role": "user", "content": PROMPT.format(
+                        filename=filename,
+                        tag_list=", ".join(known_tags) or "none",
+                        chunks=listing)}],
+                    BatchFindings, tier=Tier.MID, max_tokens=BATCH_MAX_TOKENS)
+            except Exception as e:
+                # One batch is not the document. A dense stretch of a long
+                # manual asserts more relations than the model has room to
+                # emit, and it answers with JSON cut off mid-object; letting
+                # that raise threw away every batch already read AND the
+                # document with them, so a 100-page IOM landed nowhere at all.
+                # Skipping the batch costs its relations and keeps the rest -
+                # the same trade _outline already makes when its call fails.
+                log.warning("relation batch failed, skipping it",
+                            filename=filename,
+                            chunks=f"{batch[0].index}-{batch[-1].index}",
+                            error_type=type(e).__name__, error=str(e)[:200])
+                continue
             self._apply(by_index, findings, nodes, edges, make_prov)
 
     def _apply(self, by_index, findings: BatchFindings, nodes, edges, make_prov):

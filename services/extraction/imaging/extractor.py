@@ -56,14 +56,27 @@ chart (graph/trend plot), nameplate (equipment nameplate/label photo),
 drawing (P&ID or engineering diagram), document (photo or scan of a text
 document), other."""
 
-CHART_PROMPT = """Read this chart. Extract its type, title, axes, every
-series with its data points (as written; approximate where needed), and a
-2-3 sentence summary of the trend in plain engineering language, naming
-equipment tags if the chart references any."""
+# Both specialist prompts cap their own output. A trend plot has effectively
+# unbounded readable points and a weathered nameplate invites the model into a
+# repetition loop; either one runs past the token budget and comes back as JSON
+# that stops mid-string, which is a parse error rather than a bad reading. The
+# graph wants the SHAPE of the curve and the plate's identifiers, so bounding
+# the ask costs nothing we store.
+CHART_PROMPT = """Read this chart. Extract its type, title, axes, its series
+with their data points, and a 2-3 sentence summary of the trend in plain
+engineering language, naming equipment tags if the chart references any.
+
+Limits - obey them exactly: at most 6 series, at most 40 points per series
+(sample evenly across the x-axis if the chart has more, keeping the first and
+last), and at most 3 sentences of summary. Never repeat a point or a label."""
 
 NAMEPLATE_PROMPT = """Read this equipment nameplate photo. Extract the
 equipment tag if visible, manufacturer, model, serial number, and rating
-lines exactly as printed."""
+lines exactly as printed.
+
+Limits - obey them exactly: every field is a single short line (under 80
+characters), and at most 12 rating lines. Transcribe each line once; if a
+line is unreadable, leave it out rather than guessing or repeating."""
 
 OCR_PROMPT = """Transcribe ALL readable text in this document image,
 preserving structure with markdown headings where the layout implies them."""
@@ -86,10 +99,39 @@ class ImageLane:
         if verdict.kind == "drawing":
             return await self._pnid.extract(doc_id, content_hash, filename, data)
         if verdict.kind == "chart":
-            return await self._chart(doc_id, content_hash, filename, images)
+            return await self._specialist_or_ocr(
+                self._chart, verdict.kind, doc_id, content_hash, filename, images)
         if verdict.kind == "nameplate":
-            return await self._nameplate(doc_id, content_hash, filename, images)
+            return await self._specialist_or_ocr(
+                self._nameplate, verdict.kind, doc_id, content_hash, filename,
+                images)
         # document / other: transcribe, then the full text pipeline applies
+        return await self._ocr(doc_id, content_hash, filename, images)
+
+    async def _specialist_or_ocr(self, specialist, kind, doc_id, content_hash,
+                                 filename, images):
+        """Run the specialist reader, falling back to transcription if it
+        cannot produce a valid reading.
+
+        The specialists ask for a strict shape (ChartReading, Nameplate) and a
+        vision model that overruns its token budget answers with JSON that
+        stops mid-string. That used to raise out of the lane, which releases
+        the document's hash claim and retries the whole thing - and the retries
+        overrun in the same place, so the image ended in the DLQ having put
+        NOTHING in the graph. A photograph we could not parse into a schema is
+        still a photograph full of readable text, so we take the plain OCR path
+        instead: the document lands, its tags get linked, and the only loss is
+        the structured series/ratings.
+        """
+        try:
+            return await specialist(doc_id, content_hash, filename, images)
+        except Exception as e:
+            log.warning("specialist read failed, falling back to ocr",
+                        doc_id=doc_id, filename=filename, kind=kind,
+                        error_type=type(e).__name__, error=str(e)[:200])
+            return await self._ocr(doc_id, content_hash, filename, images)
+
+    async def _ocr(self, doc_id, content_hash, filename, images):
         transcript = await self._llm.vision(OCR_PROMPT, images)
         return await self._text.extract(doc_id, content_hash, filename,
                                         transcript)

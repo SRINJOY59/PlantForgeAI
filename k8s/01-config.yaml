@@ -19,8 +19,8 @@ data:
   AGENTS_URL: "http://agents-api:8002"
 
   # --- GCP / Vertex (auth comes from Workload Identity, not a key) ---
-  GCP_PROJECT: "REPLACE_WITH_GCP_PROJECT_ID"
-  GOOGLE_CLOUD_PROJECT: "REPLACE_WITH_GCP_PROJECT_ID"
+  GCP_PROJECT: "project-1e232997-e446-4263-977"
+  GOOGLE_CLOUD_PROJECT: "project-1e232997-e446-4263-977"
   VERTEX_REGION: "us-central1"
   LLM_PROVIDER: "vertex"
   VERTEX_LLM_CHEAP: "google/gemini-2.5-flash-lite"
@@ -36,14 +36,20 @@ data:
   STANDARDS_WATCH_ENABLED: "false"    # the CronJob owns the scan, not the consumer loop
   SLACK_MIN_SEVERITY: "critical"
 
+  # --- interview mode: coturn is disabled on Autopilot (see 70-coturn.yaml) and
+  #     no DEEPGRAM_API_KEY is set, so the voice path cannot run. Text mode is
+  #     the working interview here; drop this back to "0" once you add the
+  #     Standard node pool for coturn and put a Deepgram key in the Secret. ---
+  INTERVIEW_TEXT_MODE: "1"
+
   # --- MinIO public endpoint: the browser fetches presigned URLs from here, so
   #     it must be the gateway's public origin path to MinIO. Set after you know
   #     the Ingress host (see README). Left as the in-cluster endpoint until then. ---
-  MINIO_PUBLIC_ENDPOINT: "http://minio:9000"
+  MINIO_PUBLIC_ENDPOINT: "https://api.8.233.53.227.nip.io"
 
   # --- CORS: the browser origin(s) allowed to call the gateway. Set to your
   #     UI's public URL once DNS/TLS is up (see README). ---
-  CORS_ORIGINS: "https://REPLACE_WITH_UI_DOMAIN"
+  CORS_ORIGINS: "https://ui.8.233.53.227.nip.io"
 
   # --- TURN (voice interview WebRTC relay). Set after coturn is up (README).
   #     TURN_URL is what the browser + bot dial; TURN_EXTERNAL_IP is the coturn

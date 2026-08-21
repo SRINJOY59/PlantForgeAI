@@ -38,10 +38,10 @@ spec:
       containers:
         - name: extraction
           image: plantmind-extraction:latest
-          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_parse_wo", "-c", "8"]
+          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_parse_wo", "-c", "4"]
           envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
           volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
-          resources: { requests: { cpu: "250m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+          resources: { requests: { cpu: "500m", memory: "3Gi" }, limits: { memory: "3Gi" } }
       volumes: [{ name: hf-cache, emptyDir: {} }]
 ---
 # ---------------------------------------------------------------- extraction-pnid
@@ -66,6 +66,14 @@ spec:
       volumes: [{ name: hf-cache, emptyDir: {} }]
 ---
 # ---------------------------------------------------------------- extraction-text
+# Concurrency is capped at 4 on purpose. Celery prefork forks one child per
+# slot, and every child lazily builds its OWN FastEmbed model (the singleton in
+# plantmind_core.llm.embeddings is per-process) - roughly 0.5 GiB resident each.
+# At -c 32 the first real inbox burst put 32 models in one 2 GiB container and
+# the kernel OOM-killed it (exit 137), taking 28 acks-late q_extract_text tasks
+# with it; they sat in kombu's `unacked` hash until the visibility timeout.
+# Scale text extraction OUT with the HPA (maxReplicas: 8 in 60-hpa.yaml), never
+# UP with -c: replicas come with their own memory, extra forks do not.
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: extraction-text, namespace: plantmind }
@@ -80,10 +88,10 @@ spec:
       containers:
         - name: extraction
           image: plantmind-extraction:latest
-          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_extract_text", "-c", "32"]
+          command: ["celery", "-A", "extraction.tasks", "worker", "-Q", "q_extract_text", "-c", "4"]
           envFrom: [{ configMapRef: { name: plantmind-config } }, { secretRef: { name: plantmind-secrets } }]
           volumeMounts: [{ name: hf-cache, mountPath: /tmp/fastembed_cache }]
-          resources: { requests: { cpu: "500m", memory: "1Gi" }, limits: { memory: "2Gi" } }
+          resources: { requests: { cpu: "1", memory: "4Gi" }, limits: { memory: "4Gi" } }
       volumes: [{ name: hf-cache, emptyDir: {} }]
 ---
 # ---------------------------------------------------------------- resolution
