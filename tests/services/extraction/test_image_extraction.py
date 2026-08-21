@@ -1,5 +1,7 @@
 import asyncio
 
+from pydantic import ValidationError
+
 from plantmind_core.schemas import EdgeType, NodeType
 from extraction.imaging.extractor import (
     ChartReading, DataPoint, ImageLane, ImageVerdict, Nameplate, Series,
@@ -101,3 +103,34 @@ def test_document_verdict_transcribes_then_runs_text_pipeline():
                for n in csg.nodes)
     assert "K-301" in {n.surface_form for n in csg.nodes}
     assert llm.calls[1][0] == "vision_text"           # the OCR call happened
+
+
+def test_chart_read_overrunning_its_budget_falls_back_to_ocr():
+    """A vision model that runs past max_tokens answers with JSON cut off
+    mid-string, and pydantic rejects it. The image must still reach the graph
+    through transcription rather than failing the document into the DLQ."""
+    llm = FakeLLM(
+        ImageVerdict(kind="chart"),
+        ValidationError.from_exception_data("ChartReading", []),
+        "C-220 differential pressure (PDI-221) climbed through the month.",
+        *[BatchFindings()] * 3)
+
+    csg = extract(llm)
+
+    assert any(n.type == NodeType.CHUNK and "PDI-221" in n.props["text"]
+               for n in csg.nodes)
+    assert "PDI-221" in {n.surface_form for n in csg.nodes}
+    assert llm.calls[2][0] == "vision_text"           # fell through to OCR
+
+
+def test_nameplate_read_overrunning_its_budget_falls_back_to_ocr():
+    llm = FakeLLM(
+        ImageVerdict(kind="nameplate"),
+        ValidationError.from_exception_data("Nameplate", []),
+        "GARDNER-DENVER PROCESS COMPRESSOR. Tag K-301. Serial 4471-A.",
+        *[BatchFindings()] * 3)
+
+    csg = extract(llm)
+
+    assert "K-301" in {n.surface_form for n in csg.nodes}
+    assert llm.calls[2][0] == "vision_text"

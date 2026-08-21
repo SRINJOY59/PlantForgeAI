@@ -27,10 +27,14 @@ spec:
         - name: neo4j
           image: neo4j:5-community
           env:
-            - name: NEO4J_PASSWORD
+            # NOT named NEO4J_* — neo4j reads every NEO4J_* env as a config
+            # setting, so NEO4J_PASSWORD would be parsed as a bogus setting
+            # "PASSWORD" and strict validation refuses to boot. This plain name
+            # is just a shell var used to build NEO4J_AUTH.
+            - name: NEO_PW
               valueFrom: { secretKeyRef: { name: plantmind-secrets, key: NEO4J_PASSWORD } }
             # $(VAR) resolves against an env var defined earlier in this list
-            - { name: NEO4J_AUTH, value: "neo4j/$(NEO4J_PASSWORD)" }
+            - { name: NEO4J_AUTH, value: "neo4j/$(NEO_PW)" }
             - { name: NEO4J_PLUGINS, value: '["graph-data-science"]' }
             # GDS needs the procedures allow-listed to run
             - { name: NEO4J_dbms_security_procedures_unrestricted, value: "gds.*" }
@@ -39,7 +43,7 @@ spec:
             - { containerPort: 7474 }
           readinessProbe:
             exec:
-              command: ["sh", "-c", "cypher-shell -u neo4j -p \"$NEO4J_PASSWORD\" 'RETURN 1' || exit 1"]
+              command: ["sh", "-c", "cypher-shell -u neo4j -p \"$NEO_PW\" 'RETURN 1' || exit 1"]
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 10

@@ -19,7 +19,8 @@ resources:
   - 40-init-jobs.yaml
   - 51-ingress.yaml
   - 60-hpa.yaml
-  - 70-coturn.yaml
+  # - 70-coturn.yaml   # voice TURN relay: needs hostNetwork → a Standard node
+  #                    # pool (Autopilot forbids it). Re-enable after adding one.
   # NOTE: the Secret and the three file-backed ConfigMaps (plantmind-envelopes,
   # plantmind-connectors, plantmind-neo4j-init) are created out-of-band from the
   # repo files at deploy time — see README §5. They are intentionally NOT
@@ -32,17 +33,17 @@ resources:
 # below, or run: `cd k8s && kustomize edit set image plantmind-gateway=REG/plantmind-gateway:TAG` (per image).
 # REGISTRY example: us-central1-docker.pkg.dev/my-project/plantmind
 images:
-  - { name: plantmind-gateway,     newName: REGISTRY/plantmind-gateway,     newTag: latest }
-  - { name: plantmind-retrieval,   newName: REGISTRY/plantmind-retrieval,   newTag: latest }
-  - { name: plantmind-agents,      newName: REGISTRY/plantmind-agents,      newTag: latest }
-  - { name: plantmind-diagnostics, newName: REGISTRY/plantmind-diagnostics, newTag: latest }
-  - { name: plantmind-historian,   newName: REGISTRY/plantmind-historian,   newTag: latest }
-  - { name: plantmind-ingestion,   newName: REGISTRY/plantmind-ingestion,   newTag: latest }
-  - { name: plantmind-extraction,  newName: REGISTRY/plantmind-extraction,  newTag: latest }
-  - { name: plantmind-resolution,  newName: REGISTRY/plantmind-resolution,  newTag: latest }
-  - { name: plantmind-graphd,      newName: REGISTRY/plantmind-graphd,      newTag: latest }
-  - { name: plantmind-connectors,  newName: REGISTRY/plantmind-connectors,  newTag: latest }
-  - { name: plantmind-interview,   newName: REGISTRY/plantmind-interview,   newTag: latest }
-  - { name: plantmind-simulation,  newName: REGISTRY/plantmind-simulation,  newTag: latest }
-  - { name: plantmind-seed,        newName: REGISTRY/plantmind-seed,        newTag: latest }
-  - { name: plantmind-ui,          newName: REGISTRY/plantmind-ui,          newTag: latest }
+  - { name: plantmind-gateway,     newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-gateway,     newTag: 0f4345f }
+  - { name: plantmind-retrieval,   newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-retrieval,   newTag: 0f4345f }
+  - { name: plantmind-agents,      newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-agents,      newTag: 0f4345f }
+  - { name: plantmind-diagnostics, newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-diagnostics, newTag: 0f4345f }
+  - { name: plantmind-historian,   newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-historian,   newTag: 0f4345f }
+  - { name: plantmind-ingestion,   newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-ingestion,   newTag: 0f4345f }
+  - { name: plantmind-extraction,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-extraction,  newTag: 0f4345f-imgfix2 }
+  - { name: plantmind-resolution,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-resolution,  newTag: 0f4345f }
+  - { name: plantmind-graphd,      newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-graphd,      newTag: 0f4345f }
+  - { name: plantmind-connectors,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-connectors,  newTag: 0f4345f }
+  - { name: plantmind-interview,   newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-interview,   newTag: 0f4345f }
+  - { name: plantmind-simulation,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-simulation,  newTag: 0f4345f }
+  - { name: plantmind-seed,        newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-seed,        newTag: 0f4345f }
+  - { name: plantmind-ui,          newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-ui,          newTag: 0f4345f }

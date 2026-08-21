@@ -36,23 +36,31 @@ class FakeSender:
 
 class FakeLLM:
     """Returns queued pydantic instances from structured()/vision_structured()
-    in order; records every prompt for assertions."""
+    in order; records every prompt for assertions. Queue an Exception instance
+    to make that call raise instead of return - how a caller handles a model
+    that failed to answer is worth a test too."""
 
     def __init__(self, *responses):
         self.responses = list(responses)
         self.calls = []
 
+    def _next(self):
+        reply = self.responses.pop(0)
+        if isinstance(reply, BaseException):
+            raise reply
+        return reply
+
     async def structured(self, messages, schema, tier=None, max_tokens=4096):
         self.calls.append(("structured", messages, schema))
-        return self.responses.pop(0)
+        return self._next()
 
     async def vision_structured(self, prompt, images_b64, schema, max_tokens=4096):
         self.calls.append(("vision", prompt, schema))
-        return self.responses.pop(0)
+        return self._next()
 
     async def vision(self, prompt, images_b64, max_tokens=4096):
         self.calls.append(("vision_text", prompt, None))
-        return self.responses.pop(0)
+        return self._next()
 
 
 class FakeEmbedder:

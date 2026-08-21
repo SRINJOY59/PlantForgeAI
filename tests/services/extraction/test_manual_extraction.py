@@ -99,3 +99,22 @@ def test_regex_fallback_when_llm_outline_fails():
 
     titles = {n.props["title"] for n in csg.nodes if n.type == NodeType.SECTION}
     assert any("2.1" in t for t in titles)             # regex found the headings
+
+
+def test_a_failed_relation_batch_does_not_lose_the_document():
+    """A truncated BatchFindings answer used to raise out of the lane, so a
+    long manual reached the graph as nothing at all. The batch's relations are
+    forfeit; its sections, chunks and mentions are not."""
+    from pydantic import ValidationError
+
+    llm = FakeLLM(OUTLINE,
+                  *[ValidationError.from_exception_data("BatchFindings", [])] * 5)
+    extractor = ManualExtractor(llm, FakeEmbedder())
+
+    csg = asyncio.run(extractor.extract("doc-man", "hash-man", "manual.pdf",
+                                        PAGES))
+
+    assert any(n.type == NodeType.DOCUMENT for n in csg.nodes)
+    assert any(n.type == NodeType.SECTION for n in csg.nodes)
+    assert "P-101A" in {n.surface_form for n in csg.nodes}     # mention pass ran
+    assert not any(e.type == EdgeType.HAS_FAILURE for e in csg.edges)
