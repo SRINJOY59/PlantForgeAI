@@ -1,9 +1,24 @@
 import { FileText, PencilLine, BookOpen } from "lucide-react";
-import { DocumentViewer } from "../DocumentViewer";
+import { DocumentViewer, DocumentModal } from "../DocumentViewer";
 
 export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) {
+  const allCitations = dedupe(answer?.citations || []);
+
+  // This column is hidden below lg, but the answer's inline citations are not -
+  // they still call onCite, which set activeDoc and then had nowhere to render
+  // it, so on a phone tapping a source did visibly nothing. Same document,
+  // opened over the conversation instead of beside it.
+  const sheet = activeDoc ? (
+    <div className="lg:hidden">
+      <DocumentModal docId={activeDoc} filename={nameFor(allCitations, activeDoc)}
+        onClose={onClose} />
+    </div>
+  ) : null;
+
   if (!answer) {
     return (
+      <>
+      {sheet}
       <aside
         className="hidden lg:flex w-72 shrink-0 flex-col items-center justify-center p-6 text-center"
         style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
@@ -16,15 +31,18 @@ export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) 
           Ask a question — its sources and reasoning chain appear here.
         </p>
       </aside>
+      </>
     );
   }
 
-  const citations = dedupe(answer.citations || []);
+  const citations = allCitations;
   // a document somebody has overturned must not sit in this list looking as
   // clean as the ones nobody has challenged
   const corrected = new Map((answer.corrections || []).map(c => [c.doc_id, c]));
 
   return (
+    <>
+    {sheet}
     <aside
       className="hidden lg:flex w-72 shrink-0 flex-col"
       style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-surface)" }}
@@ -53,6 +71,7 @@ export default function EvidencePanel({ answer, activeDoc, onSelect, onClose }) 
         </div>
       )}
     </aside>
+    </>
   );
 }
 

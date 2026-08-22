@@ -152,12 +152,12 @@ export default function Dashboard() {
   const timeline = useMemo(() => hourly(alerts, 12), [alerts]);
 
   return (
-    <div className="mx-auto h-full max-w-6xl overflow-y-auto px-6 py-6 space-y-5">
+    <div className="mx-auto h-full max-w-6xl overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 space-y-5">
       {/* Greeting + role */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-4"
         style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }}>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="page-title text-xl">Welcome back, {name}</h1>
             <div className="flex items-center gap-1 rounded-full px-2.5 py-0.5"
               style={{ background: `${roleInfo.color}14`, border: `1px solid ${roleInfo.color}33` }}>
@@ -185,9 +185,9 @@ export default function Dashboard() {
 
       {/* Statutory Compliance & Standards Action Center */}
       <Panel>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} style={{ color: "#d97706" }} />
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <ShieldCheck size={16} className="flex-shrink-0" style={{ color: "#d97706" }} />
             <span className="text-sm font-semibold" style={{ color: "var(--text-md)" }}>
               Statutory Compliance & Standards Issues (OISD / IBR / API)
             </span>

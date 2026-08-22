@@ -126,11 +126,21 @@ spec:
       containers:
         - name: interview
           image: plantmind-interview:latest
+          # The Ingress routes api.<host>/interview/* here WITHOUT rewriting
+          # the path (see 51-ingress.yaml), so the app serves that prefix for
+          # real - INTERVIEW_PATH_PREFIX in 01-config.yaml, not --root-path,
+          # which only advertises a prefix and still 404s the real request.
           command: ["uvicorn", "interview.main:app", "--host", "0.0.0.0", "--port", "8002"]
           envFrom:
             - configMapRef: { name: plantmind-config }
             - secretRef: { name: plantmind-secrets }
           ports: [{ containerPort: 8002 }]
+          # the GCE ingress derives its backend health check from this probe;
+          # without one it probes "/" and marks the backend unhealthy (502)
+          readinessProbe:
+            httpGet: { path: /interview/health, port: 8002 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { memory: "1Gi" } }
 ---
 # ---------------------------------------------------------------- tep-sim

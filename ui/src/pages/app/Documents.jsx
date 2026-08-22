@@ -110,9 +110,9 @@ export default function Documents() {
     ), [search, typeFilter, docs]);
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-6 h-full overflow-y-auto">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+    <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 sm:py-6 h-full overflow-y-auto">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="page-title flex items-center gap-2">
             <FileSearch size={20} style={{ color: "var(--blue)" }} /> Documents
           </h1>
@@ -157,8 +157,8 @@ export default function Documents() {
         </div>
       )}
 
-      <div className="mb-6 flex items-center gap-3">
-        <div className="relative flex-1">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }} />
           <input className="input pl-9" placeholder="Search title, ID, equipment…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>

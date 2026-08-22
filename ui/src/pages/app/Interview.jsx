@@ -41,7 +41,11 @@ export default function Interview() {
   const scroller = useRef(null);
   const audioRef = useRef(null);
 
-  const textMode = health && !health.voice_ready && health.text_mode;
+  // INTERVIEW_TEXT_MODE=1 is an explicit operator choice, not only a fallback
+  // for a missing Deepgram key. This deployment has the key but no TURN relay
+  // (coturn needs a Standard node pool), so voice negotiates and then has
+  // nowhere to put the media - the flag has to win over voice_ready.
+  const textMode = health && health.text_mode;
 
   useEffect(() => {
     checkHealth().then(setHealth).catch(() => setHealth(null));
@@ -253,7 +257,7 @@ export default function Interview() {
 
 function Centered({ children }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6">
+    <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6 sm:px-6">
       {children}
     </div>
   );
@@ -308,7 +312,13 @@ function Welcome({ profile, health, textMode, onStart }) {
       )}
       {textMode && (
         <p className="mt-4 text-xs" style={{ color: "var(--muted)" }}>
-          No voice key configured — running as a typed interview.
+          {/* Text mode has two causes now and they need different words: a
+              missing key is something to go fix, INTERVIEW_TEXT_MODE=1 with a
+              key present is a deliberate choice, and reporting the second as
+              the first sends people hunting for a key that is already set. */}
+          {health.voice_ready
+            ? "Text mode is on for this deployment — running as a typed interview."
+            : "No voice key configured — running as a typed interview."}
         </p>
       )}
 
@@ -328,6 +338,10 @@ function Live({ turns, session, seconds, muted, textMode, textInput, textBusy,
                 onEnableAudio }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
+  // TopicPanel is hidden below lg, so the bar carries the same count there -
+  // how much ground is left is the one thing you steer the interview by.
+  const topics = session?.topics || [];
+  const covered = topics.filter((t) => t.status === "covered").length;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {!textMode && audioBlocked && (
@@ -347,21 +361,34 @@ function Live({ turns, session, seconds, muted, textMode, textInput, textBusy,
       )}
       {/* call bar */}
       <div
-        className="flex items-center gap-3 px-5 py-3"
+        className="flex items-center gap-2 px-3 py-3 sm:gap-3 sm:px-5"
         style={{ background: "var(--bg-panel)", borderBottom: "1px solid var(--border)" }}
       >
-        <span className="live-dot" />
-        <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-          Interview in progress
+        <span className="live-dot flex-shrink-0" />
+        {/* The full sentence plus timer plus both buttons overran 375px. The
+            dot already says "live", so the phone keeps the word and drops the
+            sentence; the buttons keep their icons and drop their labels. */}
+        <span className="truncate text-sm font-semibold" style={{ color: "var(--text)" }}>
+          <span className="hidden sm:inline">Interview in progress</span>
+          <span className="sm:hidden">Live</span>
         </span>
-        <span className="font-mono text-xs" style={{ color: "var(--muted-lt)" }}>
+        <span className="flex-shrink-0 font-mono text-xs" style={{ color: "var(--muted-lt)" }}>
           {mm}:{ss}
         </span>
+        {topics.length > 0 && (
+          <span
+            className="flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium lg:hidden"
+            style={{ background: "var(--bg-subtle)", color: "var(--muted)" }}
+            title={`${covered} of ${topics.length} topics covered`}
+          >
+            {covered}/{topics.length}
+          </span>
+        )}
         <div className="flex-1" />
         {!textMode && (
-          <button className="btn-outline flex items-center gap-1.5 text-xs" onClick={onMute}>
+          <button className="btn-outline flex flex-shrink-0 items-center gap-1.5 text-xs" onClick={onMute}>
             {muted ? <MicOff size={13} /> : <Mic size={13} />}
-            {muted ? "Unmute" : "Mute"}
+            <span className="hidden sm:inline">{muted ? "Unmute" : "Mute"}</span>
           </button>
         )}
         <button
@@ -369,13 +396,15 @@ function Live({ turns, session, seconds, muted, textMode, textInput, textBusy,
           style={{ background: "#dc2626" }}
           onClick={onEnd}
         >
-          <PhoneOff size={13} /> End Interview
+          <PhoneOff size={13} />
+          <span className="hidden sm:inline">End Interview</span>
+          <span className="sm:hidden">End</span>
         </button>
       </div>
 
       <div className="flex min-h-0 flex-1">
         {/* transcript */}
-        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
           {turns.length === 0 && (
             <p className="mt-8 text-center text-sm" style={{ color: "var(--muted-lt)" }}>
               {textMode ? "Say hello to begin." : "The interviewer is about to greet you…"}
@@ -423,8 +452,10 @@ function TopicPanel({ session }) {
   const covered = topics.filter((t) => t.status === "covered").length;
   const pct = Math.round((session?.overall_coverage || 0) * 100);
   return (
+    // 288px of a 375px phone left 87px for the transcript, so below lg the
+    // panel goes away and the call bar carries the covered/total count.
     <aside
-      className="w-72 min-w-72 overflow-y-auto px-4 py-4"
+      className="hidden w-72 min-w-72 overflow-y-auto px-4 py-4 lg:block"
       style={{ background: "var(--bg-panel)", borderLeft: "1px solid var(--border)" }}
     >
       <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--muted-lt)" }}>
@@ -460,7 +491,7 @@ function TopicPanel({ session }) {
 
 function Done({ skills, session, onDownload }) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between">
           <div>
