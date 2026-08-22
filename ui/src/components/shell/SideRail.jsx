@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   Bell, GitBranch, GitPullRequestArrow, MessageSquare, FileStack, ShieldCheck,
   Plug, Leaf, UserRound, AudioLines, Shield, LayoutDashboard,
-  FilePieChart, FileSignature, Mic, Activity, Fingerprint,
+  FilePieChart, FileSignature, Mic, Activity, Fingerprint, X,
 } from "lucide-react";
 import { useAlerts } from "../../state/AlertsContext";
 import { ROLE_HIERARCHY, useRole } from "../../auth/useRole";
@@ -34,7 +34,10 @@ const ROLE_LABELS = {
   admin: { label: "Admin", color: "#7c3aed" },
 };
 
-export default function SideRail() {
+// 220px of permanent rail is over half of a 375px phone, so below `md` the
+// rail leaves the flow entirely and slides in over the page as a drawer.
+// `open`/`onClose` are ignored at md and up, where it is a static column again.
+export default function SideRail({ open = false, onClose = () => {} }) {
   const { unread } = useAlerts();
   const role = useRole();
   const userRank = ROLE_HIERARCHY.indexOf(role);
@@ -47,30 +50,57 @@ export default function SideRail() {
   const roleInfo = ROLE_LABELS[role] ?? ROLE_LABELS.operator;
 
   return (
-    <nav
-      className="flex flex-col gap-0.5 py-3"
-      style={{
-        width: "220px",
-        minWidth: "220px",
-        background: "var(--bg-panel)",
-        borderRight: "1px solid var(--border)",
-      }}
-    >
-      {/* Logo */}
-      <div
-        className="flex items-center px-4 pb-3 mb-1"
-        style={{ borderBottom: "1px solid var(--border)" }}
-      >
-        <Wordmark size={28} className="text-sm" />
-      </div>
+    <>
+      {/* Scrim. Only rendered while the drawer is open, and only below md -
+          tapping anywhere off the rail is the fastest way to dismiss it. */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onClose}
+          className="fixed inset-0 z-30 md:hidden"
+          style={{ background: "rgba(15, 23, 42, 0.45)" }}
+        />
+      )}
 
-      {/* Nav items */}
-      <div className="flex-1 px-2 pt-1">
+      <nav
+        className={`flex flex-col gap-0.5 py-3 fixed inset-y-0 left-0 z-40
+                    transition-transform duration-200 ease-out
+                    md:static md:z-auto md:translate-x-0 md:transition-none
+                    ${open ? "translate-x-0" : "-translate-x-full"}`}
+        style={{
+          width: "220px",
+          minWidth: "220px",
+          background: "var(--bg-panel)",
+          borderRight: "1px solid var(--border)",
+        }}
+      >
+        {/* Logo. The drawer covers the TopBar (and its menu button) on mobile,
+            so it carries its own dismiss control. */}
+        <div
+          className="flex items-center justify-between px-4 pb-3 mb-1"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <Wordmark size={28} className="text-sm" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="btn-ghost -mr-1 p-1 md:hidden"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+      {/* Nav items. min-h-0 + overflow so a long list still scrolls on a short
+          phone instead of pushing the role badge off the bottom. */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-1">
         {visibleNav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
+            onClick={onClose}
             className="group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 mb-0.5"
             style={({ isActive }) => ({
               background: isActive ? "var(--brand-light)" : "transparent",
@@ -114,7 +144,8 @@ export default function SideRail() {
         <span className="text-[11px] font-mono" style={{ color: "var(--muted-lt)" }}>
           PlantForge.ai v2.0
         </span>
-      </div>
-    </nav>
+        </div>
+      </nav>
+    </>
   );
 }

@@ -127,7 +127,7 @@ export default function Ask() {
           {turns.length === 0
             ? <Welcome onPick={send} />
             : (
-              <div className="mx-auto max-w-3xl space-y-4 px-6 py-6">
+              <div className="mx-auto max-w-3xl space-y-4 px-4 py-5 sm:px-6 sm:py-6">
                 {turns.map((turn, i) => (
                   <Turn key={i} turn={turn} active={i === focused}
                     onFocus={() => { setFocused(i); setActiveDoc(null); }}
@@ -263,7 +263,7 @@ function Verified({ answer }) {
 
 function Welcome({ onPick }) {
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center overflow-y-auto px-4 py-10 text-center sm:px-6 sm:py-12">
       <div
         className="mb-6 grid h-16 w-16 place-items-center rounded-2xl"
         style={{ background: "var(--brand-light)", border: "1px solid var(--brand-mid)" }}
@@ -325,9 +325,12 @@ function Composer({ input, setInput, onSend, busy, onClear, hasTurns }) {
                 <RotateCcw size={12} /> Clear
               </button>
             )}
-            <span className="flex-1 text-xs" style={{ color: "var(--muted-lt)" }}>
+            {/* Keyboard hint, and only a keyboard has those keys - on a phone
+                it is advice you cannot take, and it was squeezing Send. */}
+            <span className="hidden flex-1 text-xs sm:block" style={{ color: "var(--muted-lt)" }}>
               Enter to send · Shift+Enter for newline
             </span>
+            <span className="flex-1 sm:hidden" />
             <button type="submit" className="btn-primary px-4 py-2 text-xs" disabled={busy || !input.trim()}>
               {busy
                 ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />

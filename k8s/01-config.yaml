@@ -36,11 +36,17 @@ data:
   STANDARDS_WATCH_ENABLED: "false"    # the CronJob owns the scan, not the consumer loop
   SLACK_MIN_SEVERITY: "critical"
 
-  # --- interview mode: coturn is disabled on Autopilot (see 70-coturn.yaml) and
-  #     no DEEPGRAM_API_KEY is set, so the voice path cannot run. Text mode is
-  #     the working interview here; drop this back to "0" once you add the
-  #     Standard node pool for coturn and put a Deepgram key in the Secret. ---
-  INTERVIEW_TEXT_MODE: "1"
+  # --- interview mode. "1" forces the typed interview and the UI honours that
+  #     over voice_ready, which reports only whether DEEPGRAM_API_KEY is set
+  #     (STT/TTS) - it says nothing about whether media can flow. Set "1" if
+  #     the WebRTC leg cannot connect; voice also needs the ICE config below. ---
+  INTERVIEW_TEXT_MODE: "0"     # voice enabled; set to 1 to force the typed interview
+
+  # --- the interview API shares the gateway's hostname under this prefix (a
+  #     separate domain would re-provision the managed cert), so the app mounts
+  #     its routes there. Must match the Ingress path in 51-ingress.yaml and
+  #     the UI's VITE_INTERVIEW_URL. Empty (the default) serves at the root. ---
+  INTERVIEW_PATH_PREFIX: "/interview"
 
   # --- MinIO public endpoint: the browser fetches presigned URLs from here, so
   #     it must be the gateway's public origin path to MinIO. Set after you know
@@ -51,10 +57,18 @@ data:
   #     UI's public URL once DNS/TLS is up (see README). ---
   CORS_ORIGINS: "https://ui.8.233.53.227.nip.io"
 
-  # --- TURN (voice interview WebRTC relay). Set after coturn is up (README).
-  #     TURN_URL is what the browser + bot dial; TURN_EXTERNAL_IP is the coturn
-  #     node's public IP (coturn advertises it as the relay address). Leave the
-  #     placeholders and the interview falls back to STUN-only (direct paths). ---
+  # --- ICE for the voice leg. NOTE: this cluster is Autopilot, whose node pools
+  #     "cannot be accessed or modified" - so the README's plan of adding a
+  #     Standard node pool for coturn is not available here. A relay would have
+  #     to be a separate GCE VM, an in-cluster UDP LoadBalancer, or a hosted
+  #     TURN service. Until then this is STUN-only plus a firewall rule
+  #     (allow-webrtc-udp-plantmind) opening the ephemeral UDP range to the
+  #     nodes, betting on a direct path. ---
   STUN_URL: "stun:stun.l.google.com:19302"
-  TURN_URL: "turn:REPLACE_WITH_TURN_HOST_OR_IP:3478"
-  TURN_EXTERNAL_IP: "REPLACE_WITH_COTURN_NODE_EXTERNAL_IP"
+  # TURN_URL must stay EMPTY until a real relay exists. The placeholder was
+  # being served to browsers verbatim: TURN_SECRET is set from .env, so the
+  # `if turn_url and turn_secret` guard in voice/turn.py passed and every
+  # client got a relay at a hostname that does not resolve. Empty means
+  # STUN-only, which is what the direct-path attempt needs.
+  TURN_URL: ""
+  TURN_EXTERNAL_IP: ""

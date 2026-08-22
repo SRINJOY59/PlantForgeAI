@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, ChevronDown, Moon, Sun } from "lucide-react";
+import { LogOut, ChevronDown, Moon, Sun, Menu } from "lucide-react";
 import Logo from "../Logo";
 import { useAuth } from "../../auth/AuthProvider";
 import { useProfile } from "../../state/ProfileContext";
@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 
 const UNITS = ["All units", "Unit 100", "Unit 200", "Unit 300"];
 
-export default function TopBar() {
+export default function TopBar({ onMenu }) {
   const { dark, toggle } = useTheme();
   const { user, signOut, demoMode } = useAuth();
   const { profile } = useProfile();
@@ -32,15 +32,25 @@ export default function TopBar() {
 
   return (
     <header
-      className="flex h-14 flex-shrink-0 items-center gap-4 px-4"
+      className="flex h-14 flex-shrink-0 items-center gap-2 px-2 sm:gap-4 sm:px-4"
       style={{
         background: "var(--bg-panel)",
         borderBottom: "1px solid var(--border)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
+      {/* Drawer toggle. Only exists below md, where the rail is not on screen. */}
+      <button
+        type="button"
+        onClick={onMenu}
+        aria-label="Open navigation"
+        className="btn-ghost flex-shrink-0 px-2 py-1.5 md:hidden"
+      >
+        <Menu size={18} />
+      </button>
+
       {/* Logo */}
-      <div className="flex items-center gap-2.5 mr-2 select-none">
+      <div className="flex flex-shrink-0 items-center gap-2.5 select-none sm:mr-2">
         <Logo size={28} />
         <span
           className="hidden sm:block text-sm font-bold"
@@ -51,38 +61,43 @@ export default function TopBar() {
       </div>
 
       {/* Divider */}
-      <div className="h-6 w-px" style={{ background: "var(--border)" }} />
+      <div className="hidden h-6 w-px sm:block" style={{ background: "var(--border)" }} />
 
-      {/* Unit selector */}
-      <div className="relative">
+      {/* Unit selector. Narrows on a phone rather than disappearing - which
+          unit you are looking at changes what every page means. */}
+      <div className="relative min-w-0">
         <select
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
-          className="input h-8 appearance-none py-0 pl-3 pr-8 text-xs cursor-pointer"
-          style={{ minWidth: "130px", fontSize: "12px" }}
+          className="input h-8 w-[104px] appearance-none py-0 pl-2 pr-6 text-xs cursor-pointer sm:w-auto sm:pl-3 sm:pr-8"
+          style={{ fontSize: "12px" }}
         >
           {UNITS.map((u) => <option key={u}>{u}</option>)}
         </select>
         <ChevronDown
           size={11}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 sm:right-2.5"
           style={{ color: "var(--muted)" }}
         />
       </div>
 
       <div className="flex-1" />
 
-      <FreshnessPill />
+      {/* Ingestion freshness is context, not an action - it yields its space to
+          the controls once the bar gets tight. */}
+      <div className="hidden lg:block">
+        <FreshnessPill />
+      </div>
 
       {/* Theme toggle */}
-      <button onClick={toggle} className="btn-ghost px-2 py-1.5" title="Toggle theme">
+      <button onClick={toggle} className="btn-ghost flex-shrink-0 px-2 py-1.5" title="Toggle theme">
         {dark ? <Sun size={16} /> : <Moon size={16} />}
       </button>
 
       {/* User section */}
       <button
         onClick={() => nav("/app/profile")}
-        className="flex items-center gap-3 border-l pl-3 text-left transition-opacity hover:opacity-80"
+        className="flex flex-shrink-0 items-center gap-3 border-l pl-2 text-left transition-opacity hover:opacity-80 sm:pl-3"
         style={{ borderColor: "var(--border)" }}
         title="Your profile"
       >
@@ -113,7 +128,7 @@ export default function TopBar() {
         </div>
       </button>
 
-      <button onClick={handleSignOut} className="btn-ghost px-2 py-1.5" title="Sign out">
+      <button onClick={handleSignOut} className="btn-ghost flex-shrink-0 px-2 py-1.5" title="Sign out">
         <LogOut size={15} />
       </button>
     </header>

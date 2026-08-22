@@ -60,8 +60,8 @@ export default function AlertCard({ alert, onOpenDoc }) {
         <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg" style={{ background: s.iconBg }}>
           <Icon size={15} style={{ color: s.color }} />
         </div>
-        <span className="flex-1 text-sm font-semibold" style={{ color: "var(--text)" }}>{displayTitle}</span>
-        <span className="badge" style={{ background: s.chipBg, color: s.color }}>
+        <span className="min-w-0 flex-1 break-words text-sm font-semibold" style={{ color: "var(--text)" }}>{displayTitle}</span>
+        <span className="badge flex-shrink-0" style={{ background: s.chipBg, color: s.color }}>
           {alert.severity ?? "info"}
         </span>
       </div>

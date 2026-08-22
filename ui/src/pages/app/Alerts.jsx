@@ -33,8 +33,8 @@ export default function Alerts() {
   const web = shown.filter(a => WEB_KINDS.has(a.kind));
 
   return (
-    <div className="mx-auto flex h-full max-w-3xl flex-col px-6 py-6">
-      <div className="mb-6 flex items-center gap-3">
+    <div className="mx-auto flex h-full max-w-3xl flex-col px-4 py-5 sm:px-6 sm:py-6">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <div>
           <h1 className="page-title flex items-center gap-3">
             Alerts
@@ -47,7 +47,7 @@ export default function Alerts() {
         </div>
 
         {tab === "alerts" && (
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1.5 overflow-x-auto">
             {FILTERS.map(f => (
               <button key={f.id} onClick={() => setFilter(f.id)}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150"
@@ -64,7 +64,7 @@ export default function Alerts() {
       </div>
 
       {/* What the plant is telling you, and what you are going to do about it */}
-      <div className="mb-4 flex items-center gap-1" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="mb-4 flex items-center gap-1 overflow-x-auto whitespace-nowrap" style={{ borderBottom: "1px solid var(--border)" }}>
         {[
           { id: "alerts", label: "Alerts", icon: Bell, n: alerts.length },
           { id: "work_orders", label: "Work Orders", icon: ClipboardList },

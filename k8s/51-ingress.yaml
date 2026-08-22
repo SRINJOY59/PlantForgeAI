@@ -36,6 +36,15 @@ spec:
     - host: api.8.233.53.227.nip.io
       http:
         paths:
+          # The interview service shares the API host rather than taking a
+          # third domain, because a new domain means re-provisioning the
+          # managed cert (15-60 min) for a service that only needs a path.
+          # GCE picks the longest matching prefix, and the load balancer does
+          # NOT rewrite - so the app must own this prefix too: its container
+          # runs `uvicorn --root-path /interview` (see 20-app-http.yaml).
+          - path: /interview
+            pathType: Prefix
+            backend: { service: { name: interview, port: { number: 8002 } } }
           - path: /
             pathType: Prefix
             backend: { service: { name: gateway, port: { number: 8000 } } }
