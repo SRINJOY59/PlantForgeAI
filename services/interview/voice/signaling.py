@@ -9,7 +9,13 @@ off the no-voice startup path)."""
 
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 
+from interview.voice import no_mdns
 from interview.voice.turn import pipecat_ice_servers
+
+# Must happen before aiortc builds a peer connection: the browser's `.local`
+# candidates otherwise drag in an mDNS listener whose teardown fails in a pod
+# and takes setRemoteDescription down with it. See no_mdns for the detail.
+no_mdns.install()
 
 
 class WebRTCSignaler:
