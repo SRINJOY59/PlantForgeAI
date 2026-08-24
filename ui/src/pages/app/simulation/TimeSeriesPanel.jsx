@@ -3,16 +3,23 @@ import Plotly from "plotly.js-basic-dist-min";
 
 // Defines subplots per TEP unit area
 const AREA_CONFIG = {
+  // Coolant temperature is plotted ALONGSIDE process temperature, not left
+  // off. Cooling duty is UA*(T - T_cool), so the GAP between these two lines
+  // is the duty - and every coolant fault (IDV 4/11 inlet step, 14 valve
+  // stuck, and fouling via ua_degradation) shows up here first, often hours
+  // before the process temperature it eventually moves. With only REACTOR.T
+  // on screen, a live coolant fault looked like three flat lines and the sim
+  // looked frozen.
   "REACTOR": {
     subplots: [
-      { title: "Temperature (°C)", tags: ["REACTOR.T"], yaxis: "yaxis" },
+      { title: "Temperature (°C)", tags: ["REACTOR.T", "REACTOR.CoolT"], yaxis: "yaxis" },
       { title: "Pressure (kPa)",   tags: ["REACTOR.P"], yaxis: "yaxis2" },
       { title: "Level (%)",         tags: ["REACTOR.Level"], yaxis: "yaxis3" },
     ],
   },
   "CONDENSER": {
     subplots: [
-      { title: "Temperature (°C)", tags: ["CONDENSER.T"],  yaxis: "yaxis" },
+      { title: "Temperature (°C)", tags: ["CONDENSER.T", "CONDENSER.CoolT"],  yaxis: "yaxis" },
       { title: "Pressure (kPa)",   tags: ["CONDENSER.P"],  yaxis: "yaxis2" },
       { title: "Heat Duty",        tags: ["CONDENSER.HeatDuty"], yaxis: "yaxis3" },
     ],

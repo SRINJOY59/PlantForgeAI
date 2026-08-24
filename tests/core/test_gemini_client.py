@@ -23,9 +23,14 @@ def test_gemini_client_defaults(monkeypatch):
     assert client._provider == "gemini"
     assert client._api_key == "gm-test-key"
     assert "generativelanguage.googleapis.com" in client._base_url
-    assert client._models[Tier.CHEAP] == "gemini-3.5-flash"
-    assert client._models[Tier.MID] == "gemini-3.7-flash"
-    assert client._models[Tier.VISION] == "gemini-3.5-flash"
+    # Against the settings, not a hard-coded model name: what this asserts is
+    # that each tier is wired to its own setting. Pinning the literals meant a
+    # routine model bump (3.5 -> 3.6 on cheap and vision) failed three tests
+    # that have nothing to do with which model is current.
+    s = get_settings()
+    assert client._models[Tier.CHEAP] == s.gemini_llm_cheap
+    assert client._models[Tier.MID] == s.gemini_llm_mid
+    assert client._models[Tier.VISION] == s.gemini_llm_vision
 
 
 def test_get_llm_selects_gemini_when_configured(monkeypatch):
@@ -52,7 +57,7 @@ async def test_gemini_complete_calls_model_and_records_tokens():
     out = await client.complete(MSGS, tier=Tier.MID)
 
     assert out == "Gemini response"
-    assert fake.calls[0]["model"] == "gemini-3.7-flash"
+    assert fake.calls[0]["model"] == get_settings().gemini_llm_mid
     stats = list(client.meter.snapshot().values())[0]
     assert stats == {"prompt": 15, "completion": 8, "calls": 1}
 
@@ -66,7 +71,7 @@ async def test_gemini_structured_output():
 
     assert res.risk_level == "medium"
     assert res.action_required is True
-    assert fake.calls[0]["model"] == "gemini-3.5-flash"
+    assert fake.calls[0]["model"] == get_settings().gemini_llm_cheap
     assert fake.calls[0]["response_format"]["type"] == "json_schema"
 
 
@@ -78,7 +83,10 @@ async def test_gemini_vision():
     out = await client.vision("Read tag from diagram", ["BASE64_IMAGE_DATA"])
 
     assert out == "P&ID pump tag P-101A"
-    assert fake.calls[0]["model"] == "gemini-3.5-flash"
+    # the VISION setting: cheap and vision happen to name the same model today,
+    # so asserting cheap here would still pass while silently accepting a
+    # vision call routed to the wrong tier
+    assert fake.calls[0]["model"] == get_settings().gemini_llm_vision
     content = fake.calls[0]["messages"][0]["content"]
     assert content[0]["text"] == "Read tag from diagram"
     assert content[1]["image_url"]["url"].startswith("data:image/png;base64,BASE64_IMAGE_DATA")

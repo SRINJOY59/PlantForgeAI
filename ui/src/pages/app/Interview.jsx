@@ -134,8 +134,15 @@ export default function Interview() {
           // (participant.local === true), which must not loop back to us.
           if (track.kind === "audio" && participant?.local !== true
               && audioRef.current) {
-            audioRef.current.srcObject = new MediaStream([track]);
-            audioRef.current.play()
+            const el = audioRef.current;
+            // Drop the silent unlock clip first. srcObject outranks src per
+            // spec, but Safari has shipped versions where a leftover src wins
+            // and the element happily plays 1 frame of silence forever.
+            el.removeAttribute("src");
+            el.load();
+            el.srcObject = new MediaStream([track]);
+            el.muted = false;
+            el.play()
               .then(() => setAudioBlocked(false))
               .catch(() => setAudioBlocked(true));
           }
@@ -194,8 +201,19 @@ export default function Interview() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden" style={{ background: "var(--bg-surface)" }}>
-      {/* always mounted so the ref is live before the bot's track arrives */}
-      <audio ref={audioRef} autoPlay style={{ display: "none" }} />
+      {/* Always mounted so the ref is live before the bot's track arrives.
+          playsInline + a RENDERED element are both iOS requirements: WebKit
+          refuses to play media from an element that is not in the layout, so
+          `display: none` here was silent on iPhone while working on desktop.
+          1px and transparent keeps it out of the way without removing it from
+          the render tree. */}
+      <audio
+        ref={audioRef}
+        autoPlay
+        playsInline
+        style={{ position: "absolute", width: 1, height: 1,
+                 opacity: 0, pointerEvents: "none" }}
+      />
       {phase === "idle" && <Welcome profile={profile} health={health} textMode={textMode} onStart={start} />}
       {(phase === "preparing" || phase === "connecting") && (
         <Centered>

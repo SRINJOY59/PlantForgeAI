@@ -123,8 +123,12 @@ Candidate set, with `h_max = 4` hops (`pathrag_max_hops`):
                s ∈ S[:4]        {CONNECTED_TO}, min(2, h_max))
 ```
 
-- `Π(a,b;·)` — all simple paths `a ⇝ b` using only edge types in `T(q)`
-- `Π→(a,L;·)` — paths outward from `a` terminating on any node labelled in `L`
+- `Π(a,b;·)` — all **trails** `a ⇝ b` using only edge types in `T(q)`
+  (Neo4j variable-length semantics: no *relationship* repeats within a path;
+  *nodes* may repeat, so a cycle back through a node is admissible)
+- `Π→(a,L;·)` — trails outward from `a` terminating on any node labelled in `L`
+- Traversal is **undirected** — the pattern is `-[:T*1..h]-`, not `-[:T*1..h]->`
+- Each query is capped at `LIMIT 100`
 - `L_ev = {FailureMode, Procedure, RegulationClause}` (evidence-bearing labels)
 
 The final union is the **process-neighbourhood term**. Between-paths stop *at*
@@ -143,8 +147,13 @@ attenuates it three ways. The score of a path is the resource that survives:
                           ┌                                  ┐
                           │      α  ·  max(κ(e), κ_min)      │
     flow(p)   =     ∏     │  ──────────────────────────────  │
-                  e ∈ p   │    max( d_out(src(e)) − 1, 1 )   │
+                  e ∈ p   │     max( deg(src(e)) − 1, 1 )    │
                           └                                  ┘
+
+    deg(v) is the UNDIRECTED degree of v restricted to T(q). The method is
+    named out_degrees() but its Cypher pattern carries no arrow, so in- and
+    out-edges both count — consistent with the traversal, which is also
+    undirected.
 ```
 
 | term | value | meaning |
@@ -152,7 +161,7 @@ attenuates it three ways. The score of a path is the resource that survives:
 | `α` | `0.8` | **decay** — each hop is weaker evidence than the last |
 | `κ(e)` | edge prop | **extraction confidence** — a rule-parsed table row outranks a hedged LLM extraction |
 | `κ_min` | `0.3` | confidence **weakens** a path, never erases it |
-| `d_out(v)` | degree in `T(q)` | **branching** — resource splits across siblings |
+| `deg(v)` | **undirected** degree in `T(q)` | **branching** — resource splits across siblings |
 | `−1` | | discounts the edge we arrived on |
 | `max(·,1)` | | a leaf must not divide by zero |
 
@@ -171,7 +180,7 @@ Worked example, `α = 0.8`:
 
 ```
     P-101A ──CONNECTED_TO──▶ E-201 ──HAS_FAILURE──▶ FOULING
-            d_out=3, κ=1.0          d_out=2, κ=0.85
+            deg=3, κ=1.0            deg=2, κ=0.85
 
     flow =  (0.8 · 1.00 / max(3−1,1))  ·  (0.8 · 0.85 / max(2−1,1))
          =  (0.8 / 2)                  ·  (0.68 / 1)

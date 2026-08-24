@@ -27,6 +27,12 @@ class BaseSimulationRunner:
     
     Subclasses must implement the abstract `tick(self, dt: float)` method.
     """
+
+    # How many consecutive over-budget ticks before the state is treated as
+    # unrecoverable. Three is long enough to ride out one slow solve and a
+    # noisy neighbour, short enough that the UI is not stale for long.
+    MAX_OVERRUNS = 3
+
     def __init__(self, model, bank, publisher, dt: float, port: int, title: str):
         self.model = model
         self.bank = bank
@@ -39,6 +45,7 @@ class BaseSimulationRunner:
         self._tick_count = 0
         self._sim_task: asyncio.Task | None = None
         self._sim_health = "nominal"
+        self._overruns = 0            # consecutive ticks that ran over dt
 
         # Construct FastAPI app
         @asynccontextmanager
@@ -232,9 +239,33 @@ class BaseSimulationRunner:
 
             self._tick_count += 1
             elapsed = time.monotonic() - tick_start
+
+            # ALWAYS yield, including when the tick overran its budget.
+            # `if sleep > 0` looked like a harmless micro-optimisation and was
+            # the bug: a tick that takes >= dt leaves sleep == 0, the await is
+            # skipped, and the loop becomes a tight CPU-bound spin that never
+            # returns control. Uvicorn then never gets scheduled, so the
+            # process stops accepting connections while staying alive and
+            # "Running" with zero restarts - the sim goes dark with no crash
+            # to point at. asyncio.sleep(0) is the yield; it costs nothing.
             sleep = max(0.0, self.dt - elapsed)
-            if sleep > 0:
-                await asyncio.sleep(sleep)
+            await asyncio.sleep(sleep)
+
+            # Running behind real time is survivable; running behind forever
+            # means the solver is crawling on a stiff state and will not
+            # recover on its own. Treat a sustained overrun like a divergence.
+            if elapsed > self.dt:
+                self._overruns += 1
+                log.warning("simulation tick overran: %.2fs for a %.2fs step "
+                            "(%d consecutive)", elapsed, self.dt, self._overruns)
+                if self._overruns >= self.MAX_OVERRUNS:
+                    log.error("simulation overran %d ticks in a row - "
+                              "resetting to nominal", self._overruns)
+                    self._sim_health = "overrun_reset"
+                    self._reset_to_nominal()
+                    self._overruns = 0
+            else:
+                self._overruns = 0
 
     def _model_healthy(self) -> bool:
         """Divergence guard hook. Models that expose is_healthy() are checked;
