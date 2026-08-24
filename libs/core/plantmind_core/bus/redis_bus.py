@@ -10,6 +10,9 @@ import redis
 
 from plantmind_core import keys
 from plantmind_core.config import get_settings
+from plantmind_core.telemetry import get_logger
+
+log = get_logger("bus.redis")
 
 # The longest a caller may park on a blocking stream read, and the socket
 # timeout that has to outlast it.
@@ -169,7 +172,48 @@ class RedisBus:
                     ex=ttl_seconds)
 
     def get_indexed_diagnosis(self, diag_id: str) -> str | None:
-        return self._r.get(f"{keys.DIAGNOSES_INDEX}:{diag_id}")
+        """The diagnosis json for `diag_id`, from the index or the stream.
+
+        The index expires after DIAGNOSIS_INDEX_TTL_S; the diagnoses:live stream
+        it mirrors is capped by ENTRY COUNT, not by age. Those two lifetimes do
+        not agree, so a diagnosis the UI is still happily rendering off the
+        stream could already have lost its index key - and "Diagnose with AI"
+        answered `diagnosis not found` for something visible on screen with a
+        live button next to it.
+
+        Falling back to the stream ties the two together by construction: if the
+        UI can show it, this can find it, whatever the TTL happens to be. The
+        hit is re-indexed on the way out so a second click is a plain GET again.
+        """
+        cached = self._r.get(f"{keys.DIAGNOSES_INDEX}:{diag_id}")
+        if cached:
+            return cached
+
+        found = self._scan_diagnoses_for(diag_id)
+        if found:
+            log.info("diagnosis index miss, recovered from stream",
+                     diagnosis_id=diag_id)
+            self.index_diagnosis(diag_id, found)
+        return found
+
+    def _scan_diagnoses_for(self, diag_id: str) -> str | None:
+        """Newest-first scan of diagnoses:live for one id. Only ever runs on an
+        index miss, which is rare and already on a human's click."""
+        try:
+            entries = self._r.xrevrange(keys.DIAGNOSES_STREAM, count=5000)
+        except Exception:
+            log.exception("could not scan diagnoses stream", diagnosis_id=diag_id)
+            return None
+        for _entry_id, fields in entries:
+            payload = fields.get("payload") if isinstance(fields, dict) else None
+            if not payload:
+                continue
+            try:
+                if json.loads(payload).get("id") == diag_id:
+                    return payload
+            except (ValueError, TypeError):
+                continue
+        return None
 
     # on-demand LLM RCA: the UI asks, the agents runtime answers ---------------
     def request_rca(self, diag_id: str) -> str:

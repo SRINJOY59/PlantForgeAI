@@ -53,6 +53,22 @@ class FakeSource(RevisionSource):
             raise RuntimeError("network is down")
         return self._published
 
+    async def same_revision(self, a, b):
+        """Two different strings are two different revisions.
+
+        RevisionSource.same_revision defaults to True - deliberately, so a
+        subclass without a real judgement never invents a move. Inheriting that
+        default here made this fake answer "same" to every pair, which silently
+        suppressed the alert in _check() and failed every test that asserts one
+        gets raised. The fake has to state its own intent: these tests hand it
+        genuinely distinct revisions.
+        """
+        return _normalize(a) == _normalize(b)
+
+
+def _normalize(s: str) -> str:
+    return (s or "").strip().lower()
+
 
 def watcher(source=None, bus=None, reader=None):
     return StandardsWatcher(reader or FakeReader(), bus or FakeBus(),

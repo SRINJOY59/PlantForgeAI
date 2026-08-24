@@ -3,7 +3,20 @@ to find tags in text and by the resolver to canonicalise them."""
 
 import re
 
-TAG_RE = re.compile(r"\b([A-Za-z]{1,4})[-\s]?(\d{2,5})\s*([A-Za-z]?)\b")
+# The trailing letter is a tag SUFFIX (the A of P-101A), and it may be
+# separated by spaces so that "P 101 A" still reads as one tag. That spacing
+# tolerance is what made the old form
+#     \b([A-Za-z]{1,4})[-\s]?(\d{2,5})\s*([A-Za-z]?)\b
+# reach across a word boundary and eat the first letter of the NEXT tag:
+#     "unit 200 P-101A"   -> UNIT-200P   (and P-101A lost entirely)
+#     "WO 4471 K-301"     -> WO-4471K    (and K-301 lost)
+#     "V-210 V-211"       -> V-210V      (and V-211 lost)
+# Phrasings like those are everywhere in work orders and incident reports, so
+# this was inventing phantom equipment and dropping real tags throughout
+# ingestion. The lookahead declines the suffix when the letter is followed by
+# its own digits - i.e. when it is starting a tag rather than ending one.
+TAG_RE = re.compile(
+    r"\b([A-Za-z]{1,4})[-\s]?(\d{2,5})(?:\s*([A-Za-z])(?![-\s]?\d{2,5}))?\b")
 
 # ISA instrument letter codes: first letter = measured variable,
 # rest = function. Anything else (P, K, V, T, E...) is plant equipment.

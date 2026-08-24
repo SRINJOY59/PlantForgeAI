@@ -41,6 +41,8 @@ class FakeReader:
         self.vector_results = []
         self.relations = []
         self.corrections = []       # corrections_of results
+        self.work_orders = []       # equipment_work_orders results
+        self.failures = []          # equipment_failures results
 
     def entity_by_surface(self, surface):
         return self.entities.get(surface)
@@ -72,6 +74,17 @@ class FakeReader:
 
     def failure_mode_counts(self, limit=10):
         return []
+
+    # Asset-history reads. _seed_history() calls both on every local and path
+    # query; without them the fake raised AttributeError halfway through
+    # _prepare and the failure looked like a retrieval bug rather than a stub
+    # that had fallen behind the reader interface. Empty by default, so tests
+    # that do not set them get exactly the context they did before.
+    def equipment_work_orders(self, node_id, limit=20):
+        return self.work_orders[:limit]
+
+    def equipment_failures(self, node_id):
+        return self.failures
 
     def paths_between(self, src, dst, types, max_hops, limit=100):
         return self.paths
