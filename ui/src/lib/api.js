@@ -315,8 +315,13 @@ export async function fetchDocumentUrl(docId) {
   return { url: data.url, filename: data.filename ?? null };
 }
 
-export async function getGraph() {
-  const res = await fetchWithAuth(`${BASE}/graph`, { headers: await authHeaders() });
+// limit=1500: the plant graph passed 400 nodes once the full document set was
+// ingested, and the explorer was silently rendering a 400-node slice of it -
+// so searching for a real tag like V-301 found nothing, because the node had
+// never been sent to the browser. Chunks and Sections are already excluded
+// server-side, so this is entities only.
+export async function getGraph(limit = 1500) {
+  const res = await fetchWithAuth(`${BASE}/graph?limit=${limit}`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`graph failed: ${res.status}`);
   return res.json();
 }

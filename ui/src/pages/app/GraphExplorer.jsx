@@ -189,7 +189,20 @@ export default function GraphExplorer() {
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }} />
             <input className="input h-8 pl-8 pr-3 text-xs" style={{ width: "180px" }}
-              placeholder="Search nodes…" value={search} onChange={e => setSearch(e.target.value)} />
+              placeholder="Search nodes…" value={search}
+              onChange={e => setSearch(e.target.value)}
+              // Filtering is live, so Enter had nothing left to do and felt
+              // broken. It now opens the best match - exact tag first, so
+              // typing "V-301" and hitting Enter lands on V-301 and not on
+              // PSV-301 or LV-301, which also contain the string.
+              onKeyDown={e => {
+                if (e.key !== "Enter" || !visibleNodes.length) return;
+                e.preventDefault();
+                const q = search.trim().toLowerCase();
+                const exact = visibleNodes.find(
+                  n => (n.label || "").toLowerCase() === q);
+                setSelected(exact || visibleNodes[0]);
+              }} />
           </div>
 
           <div className="flex items-center gap-1">
