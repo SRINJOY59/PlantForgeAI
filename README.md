@@ -80,7 +80,7 @@ multi-hop cases, cache disabled:
 
 ```
    ╔══════════════════════════════════════════════════════════════╗
-   ║  Answer accuracy (strict)         0.64    18/28 correct      ║
+   ║  Answer accuracy (strict)         0.86    24/28 correct      ║
    ║  Citation hit rate                0.82    mechanical         ║
    ║  Mode routing accuracy            0.93    mechanical         ║
    ║  Mean time to answer             11.2 s   end to end         ║
