@@ -1,0 +1,5 @@
+permit_id,date,equipment_tag,work_description,requested_by,status,isolation_valves,loto_tags
+PTW-3001,2026-01-14,R-101,Emergency positioner repair on cooling water valve TV-102,S. Patel,CLOSED,FV-101;FV-102;FV-103;FV-104,#LOTO-101A..104A
+PTW-3002,2026-02-10,PSV-101,Pull PSV-101 for shop pop test and recalibration,A. Khan,APPROVED,FV-101;FV-102;FV-103;FV-104,#LOTO-101A..104A
+PTW-3003,2026-04-05,P-601A,Packing gland replacement on molten resin pump P-601A,D. Nair,CLOSED,P-601A Suction Block;P-601A Discharge Block,#LOTO-P601A
+PTW-3004,2026-06-15,E-201,Shell side hydroblasting and tube eddy current inspection,M. George,DRAFT,E-201 CW Inlet Block;E-201 CW Outlet Block,#LOTO-E201
