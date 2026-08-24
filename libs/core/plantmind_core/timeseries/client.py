@@ -33,6 +33,11 @@ log = get_logger("timeseries")
 
 TABLE = "plant_telemetry"
 
+# Fail fast rather than hang. Both exist so a stalled cloud instance surfaces
+# as a logged, retried error instead of a silently dead historian.
+CONNECT_TIMEOUT_S = 10
+STATEMENT_TIMEOUT_MS = 30_000
+
 
 @dataclass
 class TelemetryRow:
@@ -60,6 +65,27 @@ class TelemetryRow:
         return cls(ts=ts, tag_id=tag_id, value=value,
                    quality=fields.get("status", "GOOD"),
                    unit=fields.get("unit", ""))
+
+
+def _end_read(conn) -> None:
+    """Close the implicit transaction a SELECT opened.
+
+    The connection is cached and autocommit is off (the sink needs a batch to
+    commit atomically), so a read that never commits leaves the session `idle
+    in transaction` holding ACCESS SHARE on the telemetry table - forever, for
+    a long-lived reader. That is not theoretical: one leaked `window()` sat
+    idle for three hours and blocked ensure_schema's ALTER TABLE, which
+    blocked every historian restart's CREATE EXTENSION behind it, which meant
+    the sink never consumed a single sample and every diagnosis downstream
+    reported "no telemetry around onset".
+
+    rollback, not commit: a read has nothing to persist, and rollback is the
+    cheaper way to end the transaction.
+    """
+    try:
+        conn.rollback()
+    except Exception:                       # a dead connection is not a read error
+        log.debug("could not end read transaction", exc_info=True)
 
 
 def _parse_ts(raw) -> datetime:
@@ -97,8 +123,25 @@ class TimeseriesDB:
                 "Add 'psycopg[binary]' to run the historian outside it.")
         if self._conn is None or self._conn.closed:
             # autocommit off: the sink commits a whole batch atomically, so a
-            # failed insert redelivers rather than half-lands
-            self._conn = psycopg.connect(self._dsn, autocommit=False)
+            # failed insert redelivers rather than half-lands.
+            #
+            # connect_timeout is not optional. Without it a stalled handshake
+            # blocks forever - and because the sink connects BEFORE its first
+            # log line, the whole historian died silently: pod Ready, log
+            # empty, no consumer group, 50k telemetry entries unread, and
+            # downstream every diagnosis reported "no telemetry around onset"
+            # with nothing anywhere pointing at the database. A paused cloud
+            # instance accepts TCP and then never completes startup, which is
+            # exactly the shape that hangs here. Failing fast lets
+            # _ensure_schema's retry loop log it and keep trying.
+            kwargs = {"autocommit": False}
+            if "connect_timeout" not in self._dsn:
+                kwargs["connect_timeout"] = CONNECT_TIMEOUT_S
+            self._conn = psycopg.connect(self._dsn, **kwargs)
+            # a query that hangs must not wedge the sink either
+            with self._conn.cursor() as cur:
+                cur.execute(f"SET statement_timeout = {STATEMENT_TIMEOUT_MS}")
+            self._conn.commit()
         return self._conn
 
     def close(self):
@@ -212,7 +255,9 @@ class TimeseriesDB:
                 ORDER BY ts ASC
                 LIMIT %s
             """, (tag_ids, start, end, limit))
-            return [TelemetryRow(*row) for row in cur.fetchall()]
+            rows = [TelemetryRow(*row) for row in cur.fetchall()]
+        _end_read(conn)
+        return rows
 
     def latest(self, tag_ids: list[str]) -> dict[str, TelemetryRow]:
         """Most recent sample per tag - a cheap 'current value' read."""
@@ -224,7 +269,9 @@ class TimeseriesDB:
                 WHERE tag_id = ANY(%s)
                 ORDER BY tag_id, ts DESC
             """, (tag_ids,))
-            return {row[1]: TelemetryRow(*row) for row in cur.fetchall()}
+            rows = {row[1]: TelemetryRow(*row) for row in cur.fetchall()}
+        _end_read(conn)
+        return rows
 
     def distinct_tags(self, since_minutes: int = 1440) -> list[str]:
         """Every tag the historian has seen in the last `since_minutes`. Lets a
@@ -235,7 +282,9 @@ class TimeseriesDB:
         with conn.cursor() as cur:
             cur.execute(
                 f"SELECT DISTINCT tag_id FROM {TABLE} WHERE ts >= %s", (since,))
-            return [r[0] for r in cur.fetchall()]
+            tags = [r[0] for r in cur.fetchall()]
+        _end_read(conn)
+        return tags
 
     def ping(self) -> bool:
         try:

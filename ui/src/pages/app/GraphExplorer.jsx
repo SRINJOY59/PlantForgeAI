@@ -50,7 +50,17 @@ export default function GraphExplorer() {
     });
   }, []);
 
-  const visibleNodes = allNodes.filter(n => filterType === "all" || n.type === filterType);
+  // The search box was bound to state that nothing ever read - typing filtered
+  // precisely nothing. Matches on the label a person actually sees plus the
+  // node type, so "pump", "P-101" and "equipment" all narrow the canvas.
+  const needle = search.trim().toLowerCase();
+  const visibleNodes = allNodes.filter(n => {
+    if (filterType !== "all" && n.type !== filterType) return false;
+    if (!needle) return true;
+    return (n.label || "").toLowerCase().includes(needle)
+        || (n.id || "").toLowerCase().includes(needle)
+        || (n.type || "").toLowerCase().includes(needle);
+  });
   const visibleIds = new Set(visibleNodes.map(n => n.id));
   const visibleEdges = allEdges.filter(e => visibleIds.has(e.source) && visibleIds.has(e.target));
 
@@ -154,7 +164,9 @@ export default function GraphExplorer() {
     return () => sim.stop();
     // allNodes/allEdges land asynchronously - without them here the effect
     // bails once on mount and never redraws when the data arrives
-  }, [filterType, allNodes, allEdges]);
+    // `search` belongs here too: it now narrows visibleNodes, so leaving it
+    // out meant the filter was correct and the canvas never redrew to show it.
+  }, [filterType, search, allNodes, allEdges]);
 
   function zoomIn()    { d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 1.4); }
   function zoomOut()   { d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7); }

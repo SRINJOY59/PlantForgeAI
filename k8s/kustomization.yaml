@@ -43,7 +43,7 @@ images:
   - { name: plantmind-resolution,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-resolution,  newTag: 7d1d565 }
   - { name: plantmind-graphd,      newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-graphd,      newTag: 7d1d565 }
   - { name: plantmind-connectors,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-connectors,  newTag: 7d1d565 }
-  - { name: plantmind-interview,   newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-interview,   newTag: 7d1d565 }
-  - { name: plantmind-simulation,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-simulation,  newTag: 7d1d565 }
-  - { name: plantmind-seed,        newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-seed,        newTag: 7d1d565 }
-  - { name: plantmind-ui,          newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-ui,          newTag: 7d1d565 }
+  - { name: plantmind-interview,   newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-interview,   newTag: 0f4345f-mdns }
+  - { name: plantmind-simulation,  newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-simulation,  newTag: 0f4345f-simyield }
+  - { name: plantmind-seed,        newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-seed,        newTag: 0f4345f }
+  - { name: plantmind-ui,          newName: us-central1-docker.pkg.dev/project-1e232997-e446-4263-977/plantmind/plantmind-ui,          newTag: 0f4345f-coolt }
