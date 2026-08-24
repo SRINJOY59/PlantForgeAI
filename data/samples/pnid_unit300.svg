@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" style="background-color: #0d1117; font-family: Arial, sans-serif;">
+  <style>
+    .line { stroke: #38bdf8; stroke-width: 3; fill: none; }
+    .signal { stroke: #eab308; stroke-width: 1.5; stroke-dasharray: 4,4; fill: none; }
+    .cw-line { stroke: #34d399; stroke-width: 2; fill: none; }
+    .vessel { fill: #1e293b; stroke: #f8fafc; stroke-width: 2.5; }
+    .text-tag { fill: #f8fafc; font-size: 13px; font-weight: bold; text-anchor: middle; }
+    .text-label { fill: #94a3b8; font-size: 11px; text-anchor: middle; }
+    .inst-circle { fill: #0f172a; stroke: #eab308; stroke-width: 1.5; }
+    .valve { fill: #ef4444; stroke: #f8fafc; stroke-width: 1.5; }
+  </style>
+
+  <!-- Title Block -->
+  <rect x="20" y="20" width="1160" height="40" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="600" y="45" class="text-tag" font-size="18">MERIDIAN SPECIALTY CHEMICALS — UNIT 300 PIPING &amp; INSTRUMENTATION DIAGRAM (P&amp;ID)</text>
+
+  <!-- Feeds (Left) -->
+  <!-- Stream 1 (H2) -->
+  <path d="M 40 180 L 220 180" class="line"/>
+  <text x="70" y="170" fill="#38bdf8" font-size="11">Stream 1: Hydrogen (A)</text>
+  <!-- FT-101 -->
+  <circle cx="120" cy="180" r="14" class="inst-circle"/>
+  <text x="120" y="184" class="text-tag" font-size="9" fill="#eab308">FT-101</text>
+  <!-- FV-101 -->
+  <polygon points="175,173 175,187 185,180" class="valve"/>
+  <polygon points="195,173 195,187 185,180" class="valve"/>
+  <text x="185" y="165" class="text-label">FV-101</text>
+
+  <!-- Stream 2 (1-Butene) -->
+  <path d="M 40 230 L 220 230" class="line"/>
+  <text x="70" y="220" fill="#38bdf8" font-size="11">Stream 2: 1-Butene (D)</text>
+  <!-- FT-102 -->
+  <circle cx="120" cy="230" r="14" class="inst-circle"/>
+  <text x="120" y="234" class="text-tag" font-size="9" fill="#eab308">FT-102</text>
+  <!-- FV-102 -->
+  <polygon points="175,223 175,237 185,230" class="valve"/>
+  <polygon points="195,223 195,237 185,230" class="valve"/>
+  <text x="185" y="215" class="text-label">FV-102</text>
+
+  <!-- Stream 3 (VAM) -->
+  <path d="M 40 280 L 220 280" class="line"/>
+  <text x="70" y="270" fill="#38bdf8" font-size="11">Stream 3: VAM (E)</text>
+  <!-- FT-103 -->
+  <circle cx="120" cy="280" r="14" class="inst-circle"/>
+  <text x="120" y="284" class="text-tag" font-size="9" fill="#eab308">FT-103</text>
+  <!-- FV-103 -->
+  <polygon points="175,273 175,287 185,280" class="valve"/>
+  <polygon points="195,273 195,287 185,280" class="valve"/>
+  <text x="185" y="265" class="text-label">FV-103</text>
+
+  <!-- Feed Header (Stream 6) -->
+  <path d="M 220 180 L 220 330 L 260 330" class="line"/>
+  <path d="M 40 330 L 260 330" class="line"/>
+  <text x="100" y="320" fill="#38bdf8" font-size="11">Stream 4: Ethylene (C)</text>
+  <text x="235" y="350" fill="#38bdf8" font-size="11">Stream 6: Combined Feed</text>
+
+  <!-- Reactor R-101 -->
+  <rect x="260" y="220" width="120" height="240" rx="30" class="vessel"/>
+  <text x="320" y="330" class="text-tag" font-size="16">R-101</text>
+  <text x="320" y="350" class="text-label">Reactor</text>
+
+  <!-- Agitator SC-101 -->
+  <line x1="320" y1="180" x2="320" y2="220" stroke="#f8fafc" stroke-width="4"/>
+  <rect x="300" y="160" width="40" height="20" fill="#f59e0b"/>
+  <text x="320" y="150" class="text-label">SC-101 VFD</text>
+
+  <!-- Reactor Cooling Jacket TV-102 -->
+  <path d="M 240 400 L 260 400" class="cw-line"/>
+  <polygon points="215,393 215,407 225,400" fill="#10b981"/>
+  <polygon points="235,393 235,407 225,400" fill="#10b981"/>
+  <text x="225" y="385" class="text-label">TV-102</text>
+  <text x="180" y="415" fill="#34d399" font-size="10">Cooling Water In</text>
+
+  <!-- Reactor Instruments -->
+  <circle cx="320" cy="250" r="14" class="inst-circle"/>
+  <text x="320" y="254" class="text-tag" font-size="9" fill="#eab308">TT-101</text>
+
+  <circle cx="380" cy="270" r="14" class="inst-circle"/>
+  <text x="380" y="274" class="text-tag" font-size="9" fill="#eab308">PT-101</text>
+
+  <!-- PSV-101 -->
+  <path d="M 320 220 L 320 120 L 360 120" class="line" stroke="#ef4444"/>
+  <circle cx="360" cy="120" r="12" fill="#ef4444"/>
+  <text x="360" y="105" class="text-label" fill="#ef4444">PSV-101</text>
+
+  <!-- Stream 7 Off-Gas to E-201 -->
+  <path d="M 380 300 L 480 300" class="line"/>
+  <text x="430" y="290" fill="#38bdf8" font-size="11">Stream 7</text>
+
+  <!-- E-201 Condenser -->
+  <rect x="480" y="260" width="100" height="80" rx="10" class="vessel"/>
+  <text x="530" y="305" class="text-tag">E-201</text>
+
+  <!-- Stream to D-301 -->
+  <path d="M 580 300 L 650 300" class="line"/>
+
+  <!-- D-301 Separator -->
+  <rect x="650" y="200" width="90" height="200" rx="20" class="vessel"/>
+  <text x="695" y="305" class="text-tag">D-301</text>
+
+  <!-- Overhead Stream 5 to K-401 Compressor -->
+  <path d="M 695 200 L 695 100 L 800 100" class="line"/>
+  <text x="740" y="90" fill="#38bdf8" font-size="11">Stream 5 Overhead</text>
+
+  <!-- K-401 Compressor -->
+  <polygon points="800,70 860,100 800,130" fill="#1e293b" stroke="#f8fafc" stroke-width="2"/>
+  <text x="825" y="105" class="text-tag" font-size="11">K-401</text>
+
+  <!-- Purge Stream 9 & Valve HV-901 -->
+  <path d="M 860 100 L 950 100" class="line"/>
+  <polygon points="895,93 895,107 905,100" class="valve"/>
+  <polygon points="915,93 915,107 905,100" class="valve"/>
+  <text x="905" y="85" class="text-label">HV-901</text>
+  <text x="960" y="105" fill="#ef4444" font-size="11">Stream 9 (Purge to Flare)</text>
+
+  <!-- D-301 Bottoms Stream 10 to T-501 -->
+  <path d="M 695 400 L 695 480 L 780 480" class="line"/>
+  <polygon points="730,473 730,487 740,480" class="valve"/>
+  <polygon points="750,473 750,487 740,480" class="valve"/>
+  <text x="740" y="465" class="text-label">LV-301</text>
+
+  <!-- T-501 Stripper -->
+  <rect x="780" y="420" width="80" height="220" rx="15" class="vessel"/>
+  <text x="820" y="530" class="text-tag">T-501</text>
+
+  <!-- Product Stream 11 to D-601 -->
+  <path d="M 820 640 L 820 700 L 940 700" class="line"/>
+  <polygon points="870,693 870,707 880,700" class="valve"/>
+  <polygon points="890,693 890,707 880,700" class="valve"/>
+  <text x="880" y="685" class="text-label">LV-501</text>
+
+  <!-- D-601 Surge Drum -->
+  <rect x="940" y="670" width="100" height="60" rx="10" class="vessel"/>
+  <text x="990" y="705" class="text-tag" font-size="12">D-601</text>
+
+</svg>
