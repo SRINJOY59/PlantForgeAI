@@ -3,12 +3,14 @@ fetch an original document for a citation click, gather metrics. The
 FastAPI layer (main.py) owns request/response and proxying to retrieval."""
 
 import json
+import time
 import uuid
 from datetime import date
 from pathlib import Path
 
-from plantmind_core import corrections
+from plantmind_core import corrections, keys
 from plantmind_core.bus import RedisBus
+from plantmind_core.notify import SlackNotifier
 from plantmind_core.pipeline import stage_and_enqueue
 from plantmind_core.storage import ObjectStore
 from plantmind_core.telemetry import get_logger
@@ -112,6 +114,183 @@ class GatewayService:
         self._bus.set_work_order_decision(draft_id, decision, who)
         log.info("work order decision", draft=draft_id, decision=decision,
                  by=who)
+
+    def schedule_work_order(self, draft_id: str, schedule: dict,
+                            draft: dict) -> dict:
+        """An engineer proposes a time slot and crew for a work order.
+
+        Saves the schedule to Redis and sends the Slack approval request.
+        The draft does not move until Slack answers.
+        """
+        schedule["draft_id"] = draft_id
+        schedule["status"] = "pending_approval"
+        self._bus.set_work_order_schedule(draft_id, schedule)
+
+        try:
+            notifier = SlackNotifier.from_settings()
+            notifier.post_work_order_approval(draft, schedule)
+        except Exception as e:
+            log.warning("slack approval request failed", error=str(e)[:200])
+
+        log.info("work order scheduled", draft=draft_id,
+                 requested_by=schedule.get("requested_by"))
+        return schedule
+
+    async def handle_schedule_decision(self, draft_id: str, decision: str,
+                                       who: str, channel: str) -> dict | None:
+        """Slack answered. Record it, and on approval dispatch to the crew.
+
+        Async, and awaited by its callers, rather than fired off into a
+        background task. The dispatch is the whole point of the approval - if
+        it fails, the person who just tapped Approve is the only one in a
+        position to know, and they are still looking at the response. A task
+        that logged its own failure into a container nobody is tailing would
+        leave a crew un-notified while Slack said "approved".
+
+        Returns the updated record, or None when this draft was never
+        scheduled or has already been decided.
+        """
+        record = self._bus.claim_schedule_decision(
+            draft_id, decision, who, channel)
+        if record is None:
+            return None
+
+        log.info("schedule decision", draft=draft_id, decision=decision,
+                 by=who, via=channel)
+
+        if decision != "approved":
+            return record
+
+        draft = self.draft_by_id(draft_id)
+        if draft is None:
+            log.warning("approved a draft we cannot read back; nothing "
+                        "dispatched", draft=draft_id)
+            record["dispatch_error"] = "draft could not be read back"
+            self._bus.set_work_order_schedule(draft_id, record)
+            return record
+
+        from gateway.dispatch import dispatch_to_crew
+        try:
+            recipients = await dispatch_to_crew(self._bus, draft, record,
+                                                self._agents_http())
+            record["dispatched_at"] = time.time()
+            record["dispatched_to"] = recipients
+        except Exception as e:
+            # The approval stands - a human made it and it is recorded. Only
+            # the delivery failed, and saying which is what lets the engineer
+            # retry the dispatch instead of re-asking Slack for permission it
+            # already gave.
+            log.warning("dispatch failed after approval", draft=draft_id,
+                        error=str(e)[:200])
+            record["dispatch_error"] = str(e)[:200]
+        self._bus.set_work_order_schedule(draft_id, record)
+        return record
+
+    @staticmethod
+    def _agents_http():
+        """The agents client, fetched at call time rather than held.
+
+        deps.wire() runs in the lifespan hook, after this service is built, so
+        an attribute captured in __init__ would be None forever."""
+        from gateway.deps import get_agents_http
+        return get_agents_http()
+
+    async def redispatch(self, draft_id: str) -> list:
+        """Send an already-approved order to the crew again.
+
+        The retry path for the failure above, and for a crew member added after
+        the fact. Refuses anything not actually approved: re-running a dispatch
+        is cheap, manufacturing an approval is not.
+        """
+        record = self._bus.work_order_schedule(draft_id)
+        if record is None or record.get("status") != "approved":
+            raise ValueError("work order is not approved")
+        draft = self.draft_by_id(draft_id)
+        if draft is None:
+            raise ValueError("draft could not be read back")
+
+        from gateway.dispatch import dispatch_to_crew
+        recipients = await dispatch_to_crew(self._bus, draft, record,
+                                            self._agents_http())
+        record["dispatched_at"] = time.time()
+        record["dispatched_to"] = recipients
+        record.pop("dispatch_error", None)
+        self._bus.set_work_order_schedule(draft_id, record)
+        return recipients
+
+    def draft_by_id(self, draft_id: str) -> dict | None:
+        """Read one draft back off the stream by its entry id.
+
+        XRANGE with the same id as start and end, which is how you address a
+        single stream entry - the drafts stream is capped but never rewritten,
+        so an id that came out of it addresses the same draft forever.
+
+        The field is 'payload' because that is what publish_draft_work_order
+        writes; the bus client is built with decode_responses=True, so what
+        comes back is already str.
+        """
+        if not draft_id:
+            return None
+        try:
+            entries = self._bus._r.xrange(keys.DRAFT_WORK_ORDERS_STREAM,
+                                          draft_id, draft_id)
+        except Exception as e:
+            log.warning("could not read draft", draft=draft_id, error=str(e))
+            return None
+        if not entries:
+            return None
+        _entry_id, fields = entries[0]
+        raw = (fields or {}).get("payload")
+        if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except (ValueError, TypeError):
+            log.warning("draft payload is not json", draft=draft_id)
+            return None
+
+    def work_order_schedules(self) -> dict:
+        return self._bus.work_order_schedules()
+
+    def work_order_schedule(self, draft_id: str) -> dict | None:
+        return self._bus.work_order_schedule(draft_id)
+
+    def crew(self, engineer_key: str) -> list:
+        return self._bus.crew(engineer_key)
+
+    def add_crew_member(self, engineer_key: str, worker: dict) -> None:
+        self._bus.set_crew_member(engineer_key, worker)
+
+    def remove_crew_member(self, engineer_key: str, worker_id: str) -> int:
+        return self._bus.remove_crew_member(engineer_key, worker_id)
+
+    # --- a worker's own job list ------------------------------------------
+
+    def assignments_for(self, worker_key: str) -> list:
+        return self._bus.assignments_for(worker_key)
+
+    def update_assignment(self, worker_key: str, assignment_id: str,
+                          status: str, note: str = "") -> dict | None:
+        """Move one job forward and stamp when it happened.
+
+        Timestamps are only ever written once. A worker tapping "done" twice
+        must not rewrite when the work finished, and a job that goes done ->
+        in_progress (a mis-tap, or a second device catching up) must not erase
+        the completion time that a planner may already have acted on.
+        """
+        patch = {"status": status}
+        if note:
+            patch["worker_note"] = note
+        existing = self._bus.assignment(worker_key, assignment_id) or {}
+        stamp = {"acknowledged": "acknowledged_at", "in_progress": "started_at",
+                 "done": "completed_at"}.get(status)
+        if stamp and not existing.get(stamp):
+            patch[stamp] = time.time()
+        updated = self._bus.update_assignment(worker_key, assignment_id, patch)
+        if updated is not None:
+            log.info("assignment update", assignment=assignment_id,
+                     worker=worker_key, status=status)
+        return updated
 
     def rate_check(self, bucket: str, limit: int, window_s: int):
         return self._bus.rate_check(bucket, limit, window_s)

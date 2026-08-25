@@ -114,6 +114,7 @@ embedded chunks**. → [Appendix A3](docs/appendix/A3-evaluation-metrics.md)
 | **Voice knowledge capture** | WebRTC interview (Pipecat + Deepgram) that harvests undocumented expertise before retirement |
 | **Multi-persona reasoning** | Prompt grounding tuned per role: operator, engineer, maintenance, safety |
 | **Field Co-Pilot PWA** | Mobile-first, multilingual TTS (`hi`, `bn`, `ta`, `te`, `mr`, `gu`), tag scanning |
+| **Slack-gated work scheduling** | Engineer schedules → Slack authorises (signed buttons or links) → order dispatched to the crew, translated per worker |
 | **MCP server** | 9 stdio tools exposing plant topology and telemetry to external assistants |
 
 ---
@@ -456,6 +457,57 @@ python -m eval.run_ablation --modes vector,path
 ```bash
 pytest -q                                      # 529 passing, no cloud calls
 ```
+
+---
+
+## Scheduling work: the Slack approval gate
+
+A drafted work order is a proposal. Turning it into a crew standing at live
+plant is a separate decision with a separate authority, so it is gated outside
+the console entirely:
+
+1. An engineer opens a draft in **Work Orders**, presses **Schedule Work**, and
+   picks a window and a crew. The card immediately reads *awaiting approval in
+   Slack*, and **nobody is notified**.
+2. Slack gets an approval request naming the asset, the slot, the crew and the
+   recommended fix — with Approve/Reject buttons and, below them, signed links
+   that work without a Slack app.
+3. On approval the order is rewritten into a technician's job card — safety
+   first, then numbered steps — translated into each crew member's own
+   language, and pushed to their **My Jobs** tab in the field PWA. The card in
+   the console flips to *approved and sent to the crew* and lists who got it.
+4. The worker accepts, starts and closes the job on their phone. Equipment
+   tags, procedure numbers and standards are never translated — a
+   transliterated `SOP-114` is a procedure nobody can find.
+
+Translation happens in the agents service, not the gateway: the gateway is the
+internet-facing process and deliberately carries no LLM SDK. Briefs are cached
+per (draft, language), so a three-person Hindi-speaking crew costs one
+translation, not three.
+
+### Configuring it
+
+Only `SLACK_WEBHOOK_URL` is required — the signed links work with nothing else,
+which is why they exist. Buttons need a Slack app:
+
+```
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+SLACK_ENABLED=true
+PUBLIC_GATEWAY_URL=https://your-gateway.example.com   # links are built from this
+SLACK_APPROVAL_SECRET=<long random string>            # derived (with a warning) if unset
+SLACK_SIGNING_SECRET=<from the Slack app>             # required for BUTTONS only
+```
+
+For buttons: create a Slack app, enable **Interactivity**, and set its Request
+URL to `<PUBLIC_GATEWAY_URL>/slack/interactions`. Without a signing secret those
+callbacks are refused rather than trusted — an approval that cannot be verified
+is not an approval. For a local demo, put an ngrok HTTPS URL in
+`PUBLIC_GATEWAY_URL`.
+
+The approval link is a two-step GET-then-POST on purpose. Slack and every other
+link-preview bot fetch URLs that appear in messages; a GET that decided anything
+would approve the work the instant the request was posted, before a human had
+read it.
 
 ---
 

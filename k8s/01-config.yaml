@@ -36,6 +36,17 @@ data:
   STANDARDS_WATCH_ENABLED: "false"    # the CronJob owns the scan, not the consumer loop
   SLACK_MIN_SEVERITY: "critical"
 
+  # --- Slack as an approval gate for scheduling work ---
+  # The URL Slack itself reaches the gateway on. Approval links in the Slack
+  # message are built from this, so it must be the PUBLIC gateway address, not
+  # the in-cluster service name.
+  PUBLIC_GATEWAY_URL: "https://api.8.233.53.227.nip.io"
+  SLACK_APPROVAL_TTL_S: "86400"
+
+  # How long a translated job card is cached per (draft, language). Which
+  # languages get translated is derived from the crew roster, not configured.
+  DISPATCH_BRIEF_TTL_S: "604800"
+
   # --- interview mode. "1" forces the typed interview and the UI honours that
   #     over voice_ready, which reports only whether DEEPGRAM_API_KEY is set
   #     (STT/TTS) - it says nothing about whether media can flow. Set "1" if
@@ -55,7 +66,7 @@ data:
 
   # --- CORS: the browser origin(s) allowed to call the gateway. Set to your
   #     UI's public URL once DNS/TLS is up (see README). ---
-  CORS_ORIGINS: "https://ui.8.233.53.227.nip.io"
+  CORS_ORIGINS: "https://ui.8.233.53.227.nip.io,http://ui.8.233.53.227.nip.io"
 
   # --- ICE for the voice leg. NOTE: this cluster is Autopilot, whose node pools
   #     "cannot be accessed or modified" - so the README's plan of adding a

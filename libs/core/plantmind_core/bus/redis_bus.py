@@ -277,7 +277,123 @@ class RedisBus:
                                  "at": time.time()}))
 
     def work_order_decisions(self) -> dict:
-        raw = self._r.hgetall(keys.WORK_ORDER_DECISIONS) or {}
+        return self._json_hash(keys.WORK_ORDER_DECISIONS)
+
+    # --- work-order schedules ---------------------------------------------
+    # An engineer proposing a slot, and Slack's answer to it. A third fact
+    # about the same immutable draft, so it lives in a third hash rather than
+    # being merged into the decision above: a rejected schedule can be
+    # re-proposed, and overwriting the decision would lose who rejected what.
+
+    def set_work_order_schedule(self, draft_id: str, record: dict) -> None:
+        self._r.hset(keys.WORK_ORDER_SCHEDULES, draft_id, json.dumps(record))
+
+    def work_order_schedule(self, draft_id: str) -> dict | None:
+        return self._json_field(keys.WORK_ORDER_SCHEDULES, draft_id)
+
+    def work_order_schedules(self) -> dict:
+        return self._json_hash(keys.WORK_ORDER_SCHEDULES)
+
+    def claim_schedule_decision(self, draft_id: str, decision: str, who: str,
+                                channel: str) -> dict | None:
+        """Record Slack's answer, but only the first one.
+
+        Both return paths land here - a Block Kit button and a signed link -
+        and the message carries both at once, so the same human can plausibly
+        hit approve twice within a second. The second one must not re-stamp the
+        record with a different approver or, worse, flip an approval to a
+        rejection after a crew has already been dispatched. Returns the updated
+        record, or None if this draft was never scheduled or is already
+        decided (the caller reports that back rather than pretending).
+        """
+        record = self.work_order_schedule(draft_id)
+        if record is None or record.get("status") != "pending_approval":
+            return None
+        record.update({
+            "status": decision,
+            "decided_by": who,
+            "decided_at": time.time(),
+            "decided_via": channel,
+        })
+        self.set_work_order_schedule(draft_id, record)
+        return record
+
+    # --- crew roster -------------------------------------------------------
+
+    def set_crew_member(self, engineer_key: str, worker: dict) -> None:
+        self._r.hset(keys.CREW_PREFIX + engineer_key, worker["id"],
+                     json.dumps(worker))
+
+    def remove_crew_member(self, engineer_key: str, worker_id: str) -> int:
+        return int(self._r.hdel(keys.CREW_PREFIX + engineer_key, worker_id))
+
+    def crew(self, engineer_key: str) -> list:
+        members = list(self._json_hash(keys.CREW_PREFIX + engineer_key).values())
+        # Stable order, so a roster does not reshuffle under the engineer
+        # between two renders of the same page.
+        return sorted(members, key=lambda w: (w.get("name") or "").lower())
+
+    # --- dispatched assignments -------------------------------------------
+
+    def add_assignment(self, worker_key: str, assignment: dict) -> None:
+        self._r.hset(keys.ASSIGNMENTS_PREFIX + worker_key, assignment["id"],
+                     json.dumps(assignment))
+
+    def assignments_for(self, worker_key: str) -> list:
+        rows = list(self._json_hash(keys.ASSIGNMENTS_PREFIX + worker_key).values())
+        # Newest first: a worker opening the app wants the job they were just
+        # sent, not the one they closed last week.
+        return sorted(rows, key=lambda a: a.get("assigned_at") or 0, reverse=True)
+
+    def assignment(self, worker_key: str, assignment_id: str) -> dict | None:
+        return self._json_field(keys.ASSIGNMENTS_PREFIX + worker_key, assignment_id)
+
+    def update_assignment(self, worker_key: str, assignment_id: str,
+                          patch: dict) -> dict | None:
+        """Merge a worker's progress into their copy of the assignment.
+
+        Read-modify-write rather than a field-level update because the record
+        is one JSON blob; the races that matter (two devices, same worker)
+        settle to the same terminal state either way, and nothing here is
+        worth a lock on the field path."""
+        record = self.assignment(worker_key, assignment_id)
+        if record is None:
+            return None
+        record.update(patch)
+        self.add_assignment(worker_key, record)
+        return record
+
+    def set_order_assignments(self, draft_id: str, entries: list) -> None:
+        self._r.hset(keys.WORK_ORDER_ASSIGNMENTS, draft_id, json.dumps(entries))
+
+    def order_assignments(self, draft_id: str) -> list:
+        return self._json_field(keys.WORK_ORDER_ASSIGNMENTS, draft_id) or []
+
+    def all_order_assignments(self) -> dict:
+        return self._json_hash(keys.WORK_ORDER_ASSIGNMENTS)
+
+    # --- translated brief cache -------------------------------------------
+
+    def cached_brief(self, draft_id: str, lang: str) -> dict | None:
+        raw = self._r.get(f"{keys.DISPATCH_BRIEF_PREFIX}{draft_id}:{lang}")
+        if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except (ValueError, TypeError):
+            return None
+
+    def cache_brief(self, draft_id: str, lang: str, brief: dict,
+                    ttl_s: int) -> None:
+        self._r.set(f"{keys.DISPATCH_BRIEF_PREFIX}{draft_id}:{lang}",
+                    json.dumps(brief), ex=ttl_s)
+
+    # --- json hash helpers -------------------------------------------------
+    # A half-written or hand-edited value must never take down a page that is
+    # mostly fine, so a bad row is skipped rather than raised.
+
+    def _json_hash(self, key: str) -> dict:
+        raw = self._r.hgetall(key) or {}
         out = {}
         for k, v in raw.items():
             try:
@@ -285,6 +401,15 @@ class RedisBus:
             except (ValueError, TypeError):
                 continue
         return out
+
+    def _json_field(self, key: str, field: str) -> dict | None:
+        raw = self._r.hget(key, field)
+        if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except (ValueError, TypeError):
+            return None
 
     def _read_stream(self, stream, after_id, block_ms) -> list:
         # block_ms > 0 waits; 0/None returns immediately. (Raw redis treats

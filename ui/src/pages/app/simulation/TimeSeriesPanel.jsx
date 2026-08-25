@@ -143,6 +143,29 @@ export default function TimeSeriesPanel({ activeNode, telemetryBuffer, limits = 
         gridcolor: "#1e293b",
         tickfont: { size: 8 },
       };
+
+      // Scale to the DATA, not to the alarm bands.
+      //
+      // The limit rectangles are drawn against this axis and span ll..hh, and
+      // Plotly's autorange includes shapes - so the axis stretched to the full
+      // alarm envelope and every trend rendered as a flat line. Reactor T sits
+      // at 122.6 with ~0.03 of noise; on a 0-130 axis that is sub-pixel, and
+      // even a real 5 degree excursion moved about 4% of the height. Faults
+      // were landing and were invisible.
+      //
+      // An explicit range also clips the bands into view rather than letting
+      // them drive it. The floor stops pure sensor noise from being amplified
+      // to fill the panel when nothing is actually happening.
+      const ys = subplot.tags
+        .flatMap(t => (telemetryBuffer[t] || []).map(p => p.y))
+        .filter(v => Number.isFinite(v));
+      if (ys.length) {
+        const lo = Math.min(...ys), hi = Math.max(...ys);
+        const mid = (lo + hi) / 2;
+        const span = Math.max(hi - lo, Math.abs(mid) * 0.001, 0.05);
+        const pad = span * 0.25;
+        layout[yKey].range = [mid - span / 2 - pad, mid + span / 2 + pad];
+      }
     });
 
     Plotly.react(chartRef.current, traces, layout, {

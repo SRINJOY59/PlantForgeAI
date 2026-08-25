@@ -31,7 +31,8 @@ from agents.usecases import (
     PermitToWorkAgent, ReportGeneratorAgent,
 )
 from agents.usecases.compliance import position
-from agents.usecases.work_order import from_compliance
+from agents.usecases.work_order import (LANGUAGE_NAMES, build_brief,
+                                        from_compliance, translate_brief)
 
 
 class ReportRequest(BaseModel):
@@ -41,6 +42,22 @@ class ReportRequest(BaseModel):
 class ScheduleRequest(BaseModel):
     """One obligation off the compliance view, echoed back to be actioned."""
     item_id: str
+
+
+class BriefRequest(BaseModel):
+    """Turn one approved work order into job cards for its crew.
+
+    The draft comes over the wire rather than being re-read from the stream on
+    this side, because the gateway has already read it, already merged the
+    approval onto it, and is the only party that knows the schedule. Sending it
+    back down would mean two services holding two ideas of what was approved.
+
+    The gateway is the only caller and it is not internet-facing, so this is
+    the same trust posture as /assess and /permit/draft.
+    """
+    draft: dict
+    schedule: dict = {}
+    langs: list[str] = ["en"]
 
 
 _reader: AgentReader | None = None
@@ -181,6 +198,42 @@ def schedule_inspection(request: ScheduleRequest):
             return {"status": "drafted", "equipment": item["equipment"],
                     "order_type": draft.order_type}
     raise HTTPException(404, f"no compliance item {request.item_id}")
+
+
+@app.post("/work-order/brief")
+async def work_order_brief(request: BriefRequest):
+    """The approved order as job cards - English first, then each language.
+
+    English is built once and every translation starts from it, so the crew are
+    all working from the same instruction rather than from parallel readings of
+    the planner's prose. Translations run concurrently because they are
+    independent and a six-language crew should not wait six round trips.
+
+    One language failing does not fail the dispatch: translate_brief falls back
+    to English rather than raising, so the worst case is a worker who gets a
+    job card they need help reading, not a worker who gets nothing.
+    """
+    english = await build_brief(request.draft, request.schedule)
+    wanted = list(dict.fromkeys(request.langs or ["en"]))
+    others = [code for code in wanted if code != "en"]
+
+    translated = await asyncio.gather(
+        *(translate_brief(english, code) for code in others))
+
+    briefs = {"en": english.model_dump()}
+    for code, brief in zip(others, translated):
+        briefs[code] = brief.model_dump()
+    return {"briefs": briefs,
+            "untranslatable": [c for c in others if c not in LANGUAGE_NAMES]}
+
+
+@app.get("/work-order/languages")
+def work_order_languages():
+    """Which languages a job card can actually be written in. The console reads
+    this rather than hard-coding a list that would drift out of step with what
+    the dispatcher will really do with the code."""
+    return {"languages": [{"code": c, "label": n}
+                          for c, n in LANGUAGE_NAMES.items()]}
 
 
 @app.get("/failures")

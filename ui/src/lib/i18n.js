@@ -19,6 +19,13 @@ export const LANGUAGES = [
   { code: "ta", label: "தமிழ்",       speech: "ta-IN" },
   { code: "te", label: "తెలుగు",      speech: "te-IN" },
   { code: "mr", label: "मराठी",      speech: "mr-IN" },
+  { code: "gu", label: "ગુજરાતી",    speech: "gu-IN" },
+  { code: "kn", label: "ಕನ್ನಡ",      speech: "kn-IN" },
+  { code: "ml", label: "മലയാളം",    speech: "ml-IN" },
+  { code: "pa", label: "ਪੰਜਾਬੀ",     speech: "pa-IN" },
+  { code: "or", label: "ଓଡ଼ିଆ",       speech: "or-IN" },
+  { code: "as", label: "অসমীয়া",    speech: "as-IN" },
+  { code: "ur", label: "اردو",       speech: "ur-IN" },
   { code: "es", label: "Español",   speech: "es-ES" },
   { code: "fr", label: "Français",  speech: "fr-FR" },
   { code: "de", label: "Deutsch",   speech: "de-DE" },
@@ -26,6 +33,17 @@ export const LANGUAGES = [
   { code: "zh", label: "中文",        speech: "zh-CN" },
   { code: "pt", label: "Português", speech: "pt-BR" },
 ];
+
+// Languages a dispatched work order can actually be TRANSLATED into, as
+// opposed to languages the copilot will answer in. The two lists differ: the
+// model answers a question in anything, but a job card is only written in a
+// language the dispatcher has a name and a script for, and offering an
+// engineer a language their worker would then receive in English is worse than
+// not offering it. Keep in step with LANGUAGE_NAMES in
+// services/agents/usecases/work_order/dispatch.py.
+export const DISPATCH_LANGUAGES = LANGUAGES.filter((l) =>
+  ["en", "hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "pa", "or", "as", "ur"]
+    .includes(l.code));
 
 // The BCP-47 tag to hand the speech engine for a given language code.
 export function speechLang(code) {
@@ -73,6 +91,27 @@ const STRINGS = {
     permit_none_isolation: "No isolation points found — confirm with your supervisor.",
     permit_none_hazard: "No hazards found in records — stay alert regardless.",
     permit_none_proc: "No specific procedure found.",
+
+    tab_jobs: "My Jobs",
+    jobs_title: "Work assigned to me",
+    jobs_refresh: "Refresh",
+    jobs_completed: "Completed",
+    jobs_empty: "No work assigned",
+    jobs_empty_hint: "Approved work orders from your engineer appear here, in your language.",
+    job_safety: "Before you start",
+    job_no_safety: "No isolation points or hazards were recorded for this job. Confirm with your supervisor before starting.",
+    job_steps: "What to do",
+    job_references: "Procedures and standards",
+    job_accept: "Accept job",
+    job_start: "Start work",
+    job_done: "Mark complete",
+    job_show_english: "Show English",
+    job_show_mine: "Show my language",
+    job_authorised_by: "Authorised by",
+    job_status_assigned: "New",
+    job_status_acknowledged: "Accepted",
+    job_status_in_progress: "In progress",
+    job_status_done: "Done",
   },
   hi: {
     title: "फील्ड कोपायलट",
@@ -106,6 +145,27 @@ const STRINGS = {
     permit_isolations: "लॉक-आउट / टैग-आउट बिंदु",
     permit_hazards: "खतरे",
     permit_ppe: "आवश्यक PPE",
+
+    tab_jobs: "मेरे काम",
+    jobs_title: "मुझे सौंपा गया काम",
+    jobs_refresh: "रिफ्रेश करें",
+    jobs_completed: "पूर्ण हुए",
+    jobs_empty: "कोई काम नहीं सौंपा गया",
+    jobs_empty_hint: "आपके इंजीनियर द्वारा मंजूर किए गए कार्य आदेश यहाँ आपकी भाषा में दिखेंगे।",
+    job_safety: "शुरू करने से पहले",
+    job_no_safety: "इस काम के लिए कोई आइसोलेशन या खतरा दर्ज नहीं है। शुरू करने से पहले अपने सुपरवाइज़र से पुष्टि करें।",
+    job_steps: "क्या करना है",
+    job_references: "प्रक्रियाएँ और मानक",
+    job_accept: "काम स्वीकार करें",
+    job_start: "काम शुरू करें",
+    job_done: "पूर्ण चिह्नित करें",
+    job_show_english: "अंग्रेज़ी में देखें",
+    job_show_mine: "मेरी भाषा में देखें",
+    job_authorised_by: "अनुमोदित कर्ता",
+    job_status_assigned: "नया",
+    job_status_acknowledged: "स्वीकृत",
+    job_status_in_progress: "चल रहा है",
+    job_status_done: "पूर्ण",
   },
   bn: {
     title: "ফিল্ড কোপাইলট",
@@ -139,6 +199,27 @@ const STRINGS = {
     permit_isolations: "লক-আউট / ট্যাগ-আউট পয়েন্ট",
     permit_hazards: "বিপদ",
     permit_ppe: "প্রয়োজনীয় PPE",
+
+    tab_jobs: "আমার কাজ",
+    jobs_title: "আমাকে দেওয়া কাজ",
+    jobs_refresh: "রিফ্রেশ করুন",
+    jobs_completed: "সম্পন্ন",
+    jobs_empty: "কোনো কাজ দেওয়া হয়নি",
+    jobs_empty_hint: "আপনার ইঞ্জিনিয়ারের অনুমোদিত কাজের আদেশ এখানে আপনার ভাষায় দেখাবে।",
+    job_safety: "শুরু করার আগে",
+    job_no_safety: "এই কাজের জন্য কোনো আইসোলেশন বা বিপদ লিপিবদ্ধ নেই। শুরুর আগে সুপারভাইজারের সঙ্গে নিশ্চিত হন।",
+    job_steps: "কী করতে হবে",
+    job_references: "পদ্ধতি ও মান",
+    job_accept: "কাজ গ্রহণ করুন",
+    job_start: "কাজ শুরু করুন",
+    job_done: "সম্পন্ন চিহ্নিত করুন",
+    job_show_english: "ইংরেজিতে দেখুন",
+    job_show_mine: "আমার ভাষায় দেখুন",
+    job_authorised_by: "অনুমোদন করেছেন",
+    job_status_assigned: "নতুন",
+    job_status_acknowledged: "গৃহীত",
+    job_status_in_progress: "চলছে",
+    job_status_done: "সম্পন্ন",
   },
 };
 

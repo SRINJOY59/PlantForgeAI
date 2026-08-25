@@ -16,8 +16,8 @@ from plantmind_core.config import get_settings
 from gateway import deps
 from gateway.auth import current_user
 from gateway.routes import (compliance, diagnostics, documents, events, field,
-                            graph, moc, permit, qa, reports, simulation, system,
-                            work_orders)
+                            graph, moc, permit, qa, reports, simulation, slack,
+                            system, work_orders)
 from gateway.security import SecurityHeadersMiddleware, cors_origins
 from gateway.service import GatewayService
 
@@ -46,7 +46,12 @@ app.add_middleware(
     # need credentialed CORS - and not needing it lets us keep a real allowlist
     # instead of the "*"-with-credentials combination browsers forbid anyway
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    # DELETE is here for exactly one thing: taking a worker off a crew roster.
+    # Everything else that removes something in this API is a POST, because it
+    # is a domain event with an author rather than a resource deletion - a
+    # roster entry genuinely is the resource, and pretending otherwise would
+    # mean a second verb-in-the-path endpoint just to avoid this line.
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Authorization", "Content-Type"])
 
 # auth is applied per-router rather than per-endpoint: a new endpoint is
@@ -65,3 +70,4 @@ app.include_router(diagnostics.router, dependencies=protected)
 app.include_router(field.router, dependencies=protected)
 app.include_router(simulation.router)
 app.include_router(system.router)   # /health must stay open for healthchecks
+app.include_router(slack.router)    # Slack authenticates via signing secret, not JWT

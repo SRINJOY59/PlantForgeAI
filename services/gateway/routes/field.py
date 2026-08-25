@@ -6,6 +6,8 @@ their own language. These endpoints give them:
   GET  /field/assets            - what they can scope the copilot to
   GET  /field/asset/{tag}/context - the live analytic state of one asset
   POST /field/ask/stream        - an asset-scoped, multilingual grounded answer
+  GET  /field/assignments       - the work orders dispatched to this worker
+  POST /field/assignments/{id}/status - accept a job, or report it done
 
 The answer path deliberately REUSES retrieval's /ask/stream rather than owning
 a second Q&A pipeline: it assembles the asset's live state and a language
@@ -22,12 +24,14 @@ copilot), while the /app console stays closed to workers.
 import json
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from typing import Literal
 
 from plantmind_core.schemas import Turn
 
+from gateway.auth import current_user
 from gateway.deps import get_http, get_service, require_role
 from gateway.ratelimit import rate_limit
 
@@ -39,6 +43,12 @@ MAX_HISTORY = 8
 # the BCP-47 tag the browser's speech engine and the model both understand. The
 # model is natively multilingual, so this list is a UX choice, not a capability
 # limit - it just has to agree with the frontend selector.
+#
+# It also has to agree with LANGUAGE_NAMES in the work-order dispatcher: a
+# worker whose roster language is Gujarati receives their job card in Gujarati,
+# and would then be asking follow-up questions about it through this endpoint.
+# A code the dispatcher can write but the copilot cannot answer in is a worker
+# holding an instruction they cannot ask about.
 SUPPORTED_LANGUAGES = {
     "en": "English",
     "hi": "Hindi",
@@ -46,6 +56,13 @@ SUPPORTED_LANGUAGES = {
     "ta": "Tamil",
     "te": "Telugu",
     "mr": "Marathi",
+    "gu": "Gujarati",
+    "kn": "Kannada",
+    "ml": "Malayalam",
+    "pa": "Punjabi",
+    "or": "Odia",
+    "as": "Assamese",
+    "ur": "Urdu",
     "es": "Spanish",
     "fr": "French",
     "de": "German",
@@ -53,6 +70,19 @@ SUPPORTED_LANGUAGES = {
     "zh": "Chinese",
     "pt": "Portuguese",
 }
+
+
+class AssignmentUpdate(BaseModel):
+    """A worker moving their own job along.
+
+    Only forward states, and only the three that mean something on a phone:
+    they have seen it, they are on it, they are finished. There is no
+    "cancelled" - a worker does not get to cancel authorised work, and a note
+    explaining why they could not do it is more use to a planner than a status
+    that hides the reason.
+    """
+    status: Literal["acknowledged", "in_progress", "done"]
+    note: str = ""
 
 
 class FieldAskRequest(BaseModel):
@@ -156,3 +186,64 @@ async def field_languages():
     """The languages the copilot offers, for the client's selector."""
     return JSONResponse({"languages": [{"code": c, "label": l}
                                        for c, l in SUPPORTED_LANGUAGES.items()]})
+
+
+# --------------------------------------------------------------- assignments
+# The end of the loop that starts at an engineer pressing Schedule Work: the
+# order was authorised in Slack, translated, and put in this worker's inbox.
+#
+# A worker sees ONLY their own assignments, and "their own" is decided by the
+# verified token, never by a path or query parameter. That is the whole access
+# control here and it has to be: the roster is typed by an engineer, so a
+# worker-supplied key would let anyone read - or close - anyone else's job.
+
+
+def _worker_key(user: dict) -> str:
+    """The inbox this account reads.
+
+    Their email, lowercased, matching what the engineer typed into the roster.
+    A worker whose token carries no email has no inbox rather than a shared
+    one: falling back to `sub` would silently create an inbox nothing ever
+    dispatches into, which reads as "no jobs today" instead of as a
+    provisioning mistake.
+    """
+    return (user.get("email") or "").strip().lower()
+
+
+@router.get("/field/assignments", dependencies=[require_role("worker")])
+async def field_assignments(svc=Depends(get_service),
+                            user: dict = Depends(current_user)):
+    """This worker's dispatched job cards, newest first.
+
+    Each carries `brief` in the worker's own language and `brief_en` alongside
+    it, so the phone can offer both without another round trip - useful exactly
+    when a translation reads oddly and someone needs to check the original.
+    """
+    key = _worker_key(user)
+    if not key:
+        return {"assignments": [], "detail": "this account has no email, so "
+                                             "no work can be addressed to it"}
+    return {"assignments": svc.assignments_for(key)}
+
+
+@router.post("/field/assignments/{assignment_id}/status",
+             dependencies=[require_role("worker")])
+async def update_assignment(assignment_id: str, body: AssignmentUpdate,
+                            svc=Depends(get_service),
+                            user: dict = Depends(current_user)):
+    """Acknowledge, start, or close out one job.
+
+    The timestamps are stamped here rather than sent by the client: when a job
+    was picked up and when it was closed is evidence about work on live plant,
+    and evidence is something we record, not something a phone asserts.
+    """
+    key = _worker_key(user)
+    if not key:
+        raise HTTPException(403, "this account has no email and cannot hold "
+                                 "assignments")
+    updated = svc.update_assignment(key, assignment_id, body.status, body.note)
+    if updated is None:
+        # 404 rather than 403 on someone else's id: the two are the same answer
+        # from here, and distinguishing them would confirm that an id exists.
+        raise HTTPException(404, "no such assignment for this worker")
+    return {"assignment": updated}

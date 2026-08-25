@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useOutletContext } from "react-router-dom";
-import { Globe, LogOut, HardHat, Gauge, MessageSquare, FileSignature } from "lucide-react";
+import { Globe, LogOut, HardHat, Gauge, MessageSquare, FileSignature, ClipboardList } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { LANGUAGES, t } from "../../lib/i18n";
 
@@ -77,11 +77,14 @@ export default function FieldShell() {
         <Outlet context={{ lang, setLang }} />
       </main>
 
-      {/* Bottom tabs — Copilot (asset-scoped) and Ask (general Q&A). Large,
-          thumb-reachable targets for a phone held one-handed. */}
+      {/* Bottom tabs. Copilot and Ask are what the worker asks; My Jobs is
+          what the plant asks of them — work an engineer scheduled and Slack
+          authorised, already translated into the language selected above.
+          Large, thumb-reachable targets for a phone held one-handed. */}
       <nav className="flex flex-shrink-0"
         style={{ background: "var(--bg-panel)", borderTop: "1px solid var(--border)" }}>
         <FieldTab to="/field" end icon={Gauge} label={t("tab_copilot", lang)} />
+        <FieldTab to="/field/jobs" icon={ClipboardList} label={t("tab_jobs", lang)} />
         <FieldTab to="/field/ask" icon={MessageSquare} label={t("tab_ask", lang)} />
         <FieldTab to="/field/permit" icon={FileSignature} label={t("tab_permit", lang)} />
       </nav>

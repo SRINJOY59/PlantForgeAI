@@ -29,6 +29,7 @@ const Simulation = React.lazy(() => import("./pages/app/Simulation"));
 const FaultLibrary = React.lazy(() => import("./pages/app/FaultLibrary"));
 const FieldCopilot = React.lazy(() => import("./pages/field/FieldCopilot"));
 const FieldAsk = React.lazy(() => import("./pages/field/FieldAsk"));
+const FieldJobs = React.lazy(() => import("./pages/field/FieldJobs"));
 const FieldPermit = React.lazy(() => import("./pages/field/FieldPermit"));
 
 const Suspended = ({ children }) => (
@@ -56,6 +57,7 @@ export default function App() {
         }
       >
         <Route index element={<Suspended><FieldCopilot /></Suspended>} />
+        <Route path="jobs" element={<Suspended><FieldJobs /></Suspended>} />
         <Route path="ask" element={<Suspended><FieldAsk /></Suspended>} />
         <Route path="permit" element={<Suspended><FieldPermit /></Suspended>} />
       </Route>

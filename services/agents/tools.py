@@ -6,7 +6,14 @@ assessment both want to know what a pump is connected to, and neither should
 own that question. Use-cases compose the list they need from here.
 """
 
+import json
+import os
+import urllib.request
+
 from plantmind_core.llm import Tool
+from plantmind_core.telemetry import get_logger
+
+log = get_logger("agents.tools")
 
 
 def _one_tag() -> dict:
@@ -139,32 +146,73 @@ def tep_idv_context() -> Tool:
         21: "Stream 4 valve constant — reduced controllability",
     }
 
+    def _live_faults() -> dict:
+        """What the simulator says is wrong RIGHT NOW.
+
+        Without this the tool was a dictionary and nothing more: it could
+        describe IDV 6 if you already knew IDV 6 was active, and answered an
+        empty call with {"active": []}. The agent has no other way to learn
+        the active set, so every investigation concluded "no IDV fault is
+        active" while the plant was running two of them - the single most
+        useful fact about the upset, and the one the report denied.
+        """
+        url = os.environ.get("TEP_SIM_URL", "http://tep-sim:8012") + "/sim/status"
+        try:
+            with urllib.request.urlopen(url, timeout=6) as r:
+                status = json.loads(r.read().decode())
+        except Exception as e:
+            log.warning("could not read live sim status for IDV context",
+                        error=str(e)[:160])
+            return {}
+        return status.get("active_faults") or {}
+
     def describe_idvs(idv_list=None):
+        faults = _live_faults()
+        live = [int(i) for i in (faults.get("_active_idvs") or [])]
+
+        # An explicit list still wins (explaining a historical alert), but an
+        # empty call now means "tell me what is active", not "nothing is".
         if not idv_list:
-            return {"active": [], "descriptions": []}
-        if isinstance(idv_list, int):
+            idv_list = live
+        elif isinstance(idv_list, int):
             idv_list = [idv_list]
+
+        # the raw fault parameters alongside the codes: "feed_a_bias: -50.0"
+        # is the magnitude an engineer reasons about, not just the IDV number
+        params = {k: v for k, v in faults.items() if not k.startswith("_")}
+
+        if not idv_list:
+            return {"active": [], "descriptions": [],
+                    "live_fault_parameters": params,
+                    "note": "The simulator reports no IDV fault injected. "
+                            "Any deviation is process drift, controller "
+                            "action or an unmodelled disturbance."}
         return {
             "active": idv_list,
+            "currently_injected_in_simulator": live,
             "descriptions": [IDV_TABLE.get(i, f"IDV-{i}: unknown") for i in idv_list],
+            "live_fault_parameters": params,
         }
 
     return Tool(
         "describe_tep_idv_faults",
-        "Returns human-readable descriptions for active IDV fault codes in the TEP plant. "
-        "Call this when an alert mentions IDV fault numbers (e.g. [4, 14]) to understand "
-        "the root cause and expected plant behaviour.",
+        "The IDV faults injected in the TEP simulator RIGHT NOW, with "
+        "human-readable descriptions and the raw fault parameters. Call this "
+        "on ANY simulator alarm before concluding a cause - it is the only "
+        "way to learn what was actually injected. Pass idv_list only to "
+        "explain specific codes; omit it to get the live active set.",
         {
             "type": "object",
             "properties": {
                 "idv_list": {
                     "type": "array",
                     "items": {"type": "integer"},
-                    "description": "List of active IDV fault numbers (1-21)",
+                    "description": "Optional. Specific IDV numbers (1-21) to "
+                                   "explain. Omit to read the live active set.",
                 }
             },
-            "required": ["idv_list"],
+            "required": [],
         },
-        lambda idv_list: describe_idvs(idv_list),
+        lambda idv_list=None: describe_idvs(idv_list),
     )
 

@@ -438,6 +438,114 @@ export function subscribeDraftWorkOrders(onWorkOrder, after = "0") {
   return () => control.abort();
 }
 
+// ─── Work-order scheduling ──────────────────────────────────────────────────
+// An engineer proposes a time window + crew for an approved draft. The gateway
+// sends it to Slack for approval; the UI polls schedule status.
+
+// The crew is not sent. Who is going in is part of what the Slack approver is
+// agreeing to, so the gateway reads it off the roster rather than taking this
+// client's word for it.
+export async function scheduleWorkOrder(draftId, { windowStart, windowEnd, notes }) {
+  const res = await fetchWithAuth(`${BASE}/work-orders/${encodeURIComponent(draftId)}/schedule`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({
+      window_start: windowStart || "",
+      window_end: windowEnd || "",
+      notes: notes || "",
+    }),
+  });
+  if (!res.ok) throw new Error(`schedule failed: ${res.status}`);
+  return res.json();
+}
+
+// Every schedule and where its Slack approval has got to, keyed by draft id.
+// Polled rather than streamed: the approval happens in Slack, so nothing lands
+// on the drafts stream to carry it back, and that stream's cursor only moves
+// forward anyway - a card already on screen would never be re-sent.
+export async function getSchedules() {
+  const res = await fetchWithAuth(`${BASE}/work-orders/schedules`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`schedules failed: ${res.status}`);
+  const data = await res.json();
+  return data.schedules ?? {};
+}
+
+export async function getScheduleStatus(draftId) {
+  const res = await fetchWithAuth(
+    `${BASE}/work-orders/${encodeURIComponent(draftId)}/schedule`,
+    { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`schedule status failed: ${res.status}`);
+  return res.json();
+}
+
+// ─── Crew roster ────────────────────────────────────────────────────────────
+export async function getCrew() {
+  const res = await fetchWithAuth(`${BASE}/crew`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error(`crew failed: ${res.status}`);
+  const data = await res.json();
+  return data.crew ?? [];
+}
+
+export async function addCrewMember({ name, email, lang, phone }) {
+  const res = await fetchWithAuth(`${BASE}/crew`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ name, email, lang: lang || "en", phone: phone || "" }),
+  });
+  if (!res.ok) throw new Error(`add crew failed: ${res.status}`);
+  return res.json();
+}
+
+export async function removeCrewMember(workerId) {
+  const res = await fetchWithAuth(`${BASE}/crew/${encodeURIComponent(workerId)}`, {
+    method: "DELETE",
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`remove crew failed: ${res.status}`);
+  return res.json();
+}
+
+// Re-send an approved order to the crew. Not an approval path: the gateway
+// refuses anything Slack has not already authorised, so this is only the retry
+// for a dispatch that failed, or for a worker added after the fact.
+export async function dispatchWorkOrder(draftId) {
+  const res = await fetchWithAuth(
+    `${BASE}/work-orders/${encodeURIComponent(draftId)}/dispatch`, {
+      method: "POST",
+      headers: { ...(await authHeaders()) },
+    });
+  if (!res.ok) throw new Error(`dispatch failed: ${res.status}`);
+  return res.json();
+}
+
+// ─── Field worker: dispatched job cards ─────────────────────────────────────
+// The far end of the same loop. A worker sees only their own assignments -
+// which ones those are is decided by the gateway off their token, so there is
+// no identifier to pass here and deliberately no way to ask for someone else's.
+
+export async function getMyAssignments() {
+  const res = await fetchWithAuth(`${BASE}/field/assignments`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error(`assignments failed: ${res.status}`);
+  const data = await res.json();
+  return data.assignments ?? [];
+}
+
+export async function updateAssignmentStatus(assignmentId, status, note = "") {
+  const res = await fetchWithAuth(
+    `${BASE}/field/assignments/${encodeURIComponent(assignmentId)}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ status, note }),
+    });
+  if (!res.ok) throw new Error(`assignment update failed: ${res.status}`);
+  const data = await res.json();
+  return data.assignment;
+}
+
 // ─── Simulation API extensions ──────────────────────────────────────────────
 
 export async function getEnvelopes() {

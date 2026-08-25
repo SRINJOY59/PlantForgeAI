@@ -139,6 +139,48 @@ class Settings(BaseSettings):
     # chatters across a limit produces one Slack message, not one per crossing.
     slack_dedup_ttl_s: int = 1800
 
+    # --- Slack as an approval gate (work-order scheduling) ---
+    # Scheduling work is the one flow where Slack is not a notification but a
+    # control: the engineer proposes a slot, Slack authorises it, and only then
+    # can the order be dispatched to a crew. That needs a way back IN from
+    # Slack, which an Incoming Webhook alone does not give you. Two return
+    # paths, because the two have very different setup costs:
+    #
+    #   1. Block Kit buttons -> POST /slack/interactions. Needs a real Slack
+    #      app (signing secret below) and a publicly reachable gateway.
+    #   2. Signed approve/reject links. Needs nothing but the webhook that is
+    #      already configured, so the flow works on day one.
+    #
+    # Both are posted on the same message; whichever the workspace supports is
+    # the one that gets used, and both land in the same handler.
+
+    # Slack app signing secret (api.slack.com > Your App > Basic Information).
+    # Empty means button callbacks are refused - unverifiable, so not trusted.
+    slack_signing_secret: str = ""
+    # HMAC key for the signed approval links. Left empty it is derived
+    # deterministically from other secrets (see notify.approvals) so a demo
+    # still works across gateway workers, with a warning. Set it in production.
+    slack_approval_secret: str = ""
+    # How long an approval link stays valid. A work slot that sat unapproved
+    # for a day should be re-proposed against current plant state, not
+    # rubber-stamped from a stale message.
+    slack_approval_ttl_s: int = 86400
+    # The base URL Slack itself can reach the gateway on. The links are built
+    # from this, so localhost only works if Slack is not really involved.
+    public_gateway_url: str = "http://localhost:8000"
+
+    # --- crew dispatch ---
+    # There is deliberately no "languages to translate into" setting. The set
+    # is derived from the crew actually on the roster (see gateway.dispatch),
+    # because a fixed list means translating into twelve languages for a crew
+    # that reads two - eleven wasted LLM calls, and eleven job cards nobody
+    # checks. Which languages are POSSIBLE is a property of the dispatcher
+    # (LANGUAGE_NAMES in agents.usecases.work_order.dispatch), not of config.
+    #
+    # A translated brief is cached per (draft, language) for this long. The
+    # draft is immutable, so the only reason to expire at all is to reclaim.
+    dispatch_brief_ttl_s: int = 604800
+
 
 @lru_cache
 def get_settings() -> Settings:

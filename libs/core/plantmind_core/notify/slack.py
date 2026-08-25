@@ -39,6 +39,25 @@ SEVERITY_RANK = {"info": 0, "warning": 1, "critical": 2}
 _POST_TIMEOUT_S = 5
 
 
+def _clip(text, limit: int) -> str:
+    """Slack truncates a long block server-side and the tail is silently lost,
+    so cut it here where we can say so."""
+    text = (text or "").strip()
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def _format_window(start, end) -> str:
+    """The proposed slot, as written by the engineer. Rendered verbatim rather
+    than reformatted into a timezone: the approver and the crew are standing in
+    the same plant, and a helpfully converted timestamp is how a night shift
+    gets sent in at the wrong hour."""
+    start = (start or "").replace("T", " ")
+    end = (end or "").replace("T", " ")
+    if start and end:
+        return f"{start} → {end}"
+    return start or end or "_not specified_"
+
+
 class SlackNotifier:
     def __init__(self, webhook_url: str, enabled: bool, min_severity: str,
                  dedup_ttl_s: int, redis_client=None):
@@ -129,6 +148,117 @@ class SlackNotifier:
             {"type": "context", "elements": [{"type": "mrkdwn", "text": f"Statutory requirement logged in PlantForge Knowledge Graph. Schedule work order immediately."}]}
         ]
         return self._send(blocks, fallback=f"Statutory Compliance Alert: {equip} - {std} is {status}")
+
+    def post_work_order_approval(self, draft: dict, schedule: dict) -> bool:
+        """Ask Slack to authorise a scheduled work order.
+
+        The one message in here that is not a notification. Everything else
+        this class sends is telling somebody what happened; this is asking, and
+        nothing moves until it is answered - so it is exempt from the severity
+        floor and from dedup. A re-proposed schedule after a rejection is a
+        genuinely new question, and silently swallowing it as a duplicate would
+        strand the engineer waiting on an answer that was never asked for.
+
+        Both return paths ride on the same message. The buttons work only where
+        a Slack app is installed and the gateway is reachable; the links below
+        them need nothing but this webhook. Whichever the workspace supports is
+        the one that gets used - and a reader can see the ID they are approving
+        either way.
+        """
+        if not self._enabled:
+            return False
+
+        equip = draft.get("equipment") or "Unknown asset"
+        priority = str(draft.get("priority") or "medium").upper()
+        order_type = draft.get("order_type") or "PM01"
+        draft_id = schedule.get("draft_id", "")
+        window = _format_window(schedule.get("window_start"),
+                               schedule.get("window_end"))
+        crew = schedule.get("crew_names") or []
+
+        fields = [
+            {"type": "mrkdwn", "text": f"*Equipment:* `{equip}`"},
+            {"type": "mrkdwn", "text": f"*Priority:* *{priority}*"},
+            {"type": "mrkdwn", "text": f"*Order type:* {order_type}"},
+            {"type": "mrkdwn", "text": f"*Window:* {window}"},
+            {"type": "mrkdwn", "text": f"*Requested by:* {schedule.get('requested_by', 'unknown')}"},
+            {"type": "mrkdwn",
+             "text": f"*Crew:* {', '.join(crew) if crew else '_not yet assigned_'}"},
+        ]
+
+        blocks = [
+            {"type": "header", "text": {"type": "plain_text",
+                                        "text": f"🛠️ Approval needed — schedule work on {equip}"[:150]}},
+            {"type": "section", "fields": fields[:10]},
+        ]
+
+        fix = _clip(draft.get("recommended_fix"), 600)
+        if fix:
+            blocks.append({"type": "section",
+                           "text": {"type": "mrkdwn", "text": f"*Recommended fix*\n{fix}"}})
+        notes = _clip(schedule.get("notes"), 300)
+        if notes:
+            blocks.append({"type": "section",
+                           "text": {"type": "mrkdwn", "text": f"*Engineer's note*\n{notes}"}})
+
+        # The value carries the draft id because that is what the handler acts
+        # on; the action_id carries the decision so a mis-wired button cannot
+        # approve something by defaulting.
+        blocks.append({"type": "actions", "block_id": f"wo_approval:{draft_id}",
+                       "elements": [
+                           {"type": "button", "action_id": "work_order_approve",
+                            "style": "primary", "value": draft_id,
+                            "text": {"type": "plain_text", "text": "Approve"}},
+                           {"type": "button", "action_id": "work_order_reject",
+                            "style": "danger", "value": draft_id,
+                            "text": {"type": "plain_text", "text": "Reject"}},
+                       ]})
+
+        try:
+            from plantmind_core.notify.approvals import approval_links
+            links = approval_links(draft_id)
+            blocks.append({"type": "context", "elements": [
+                {"type": "mrkdwn",
+                 "text": (f"Buttons not working? <{links['approved']}|Approve> · "
+                          f"<{links['rejected']}|Reject>")}]})
+        except Exception as e:
+            # A missing link is a degraded message, not a failed one - the
+            # buttons may well be the working path in this workspace.
+            log.warning("could not build approval links", error=str(e))
+
+        blocks.append({"type": "context", "elements": [
+            {"type": "mrkdwn",
+             "text": (f"Draft `{draft_id}` · no crew is notified until this is "
+                      f"approved.")}]})
+
+        return self._send(blocks,
+                          fallback=f"Approval needed: schedule work on {equip} ({priority})")
+
+    def post_work_order_dispatched(self, draft: dict, schedule: dict,
+                                   recipients: list) -> bool:
+        """Close the loop in the same channel that authorised it.
+
+        Whoever approved this is entitled to see that it actually went out, and
+        to whom - an approval whose consequence is invisible is one people stop
+        reading carefully.
+        """
+        if not self._enabled:
+            return False
+        equip = draft.get("equipment") or "Unknown asset"
+        who = ", ".join(f"{r.get('name')} ({r.get('lang', 'en')})"
+                        for r in recipients) or "nobody"
+        blocks = [
+            {"type": "section", "text": {"type": "mrkdwn",
+             "text": (f"✅ *Work order dispatched* — `{equip}`\n"
+                      f"Sent to {len(recipients)} worker(s): {who}")}},
+            {"type": "context", "elements": [
+                {"type": "mrkdwn",
+                 "text": (f"Approved by {schedule.get('decided_by', 'unknown')} · "
+                          f"window {_format_window(schedule.get('window_start'), schedule.get('window_end'))} · "
+                          f"each worker received it in their own language.")}]},
+        ]
+        return self._send(blocks,
+                          fallback=f"Work order dispatched: {equip} to {len(recipients)} worker(s)")
 
     def post_test(self, user_name: str = "Engineer") -> bool:
         """Send an interactive test notification verifying Slack integration."""

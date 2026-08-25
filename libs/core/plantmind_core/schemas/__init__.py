@@ -22,6 +22,7 @@ from plantmind_core.schemas.contracts import (
     TagDeviation,
     Turn,
     WebSource,
+    WorkerBrief,
     WorkOrderDraft,
     WorkOrderDraftProse,
     WorkPermit,
@@ -33,5 +34,5 @@ __all__ = [
     "EdgeType", "FaultMode", "FaultSignature", "GraphDelta", "ImpactAssessment",
     "NodeType", "PermitRequest",
     "Provenance", "QueryMode", "Source", "TagDeviation", "Turn", "WebSource",
-    "WorkOrderDraft", "WorkOrderDraftProse", "WorkPermit",
+    "WorkerBrief", "WorkOrderDraft", "WorkOrderDraftProse", "WorkPermit",
 ]

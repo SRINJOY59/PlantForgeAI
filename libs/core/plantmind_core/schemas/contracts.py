@@ -383,3 +383,34 @@ class WorkOrderDraft(BaseModel):
     graph_version: int = 0
     verified: bool = True
     unverified_claims: list[str] = Field(default_factory=list)
+
+
+class WorkerBrief(BaseModel):
+    """An approved work order as the person doing it needs to read it.
+
+    A separate contract from WorkOrderDraft rather than a translated copy of
+    it, because the audience inverted. A draft is written for a planner
+    deciding whether the work is justified: root cause, prior orders, governing
+    clauses, grounding caveats. None of that helps someone standing at the pump
+    with a spanner, and a wall of it is how a safety line gets skimmed past.
+
+    So this is short, imperative, and ordered the way the job happens. The
+    fields are deliberately lists: on a phone, at the equipment, a numbered
+    step you can put a thumb next to beats a paragraph.
+
+    `lang` is the language the strings in THIS object are written in. Every
+    worker gets their own instance in their own language, and the engineer's
+    console keeps the English one, so the two can always be compared when
+    something goes wrong.
+    """
+    lang: str = "en"
+    title: str = ""
+    summary: str = ""
+    # What to actually do, in order. Lifted from the draft's recommended_fix.
+    steps: list[str] = Field(default_factory=list)
+    # Isolation, hazards, the things that must be true before starting.
+    safety: list[str] = Field(default_factory=list)
+    ppe: list[str] = Field(default_factory=list)
+    # Named procedures and standards, left in their original form: a document
+    # number is an identifier, not prose, and translating it makes it unfindable.
+    references: list[str] = Field(default_factory=list)
