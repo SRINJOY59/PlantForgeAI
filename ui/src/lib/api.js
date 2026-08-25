@@ -4,8 +4,17 @@
 // header, and a token in the query string would leak into logs and history.
 
 import { supabase } from "./supabase";
+import { resolveBackendUrl } from "./backendUrl";
 
-const BASE = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8000";
+// The gateway origin, with its scheme corrected to match the page - see
+// backendUrl.js for why that is necessary and why upgrading is always safe.
+//
+// This is also the origin the plant-telemetry WebSocket is derived from, by
+// swapping http->ws below, so fixing the scheme here gives wss:// for free. A
+// ws:// socket is blocked from an https page for exactly the same reason a
+// fetch is, and just as silently.
+const BASE = resolveBackendUrl(import.meta.env.VITE_GATEWAY_URL,
+                               "http://localhost:8000");
 
 async function authHeaders() {
   if (!supabase) return {};                 // demo mode: gateway is open
@@ -298,21 +307,54 @@ export async function metrics() {
 }
 
 export function documentUrl(docId) {
-  return `${BASE}/documents/${docId}`;
+  const cleanId = String(docId || "").replace(/^doc:/, "").trim();
+  return `${BASE}/documents/${cleanId}`;
 }
 
-// /documents/{id}/url returns a short-lived presigned URL from MinIO, bypassing
-// the gateway proxy to eliminate bandwidth bottlenecks on large PDFs.
+// Fetch document content as an in-memory authenticated Blob URL and extracted text.
+// This serves documents directly from the gateway without requiring public MinIO exposure.
+export async function fetchDocumentBlob(docId) {
+  const cleanId = String(docId || "").replace(/^doc:/, "").trim();
+  const headers = await authHeaders();
+
+  let res = await fetchWithAuth(`${BASE}/documents/${encodeURIComponent(cleanId)}`, { headers });
+  if (!res.ok && cleanId !== String(docId)) {
+    res = await fetchWithAuth(`${BASE}/documents/${encodeURIComponent(docId)}`, { headers });
+  }
+
+  if (!res.ok) {
+    throw new Error(`Document not found (${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename="?([^";]+)"?/);
+  const filename = match ? match[1] : null;
+  const contentType = res.headers.get("content-type") || blob.type || "";
+  const objectUrl = URL.createObjectURL(blob);
+
+  let text = null;
+  const isText = /\.(md|markdown|txt|csv|tsv|log|eml|html|json)$/i.test(filename || cleanId) ||
+                 contentType.includes("text") || contentType.includes("json");
+  if (isText) {
+    try {
+      text = await blob.text();
+    } catch {
+      text = null;
+    }
+  }
+
+  return {
+    url: objectUrl,
+    filename: filename || cleanId,
+    contentType,
+    text,
+    blob,
+  };
+}
+
 export async function fetchDocumentUrl(docId) {
-  const res = await fetchWithAuth(`${BASE}/documents/${docId}/url`, {
-    headers: await authHeaders(),
-  });
-  if (!res.ok) throw new Error(`document failed: ${res.status}`);
-  const data = await res.json();
-  // filename comes back too: storage always knows it (the key is
-  // raw/<doc_id>/<filename>), so it is the reliable name even when the
-  // citation that got us here only carried a content hash.
-  return { url: data.url, filename: data.filename ?? null };
+  return await fetchDocumentBlob(docId);
 }
 
 // limit=1500: the plant graph passed 400 nodes once the full document set was

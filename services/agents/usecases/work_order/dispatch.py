@@ -38,6 +38,13 @@ from plantmind_core.telemetry import get_logger
 
 log = get_logger("agents.usecases.work_order.dispatch")
 
+# A job card with 10 steps, safety, PPE and references does not fit in 1200,
+# and structured() only doubles once before it gives up - so an over-long
+# answer arrived truncated mid-string and the whole dispatch 500'd. The prompt
+# now caps the content; this makes sure the room is there for what it asks for.
+BRIEF_MAX_TOKENS = 2000
+TRANSLATE_MAX_TOKENS = 2400
+
 # What the codes mean, spelled out for the model. A bare "bn" is ambiguous
 # enough that a model will occasionally answer in the wrong script, and the
 # script matters more than the language name here: a Devanagari rendering of
@@ -80,7 +87,17 @@ Hard rules:
 - Never translate or alter an identifier: equipment tags, document numbers,
   standard names and units stay exactly as given.
 - No markdown, no numbering in the text itself - the list is the numbering.
-- Plain, direct language. Short sentences. This is read one-handed on a phone."""
+- Plain, direct language. Short sentences. This is read one-handed on a phone.
+
+Length limits - obey them exactly. A job card that does not fit on a phone
+screen is not a job card, and an over-long answer is truncated mid-string and
+delivers nothing at all:
+- title: under 80 characters.
+- summary: under 300 characters.
+- steps: at most 10, each under 200 characters.
+- safety: at most 8, each under 200 characters.
+- ppe: at most 8, each a short noun phrase.
+- Never repeat a step, a hazard or an item of PPE."""
 
 TRANSLATE_SYSTEM = """You translate an approved maintenance job card for a
 plant technician into {language}.
@@ -146,18 +163,70 @@ def _schedule_note(schedule: dict) -> str:
 
 async def build_brief(draft: dict, schedule: dict | None = None,
                       llm=None) -> WorkerBrief:
-    """The English job card. One structured call; the shape is the schema."""
+    """The English job card. One structured call; the shape is the schema.
+
+    Never raises. translate_brief already refuses to fail a dispatch over one
+    language; the English card is the one that MUST exist, so it gets the same
+    treatment and a stronger fallback. By the time this runs the order has been
+    approved - a human said yes in Slack - and answering that with a 500 leaves
+    the approval standing and the crew with nothing, which is the worst of the
+    available outcomes.
+
+    The failure seen in practice was a truncated structured answer: the model
+    wrote past its token budget and the JSON ended mid-string, so pydantic
+    rejected it and the 500 surfaced as "the approval stands, only the delivery
+    failed". Hence a bigger budget, hard length limits in the prompt, and a
+    deterministic card assembled straight from the draft if it still fails.
+    """
     llm = llm or get_llm()
     task = _source_material(draft)
     note = _schedule_note(schedule or {})
     if note:
         task = task + chr(10) + chr(10) + note
-    brief = await llm.structured(
-        [{"role": "system", "content": RESHAPE_SYSTEM},
-         {"role": "user", "content": task}],
-        WorkerBrief, tier=Tier.MID, max_tokens=1200)
+    try:
+        brief = await llm.structured(
+            [{"role": "system", "content": RESHAPE_SYSTEM},
+             {"role": "user", "content": task}],
+            WorkerBrief, tier=Tier.MID, max_tokens=BRIEF_MAX_TOKENS)
+    except Exception as e:
+        log.warning("brief generation failed; falling back to the draft",
+                    equipment=draft.get("equipment"),
+                    error_type=type(e).__name__, error=str(e)[:200])
+        brief = _brief_from_draft(draft)
     brief.lang = "en"
     return _carry_references(brief, draft)
+
+
+def _brief_from_draft(draft: dict) -> WorkerBrief:
+    """A job card built without the model, from what the planner already wrote.
+
+    Plainer than the reshaped version and in the planner's voice rather than
+    the supervisor's, but every field traces to the approved draft, so it is
+    accurate - and a technician can work from it.
+    """
+    equipment = str(draft.get("equipment") or "equipment")
+    fix = str(draft.get("recommended_fix") or "").strip()
+    # the planner writes the fix as prose; one sentence per line is the closest
+    # honest thing to steps without inventing structure that was never there
+    steps = [s.strip() for s in fix.replace(";", ".").split(".") if s.strip()]
+
+    order_type = str(draft.get("order_type") or "PM01")
+    failure = str(draft.get("failure_mode") or "").strip()
+    summary = f"{order_type} on {equipment}"
+    if failure:
+        summary += f" for {failure}"
+    if fix:
+        summary += ". Approved fix: " + fix[:240]
+
+    return WorkerBrief(
+        lang="en",
+        title=f"{order_type}: {equipment}"[:80],
+        summary=summary[:300],
+        steps=steps[:10] or [f"Carry out the approved {order_type} on {equipment}."],
+        safety=["Follow the site permit and isolation procedure for "
+                f"{equipment} before starting."],
+        ppe=[],
+    )
 
 
 async def translate_brief(brief: WorkerBrief, lang: str, llm=None) -> WorkerBrief:
@@ -182,7 +251,7 @@ async def translate_brief(brief: WorkerBrief, lang: str, llm=None) -> WorkerBrie
         out = await llm.structured(
             [{"role": "system", "content": system},
              {"role": "user", "content": brief.model_dump_json()}],
-            WorkerBrief, tier=Tier.MID, max_tokens=1600)
+            WorkerBrief, tier=Tier.MID, max_tokens=TRANSLATE_MAX_TOKENS)
     except Exception as e:
         # A worker with an English job card can still do the work and can ask
         # someone. A worker with no job card cannot. Never fail the dispatch on

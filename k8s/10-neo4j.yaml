@@ -38,6 +38,13 @@ spec:
             - { name: NEO4J_PLUGINS, value: '["graph-data-science"]' }
             # GDS needs the procedures allow-listed to run
             - { name: NEO4J_dbms_security_procedures_unrestricted, value: "gds.*" }
+            # PIN the memory. Left to auto-size, Neo4j 5 grabs a large fraction of
+            # the container for pagecache + heap, then GDS's off-heap on top blows
+            # past the cgroup limit and the kernel OOM-kills it (the crash-loop on
+            # Autopilot). Explicit, modest values leave headroom for GDS + the JVM.
+            - { name: NEO4J_server_memory_heap_initial__size, value: "1500m" }
+            - { name: NEO4J_server_memory_heap_max__size, value: "1500m" }
+            - { name: NEO4J_server_memory_pagecache_size, value: "1g" }
           ports:
             - { containerPort: 7687 }
             - { containerPort: 7474 }
@@ -51,8 +58,10 @@ spec:
           volumeMounts:
             - { name: data, mountPath: /data }
           resources:
-            requests: { cpu: "500m", memory: "2Gi" }
-            limits:   { memory: "4Gi" }
+            # heap 1.5G + pagecache 1G + GDS off-heap + JVM/OS overhead: 5Gi
+            # gives comfortable headroom so a GDS run can't trip the OOM-killer.
+            requests: { cpu: "1", memory: "5Gi" }
+            limits:   { memory: "5Gi" }
   volumeClaimTemplates:
     - metadata: { name: data }
       spec:

@@ -40,19 +40,21 @@ MEDIA_TYPES = {
     "jpg": "image/jpeg",
     "jpeg": "image/jpeg",
     "webp": "image/webp",
-    "html": "text/html",
-    "json": "application/json",
-    "md": "text/plain",
-    "txt": "text/plain",
-    "csv": "text/plain",
-    "tsv": "text/plain",
-    "eml": "text/plain",
-    "log": "text/plain",
+    "gif": "image/gif",
+    "html": "text/html; charset=utf-8",
+    "json": "application/json; charset=utf-8",
+    "md": "text/markdown; charset=utf-8",
+    "markdown": "text/markdown; charset=utf-8",
+    "txt": "text/plain; charset=utf-8",
+    "csv": "text/csv; charset=utf-8",
+    "tsv": "text/tab-separated-values; charset=utf-8",
+    "eml": "text/plain; charset=utf-8",
+    "log": "text/plain; charset=utf-8",
 }
 
 
 def media_type_for(filename: str) -> str:
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in (filename or "") else ""
     return MEDIA_TYPES.get(ext, "application/octet-stream")
 
 
@@ -103,7 +105,8 @@ def correct(request: CorrectionRequest, svc=Depends(get_service),
 
 @router.get("/documents/{doc_id}")
 def document(doc_id: str, svc=Depends(get_service)):
-    found = svc.document(doc_id)
+    clean_id = doc_id.removeprefix("doc:").strip()
+    found = svc.document(clean_id) or svc.document(doc_id)
     if not found:
         raise HTTPException(404, f"no document for {doc_id}")
     filename, data = found
@@ -127,7 +130,9 @@ def document_url_endpoint(doc_id: str, svc=Depends(get_service)):
     got a filename prop, or that was named before that node was written, would
     otherwise show a content hash on screen forever.
     """
-    url = svc.document_url(doc_id)
+    clean_id = doc_id.removeprefix("doc:").strip()
+    url = svc.document_url(clean_id) or svc.document_url(doc_id)
     if not url:
         raise HTTPException(404, f"no document for {doc_id}")
-    return {"url": url, "filename": svc.document_name(doc_id)}
+    name = svc.document_name(clean_id) or svc.document_name(doc_id)
+    return {"url": url, "filename": name}

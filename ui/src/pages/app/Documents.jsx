@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { FileText, Search, Clock, ShieldCheck, Wrench, FileSearch, Filter, Loader2 } from "lucide-react";
+import { FileText, Search, Clock, ShieldCheck, Wrench, FileSearch, Filter, Loader2, Eye } from "lucide-react";
 import { getGraph, uploadDocument } from "../../lib/api";
+import { DocumentModal } from "../../components/DocumentViewer";
 
 const TYPE_CFG = {
   work_order: { label: "Work Order", Icon: Wrench,     color: "#d97706", bg: "#fef3c7" },
@@ -27,6 +28,7 @@ export default function Documents() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeDoc, setActiveDoc] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -191,7 +193,10 @@ export default function Documents() {
           {filtered.map(doc => {
             const cfg = TYPE_CFG[doc.type] ?? TYPE_CFG.manual;
             return (
-              <div key={doc.id} className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-150 cursor-pointer"
+              <div
+                key={doc.id}
+                onClick={() => setActiveDoc({ id: doc.id, filename: doc.title })}
+                className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-150 cursor-pointer relative"
                 style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--blue-mid)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(122,84,160,0.06)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.03)"; e.currentTarget.style.transform = "translateY(0)"; }}
@@ -201,13 +206,19 @@ export default function Documents() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-sm font-semibold truncate" style={{ color: "var(--text)" }}>{doc.title}</h3>
-                    <span className="text-[10px] font-mono" style={{ color: "var(--muted-lt)" }}>{doc.date}</span>
+                    <h3 className="text-sm font-semibold truncate group-hover:text-[var(--blue)] transition-colors" style={{ color: "var(--text)" }}>
+                      {doc.title}
+                    </h3>
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--blue)] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Eye size={12} /> View
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-xs mb-2.5" style={{ color: "var(--muted)" }}>
-                    <span className="font-mono text-[11px] font-medium" style={{ color: "var(--blue)" }}>{doc.id.slice(0, 8)}...</span>
+                    <span className="font-mono text-[11px] font-medium" style={{ color: "var(--blue)" }}>
+                      {String(doc.id).replace(/^doc:/, "").slice(0, 8)}...
+                    </span>
                     <span>·</span>
-                    <span>{doc.type}</span>
+                    <span className="capitalize">{doc.type}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {doc.equipment.map(eq => (
@@ -225,6 +236,15 @@ export default function Documents() {
             );
           })}
         </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {activeDoc && (
+        <DocumentModal
+          docId={activeDoc.id}
+          filename={activeDoc.filename}
+          onClose={() => setActiveDoc(null)}
+        />
       )}
     </div>
   );

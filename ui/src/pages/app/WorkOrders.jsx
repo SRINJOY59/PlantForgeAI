@@ -417,6 +417,25 @@ function ScheduleModal({ draft, busy, onSubmit, onClose }) {
     } catch { /* swallow */ }
   }
 
+  // Why the button is dead, in the user's words rather than the code's.
+  //
+  // A disabled control with no stated reason is the worst version of this: a
+  // datetime-local input reports an EMPTY STRING until BOTH halves are filled,
+  // so a field showing "11-08-2026 --:--" looks complete, reads as complete,
+  // and is worth nothing to the form. Somebody who has typed a date and is
+  // staring at a greyed-out button has no way to know the missing time is the
+  // problem, so it gets said out loud.
+  const blockers = [];
+  if (!windowStart) {
+    blockers.push("a start date AND time — the time is still blank");
+  }
+  if (windowEnd && windowStart && windowEnd <= windowStart) {
+    blockers.push("an end that is after the start");
+  }
+  if (crew.length === 0) {
+    blockers.push("at least one worker on the crew");
+  }
+
   function submit() {
     onSubmit({ windowStart, windowEnd, notes });
   }
@@ -443,8 +462,11 @@ function ScheduleModal({ draft, busy, onSubmit, onClose }) {
           {/* Time window */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
+              {/* "date and time" spelled out because the widget does not say
+                  so: it renders a --:-- placeholder that reads as optional and
+                  silently yields nothing until it is filled. */}
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "var(--muted-lt)" }}>Start</label>
+                style={{ color: "var(--muted-lt)" }}>Start — date and time</label>
               <input type="datetime-local" value={windowStart}
                 onChange={(e) => setWindowStart(e.target.value)}
                 className="w-full rounded-lg border px-3 py-2 text-sm"
@@ -453,7 +475,7 @@ function ScheduleModal({ draft, busy, onSubmit, onClose }) {
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "var(--muted-lt)" }}>End</label>
+                style={{ color: "var(--muted-lt)" }}>End — optional</label>
               <input type="datetime-local" value={windowEnd}
                 onChange={(e) => setWindowEnd(e.target.value)}
                 className="w-full rounded-lg border px-3 py-2 text-sm"
@@ -536,11 +558,16 @@ function ScheduleModal({ draft, busy, onSubmit, onClose }) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t px-6 py-4"
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t px-6 py-4"
           style={{ borderColor: "var(--border)" }}>
+          {blockers.length > 0 && (
+            <p className="mr-auto max-w-[22rem] text-[11px] leading-relaxed"
+              style={{ color: "#c2410c" }}>
+              Still needed: {blockers.join("; ")}.
+            </p>
+          )}
           <button onClick={onClose} className="btn-ghost px-4 py-2 text-xs">Cancel</button>
-          <button onClick={submit} disabled={busy || !windowStart || crew.length === 0}
-            title={crew.length === 0 ? "Add at least one worker to your crew first" : ""}
+          <button onClick={submit} disabled={busy || blockers.length > 0}
             className="btn-primary flex items-center gap-1.5 px-4 py-2 text-xs disabled:opacity-40">
             <Send size={12} /> {busy ? "Sending…" : "Send to Slack"}
           </button>

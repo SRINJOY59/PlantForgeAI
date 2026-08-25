@@ -22,11 +22,19 @@ dispatched before anyone read the request. So the GET only renders a
 confirmation page, and the POST behind its button is what actually decides.
 A prefetcher does not press buttons.
 
+TIMING CONSTRAINT — Slack requires a response to interaction payloads within
+3 seconds, and GKE's default Ingress backend timeout is 30 seconds. The LLM
+brief-generation and translation pipeline (gateway → agents → Gemini) takes
+30-90 seconds. So: record the decision synchronously (milliseconds), respond
+to Slack immediately, and run the dispatch in a fire-and-forget background
+task. The Slack channel gets a follow-up message once dispatch completes.
+
 These routes are registered WITHOUT the protected dependency in main.py. That
 is load-bearing, not an oversight, and the verification above is what pays for
 it.
 """
 
+import asyncio
 import json
 import urllib.parse
 
@@ -113,7 +121,7 @@ async def confirm_via_link(token: str = ""):
     try:
         draft_id, decision = verify_approval(token)
     except ApprovalTokenError as e:
-        return _page("Link not valid", str(e), status=403)
+        return _page("❌ Invalid or expired link", str(e), status=403)
 
     svc = get_service()
     record = svc.work_order_schedule(draft_id)
@@ -137,14 +145,22 @@ async def confirm_via_link(token: str = ""):
 
 @router.post("/slack/approve")
 async def approve_via_link(token: str = Form("")):
-    """The decision itself. Reached only by pressing the button above."""
+    """The decision itself. Reached only by pressing the button above.
+
+    Records the decision immediately, shows the user a result page, and
+    dispatches to the crew in the background. The page says "approved,
+    dispatching now" rather than blocking for 60+ seconds of LLM work.
+    """
     try:
         draft_id, decision = verify_approval(token)
     except ApprovalTokenError as e:
-        return _page("Link not valid", str(e), status=403)
+        return _page("❌ Invalid or expired link", str(e), status=403)
 
     svc = get_service()
-    record = await svc.handle_schedule_decision(
+
+    # Record the decision synchronously (milliseconds) so it is durable
+    # before the response leaves.
+    record = svc.record_schedule_decision(
         draft_id, decision, who="approved via Slack link", channel="link")
     if record is None:
         return _page("Already decided",
@@ -154,15 +170,15 @@ async def approve_via_link(token: str = Form("")):
         return _page("Work order rejected",
                      "No crew has been notified. The engineer can propose a "
                      "new schedule.", decision="rejected")
-    if record.get("dispatch_error"):
-        return _page("Approved, but not delivered",
-                     f"The approval is recorded. Sending it to the crew "
-                     f"failed: {record['dispatch_error']}. The engineer can "
-                     f"retry from the console.", decision="approved")
-    sent = len(record.get("dispatched_to") or [])
-    return _page("Work order approved",
-                 f"Sent to {sent} worker(s), each in their own language.",
-                 decision="approved")
+
+    # Fire off the slow dispatch (LLM briefs + translations) in the background.
+    asyncio.create_task(
+        _dispatch_in_background(svc, draft_id, record))
+
+    return _page("✅ Work order approved",
+                 "The approval is recorded. Job cards are being generated "
+                 "and translated for the crew now — they will receive them "
+                 "shortly.", decision="approved")
 
 
 # --------------------------------------------------------- Block Kit buttons
@@ -170,10 +186,10 @@ async def approve_via_link(token: str = Form("")):
 async def slack_interactions(request: Request):
     """Slack posts here when a Block Kit button is tapped.
 
-    The body is form-encoded with a single 'payload' key holding JSON. Slack
-    signs the RAW body, so it is verified before anything is parsed out of it -
-    parsing first would mean acting on attacker-shaped data to decide whether
-    to trust the attacker.
+    Slack requires a response within 3 seconds. The LLM dispatch pipeline
+    takes 30-90 seconds. So: verify the signature, record the decision
+    synchronously (milliseconds), respond to Slack immediately, and dispatch
+    to the crew in a background task that posts a follow-up message when done.
     """
     body = await request.body()
     if not verify_slack_request(body,
@@ -203,21 +219,61 @@ async def slack_interactions(request: Request):
     who = user.get("username") or user.get("name") or user.get("id") or "slack user"
 
     svc = get_service()
-    record = await svc.handle_schedule_decision(draft_id, decision, who=who,
-                                                channel="button")
+
+    # Record the decision synchronously — this is just a Redis write,
+    # takes milliseconds, well within Slack's 3-second window.
+    record = svc.record_schedule_decision(
+        draft_id, decision, who=who, channel="button")
     if record is None:
         return _ephemeral("This work order was already decided.")
 
     if decision != "approved":
         return _in_channel(f"Work order `{draft_id}` rejected by {who}. "
                            f"No crew notified.")
-    if record.get("dispatch_error"):
-        return _in_channel(f"Work order `{draft_id}` approved by {who}, but "
-                           f"delivery to the crew failed: "
-                           f"{record['dispatch_error']}")
-    sent = len(record.get("dispatched_to") or [])
-    return _in_channel(f"Work order `{draft_id}` approved by {who} and sent to "
-                       f"{sent} worker(s) in their own languages.")
+
+    # Respond to Slack immediately — dispatch runs in the background.
+    asyncio.create_task(
+        _dispatch_in_background(svc, draft_id, record, who=who))
+
+    return _in_channel(
+        f"✅ Work order `{draft_id}` approved by {who}. "
+        f"Generating job cards and dispatching to crew now…")
+
+
+async def _dispatch_in_background(svc, draft_id: str, record: dict,
+                                  who: str = ""):
+    """Run the slow LLM brief-generation + translation + assignment pipeline.
+
+    This is fire-and-forget from the Slack handler's perspective. It posts a
+    follow-up Slack message when done (success or failure) so the channel
+    stays informed without blocking the original response.
+    """
+    try:
+        recipients = await svc.dispatch_approved_order(draft_id, record)
+        sent = len(recipients)
+        langs = sorted({r["lang"] for r in recipients})
+        log.info("background dispatch complete", draft=draft_id,
+                 workers=sent, languages=langs)
+
+        from plantmind_core.notify import SlackNotifier
+        try:
+            SlackNotifier.from_settings().post_text(
+                f"📋 Work order `{draft_id}` dispatched to {sent} worker(s) "
+                f"in {', '.join(langs)}.")
+        except Exception:
+            pass  # workers already have the assignments; Slack message is cosmetic
+
+    except Exception as e:
+        log.error("background dispatch failed", draft=draft_id,
+                  error=str(e)[:300])
+        from plantmind_core.notify import SlackNotifier
+        try:
+            SlackNotifier.from_settings().post_text(
+                f"⚠️ Work order `{draft_id}` was approved but dispatch to "
+                f"crew failed: {str(e)[:200]}. The engineer can retry from "
+                f"the console.")
+        except Exception:
+            pass
 
 
 def _ephemeral(text: str) -> Response:

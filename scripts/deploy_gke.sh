@@ -85,7 +85,7 @@ stage_images() {
   VITE_GATEWAY_URL="https://$API_DOMAIN" \
   VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
   VITE_SUPABASE_ANON_KEY="$VITE_SUPABASE_ANON_KEY" \
-  VITE_INTERVIEW_URL="https://$API_DOMAIN" \
+  VITE_INTERVIEW_URL="https://$API_DOMAIN/interview" \
     ./k8s/build-and-push.sh
   # image pinning moved to stage_config (a sed, no standalone `kustomize` needed)
 }

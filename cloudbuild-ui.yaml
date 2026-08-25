@@ -1,0 +1,10 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build','-f','infra/docker/ui.Dockerfile',
+           '--build-arg','VITE_GATEWAY_URL=${_GATEWAY_URL}',
+           '--build-arg','VITE_SUPABASE_URL=${_SUPABASE_URL}',
+           '--build-arg','VITE_SUPABASE_ANON_KEY=${_ANON_KEY}',
+           '--build-arg','VITE_INTERVIEW_URL=${_INTERVIEW_URL}',
+           '-t','${_IMAGE}','.']
+images: ['${_IMAGE}']
+options: { machineType: 'E2_HIGHCPU_8' }

@@ -140,15 +140,40 @@ class GatewayService:
                                        who: str, channel: str) -> dict | None:
         """Slack answered. Record it, and on approval dispatch to the crew.
 
-        Async, and awaited by its callers, rather than fired off into a
-        background task. The dispatch is the whole point of the approval - if
-        it fails, the person who just tapped Approve is the only one in a
-        position to know, and they are still looking at the response. A task
-        that logged its own failure into a container nobody is tailing would
-        leave a crew un-notified while Slack said "approved".
+        Convenience wrapper that does both steps synchronously — used by any
+        caller that CAN wait (e.g. internal API, tests). The Slack routes use
+        record_schedule_decision + dispatch_approved_order separately so they
+        can respond within Slack's 3-second window.
 
         Returns the updated record, or None when this draft was never
         scheduled or has already been decided.
+        """
+        record = self.record_schedule_decision(draft_id, decision, who, channel)
+        if record is None:
+            return None
+        if decision != "approved":
+            return record
+
+        try:
+            recipients = await self.dispatch_approved_order(draft_id, record)
+            record["dispatched_to"] = recipients
+        except Exception as e:
+            log.warning("dispatch failed after approval", draft=draft_id,
+                        error=str(e)[:200])
+            record["dispatch_error"] = str(e)[:200]
+        return record
+
+    def record_schedule_decision(self, draft_id: str, decision: str,
+                                 who: str, channel: str) -> dict | None:
+        """Record a Slack approval/rejection — synchronous, milliseconds.
+
+        This is the fast half of the old handle_schedule_decision. It does a
+        single Redis write and returns the updated record. No LLM calls, no
+        HTTP to the agents service, no translation — those belong in
+        dispatch_approved_order, which the caller can run whenever it likes.
+
+        Returns the updated record, or None when this draft was never
+        scheduled or has already been decided (idempotent double-tap).
         """
         record = self._bus.claim_schedule_decision(
             draft_id, decision, who, channel)
@@ -157,34 +182,36 @@ class GatewayService:
 
         log.info("schedule decision", draft=draft_id, decision=decision,
                  by=who, via=channel)
+        return record
 
-        if decision != "approved":
-            return record
+    async def dispatch_approved_order(self, draft_id: str,
+                                      record: dict) -> list:
+        """Send an approved work order to the crew — async, 30-90 seconds.
 
+        This is the slow half: read the draft back, call the agents service
+        for LLM-generated briefs + translations, then assign each crew member
+        their copy in Redis. Called either inline (handle_schedule_decision)
+        or as a background task (Slack routes).
+
+        Returns the list of recipients. Raises on failure so the caller can
+        decide how to surface it (inline error vs. Slack follow-up message).
+        """
         draft = self.draft_by_id(draft_id)
         if draft is None:
             log.warning("approved a draft we cannot read back; nothing "
                         "dispatched", draft=draft_id)
             record["dispatch_error"] = "draft could not be read back"
             self._bus.set_work_order_schedule(draft_id, record)
-            return record
+            raise ValueError("draft could not be read back")
 
         from gateway.dispatch import dispatch_to_crew
-        try:
-            recipients = await dispatch_to_crew(self._bus, draft, record,
-                                                self._agents_http())
-            record["dispatched_at"] = time.time()
-            record["dispatched_to"] = recipients
-        except Exception as e:
-            # The approval stands - a human made it and it is recorded. Only
-            # the delivery failed, and saying which is what lets the engineer
-            # retry the dispatch instead of re-asking Slack for permission it
-            # already gave.
-            log.warning("dispatch failed after approval", draft=draft_id,
-                        error=str(e)[:200])
-            record["dispatch_error"] = str(e)[:200]
+        recipients = await dispatch_to_crew(self._bus, draft, record,
+                                            self._agents_http())
+        record["dispatched_at"] = time.time()
+        record["dispatched_to"] = recipients
+        record.pop("dispatch_error", None)
         self._bus.set_work_order_schedule(draft_id, record)
-        return record
+        return recipients
 
     @staticmethod
     def _agents_http():
@@ -198,25 +225,12 @@ class GatewayService:
     async def redispatch(self, draft_id: str) -> list:
         """Send an already-approved order to the crew again.
 
-        The retry path for the failure above, and for a crew member added after
-        the fact. Refuses anything not actually approved: re-running a dispatch
-        is cheap, manufacturing an approval is not.
-        """
+        The retry path for a failed dispatch, and for a crew member added
+        after the fact. Delegates to dispatch_approved_order."""
         record = self._bus.work_order_schedule(draft_id)
         if record is None or record.get("status") != "approved":
             raise ValueError("work order is not approved")
-        draft = self.draft_by_id(draft_id)
-        if draft is None:
-            raise ValueError("draft could not be read back")
-
-        from gateway.dispatch import dispatch_to_crew
-        recipients = await dispatch_to_crew(self._bus, draft, record,
-                                            self._agents_http())
-        record["dispatched_at"] = time.time()
-        record["dispatched_to"] = recipients
-        record.pop("dispatch_error", None)
-        self._bus.set_work_order_schedule(draft_id, record)
-        return recipients
+        return await self.dispatch_approved_order(draft_id, record)
 
     def draft_by_id(self, draft_id: str) -> dict | None:
         """Read one draft back off the stream by its entry id.

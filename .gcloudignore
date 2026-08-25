@@ -1,48 +1,10 @@
-# Python virtual env — symlinks break Docker on Windows/OneDrive
-.venv/
-venv/
-env/
-
-# Python cache — these are ReparsePoints on OneDrive Windows, must exclude
-**/__pycache__/
-**/*.pyc
-**/*.pyo
-**/*.pyd
-
-# Egg info (generated, not needed in containers)
-**/*.egg-info/
-**/*.egg
-
-# Node / UI
-ui/node_modules/
-ui/dist/
-ui/.env
-
-# Test / dev artifacts
-.pytest_cache/
-**/.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-*.log
-logs/
-
-# Editor / OS
 .git/
-.gitignore
-.vscode/
-.idea/
-*.DS_Store
-Thumbs.db
-
-# Secrets
-.env
-*.env.*
-
-# Eval / data samples
-eval/
+.venv/
+**/node_modules/
+**/__pycache__/
+*.pyc
+ui/dist/
+dist/
 data/
-
-# Docs
-*.md
-README*
+.env
+*.log

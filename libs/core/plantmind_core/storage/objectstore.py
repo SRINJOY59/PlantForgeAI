@@ -69,13 +69,34 @@ class ObjectStore:
     def delete(self, key: str):
         self._client.remove_object(BUCKET, key)
 
+    def _clean_doc_id(self, doc_id: str) -> str:
+        if not doc_id:
+            return ""
+        return str(doc_id).removeprefix("doc:").strip()
+
     def find_document(self, doc_id: str):
         """The raw object for a doc_id (key raw/<doc_id>/<filename>).
         Returns (filename, bytes) or None - used to serve citation sources."""
-        prefix = f"raw/{doc_id}/"
+        clean = self._clean_doc_id(doc_id)
+        if not clean:
+            return None
+
+        # 1. Exact prefix match: raw/<clean>/
+        prefix = f"raw/{clean}/"
         for obj in self._client.list_objects(BUCKET, prefix=prefix):
             filename = obj.object_name.rsplit("/", 1)[-1]
             return filename, self.get(obj.object_name)
+
+        # 2. Search all objects in raw/ for matching filename, folder hash, or partial ID
+        clean_lower = clean.lower()
+        for obj in self._client.list_objects(BUCKET, prefix="raw/", recursive=True):
+            parts = obj.object_name.split("/")
+            if len(parts) >= 3:
+                folder_id = parts[1].lower()
+                fname = parts[-1]
+                if (folder_id.startswith(clean_lower) or clean_lower.startswith(folder_id)
+                        or fname.lower() == clean_lower or clean_lower in fname.lower()):
+                    return fname, self.get(obj.object_name)
         return None
 
     def presigned_url(self, doc_id: str, expires_minutes: int = 5) -> str | None:
@@ -88,11 +109,27 @@ class ObjectStore:
         its region is pinned in config rather than discovered.
         """
         from datetime import timedelta
-        prefix = f"raw/{doc_id}/"
+        clean = self._clean_doc_id(doc_id)
+        if not clean:
+            return None
+
+        prefix = f"raw/{clean}/"
         for obj in self._client.list_objects(BUCKET, prefix=prefix):
             return self._public.presigned_get_object(
                 BUCKET, obj.object_name, expires=timedelta(minutes=expires_minutes)
             )
+
+        clean_lower = clean.lower()
+        for obj in self._client.list_objects(BUCKET, prefix="raw/", recursive=True):
+            parts = obj.object_name.split("/")
+            if len(parts) >= 3:
+                folder_id = parts[1].lower()
+                fname = parts[-1]
+                if (folder_id.startswith(clean_lower) or clean_lower.startswith(folder_id)
+                        or fname.lower() == clean_lower or clean_lower in fname.lower()):
+                    return self._public.presigned_get_object(
+                        BUCKET, obj.object_name, expires=timedelta(minutes=expires_minutes)
+                    )
         return None
 
     def document_filename(self, doc_id: str) -> str | None:
@@ -102,6 +139,21 @@ class ObjectStore:
         makes it a reliable fallback for citations whose graph node never got a
         filename prop, or that were emitted before the node existed.
         """
-        for obj in self._client.list_objects(BUCKET, prefix=f"raw/{doc_id}/"):
+        clean = self._clean_doc_id(doc_id)
+        if not clean:
+            return None
+
+        prefix = f"raw/{clean}/"
+        for obj in self._client.list_objects(BUCKET, prefix=prefix):
             return obj.object_name.rsplit("/", 1)[-1]
+
+        clean_lower = clean.lower()
+        for obj in self._client.list_objects(BUCKET, prefix="raw/", recursive=True):
+            parts = obj.object_name.split("/")
+            if len(parts) >= 3:
+                folder_id = parts[1].lower()
+                fname = parts[-1]
+                if (folder_id.startswith(clean_lower) or clean_lower.startswith(folder_id)
+                        or fname.lower() == clean_lower or clean_lower in fname.lower()):
+                    return fname
         return None

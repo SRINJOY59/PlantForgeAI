@@ -7,10 +7,20 @@
 import { PipecatClient } from "@pipecat-ai/client-js";
 import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport";
 import { supabase } from "./supabase";
+import { resolveBackendUrl } from "./backendUrl";
 
 // 8003, not 8002: agents-api (the MOC backend) owns host 8002. Override with
-// VITE_INTERVIEW_URL in deployments that map the interview service elsewhere.
-const BASE = import.meta.env.VITE_INTERVIEW_URL || "http://localhost:8003";
+// VITE_INTERVIEW_URL in deployments that map the interview service elsewhere -
+// in the k8s deployment it shares the API host under a /interview prefix, which
+// is why the container runs with --root-path /interview.
+//
+// Unset, this falls back to localhost, which is right for local dev and is
+// exactly what made the deployed Interview page look like a dead service: the
+// browser was being told to call the user's own machine. resolveBackendUrl also
+// keeps the scheme in step with the page, so an https console cannot be handed
+// an http backend it is forbidden to call.
+const BASE = resolveBackendUrl(import.meta.env.VITE_INTERVIEW_URL,
+                               "http://localhost:8003");
 
 async function authHeaders() {
   if (!supabase) return {};                 // demo mode: service is open
